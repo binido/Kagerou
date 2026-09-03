@@ -2,6 +2,9 @@ import { catppuccinFrappe } from '@/themes/catppuccin-frappe'
 import { catppuccinLatte } from '@/themes/catppuccin-latte'
 import { catppuccinMacchiato } from '@/themes/catppuccin-macchiato'
 import { catppuccinMocha } from '@/themes/catppuccin-mocha'
+import { kanagawaDragon } from '@/themes/kanagawa-dragon'
+import { kanagawaLotus } from '@/themes/kanagawa-lotus'
+import { kanagawaWave } from '@/themes/kanagawa-wave'
 import type { Theme, ThemeId, ThemePack } from '@/themes/types'
 
 export const DEFAULT_THEME_ID = 'catppuccin-mocha' as const
@@ -12,6 +15,11 @@ export const themePacks: readonly ThemePack[] = [
     id: 'catppuccin',
     name: 'Catppuccin',
     themes: [catppuccinLatte, catppuccinFrappe, catppuccinMacchiato, catppuccinMocha],
+  },
+  {
+    id: 'kanagawa',
+    name: 'Kanagawa',
+    themes: [kanagawaWave, kanagawaDragon, kanagawaLotus],
   },
 ]
 
