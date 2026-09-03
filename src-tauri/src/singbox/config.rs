@@ -88,6 +88,12 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
         "route": {
             "rules": input.routing_rules.iter().map(routing_rule_to_json).collect::<Vec<_>>(),
             "final": "proxy",
+            // Without this, TUN's auto_route captures sing-box's own
+            // connections to the proxy server and feeds them back into the
+            // tunnel, which then dials the server again: a loop that opens
+            // thousands of connections and moves zero bytes. Binding
+            // outbounds to the default NIC breaks it.
+            "auto_detect_interface": true,
         },
         "experimental": {
             "clash_api": { "external_controller": input.clash_api_listen },
@@ -337,6 +343,15 @@ mod tests {
         assert_eq!(outbound["tls"]["reality"]["public_key"], "abc123");
         assert_eq!(outbound["tls"]["reality"]["short_id"], "de");
         assert_eq!(outbound["flow"], "xtls-rprx-vision");
+    }
+
+    /// Observed live: with TUN on and this missing, sing-box dialled its own
+    /// proxy server through its own tunnel — 13k connections, 0 bytes moved.
+    #[test]
+    fn route_binds_outbounds_to_the_default_interface() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let config = generate(&base_input(&profiles, &[])).unwrap();
+        assert_eq!(config["route"]["auto_detect_interface"], true);
     }
 
     #[test]
