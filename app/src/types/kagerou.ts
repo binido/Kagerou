@@ -7,6 +7,7 @@ export type RouteKey =
   | 'settings'
 
 export type ProfileOrigin = 'local' | 'imported'
+export type ProfileGroupKind = 'default' | 'custom' | 'subscription'
 export type ProfileProtocol =
   | 'VLESS'
   | 'VMess'
@@ -22,6 +23,7 @@ export type LogLevel = 'INFO' | 'WARN' | 'ERROR'
 export type Language = 'English' | '中文' | '日本語'
 export type Theme = 'dark' | 'light'
 export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
+export type SubscriptionUpdateInterval = '5' | '10' | '15' | '30' | '60' | 'custom'
 
 export interface TestResult {
   value: string
@@ -34,6 +36,7 @@ export interface Profile {
   region: string
   protocol: ProfileProtocol
   origin: ProfileOrigin
+  groupId: string
   sourceId?: string
   selected: boolean
   tcp: TestResult
@@ -41,12 +44,15 @@ export interface Profile {
   key: string
 }
 
+export type ProfileDraft = Omit<Profile, 'id' | 'groupId' | 'selected'>
+
 export interface ProfileGroup {
   id: string
   label: string
+  kind: ProfileGroupKind
   profileIds: string[]
   open: boolean
-  managed?: boolean
+  sourceId?: string
 }
 
 export interface Source {
@@ -54,10 +60,22 @@ export interface Source {
   name: string
   type: SourceType
   value: string
-  profileCount: number
   status: SourceStatus
   lastRefresh: string
   originLabel: 'Remote URL' | 'Local key'
+}
+
+export interface AddSourceInput {
+  type: SourceType
+  name?: string
+  value: string
+}
+
+export interface AddLocalProfileInput {
+  name: string
+  key: string
+  groupId?: string
+  sourceId?: string
 }
 
 export interface RoutingPreset {
@@ -92,6 +110,9 @@ export interface SettingsState {
   language: Language
   startup: boolean
   tunInterface: TunInterface
+  autoUpdateSubscriptions: boolean
+  subscriptionUpdateInterval: SubscriptionUpdateInterval
+  customSubscriptionUpdateMinutes: number
 }
 
 export interface KagerouStore {
@@ -112,16 +133,20 @@ export interface KagerouStore {
   toggleConnection: () => void
   toggleMode: (mode: 'tun' | 'proxy') => void
   setProfileGroupOpen: (id: string, open: boolean) => void
+  addProfileGroup: (label: string) => string | null
+  renameProfileGroup: (id: string, label: string) => boolean
   selectProfile: (id: string) => void
-  addProfile: (input: Pick<Profile, 'name' | 'key'>) => void
-  renameProfile: (id: string, name: string) => void
+  addLocalProfile: (input: AddLocalProfileInput) => string | null
+  renameProfile: (id: string, name: string) => boolean
   deleteProfile: (id: string) => void
-  moveProfile: (id: string, direction: 'up' | 'down') => void
-  reorderProfiles: (fromId: string, toId: string) => void
+  moveProfileToGroup: (profileId: string, targetGroupId: string) => boolean
+  moveProfile: (id: string, direction: 'up' | 'down') => boolean
+  reorderProfiles: (fromId: string, toId: string) => boolean
   setTestResult: (id: string, method: TestMethod, result: TestResult) => void
-  addSource: (source: Source) => void
-  updateSource: (id: string, patch: Partial<Source>) => void
-  removeSource: (id: string) => void
+  replaceSubscriptionProfiles: (sourceId: string, profiles: ProfileDraft[]) => boolean
+  addSource: (input: AddSourceInput, importedProfiles?: ProfileDraft[]) => string | null
+  updateSource: (id: string, patch: Partial<Pick<Source, 'name' | 'value' | 'status' | 'lastRefresh'>>) => boolean
+  removeSource: (id: string) => boolean
   setPreset: (id: string, enabled: boolean) => void
   selectRule: (id: string) => void
   updateRule: (id: string, patch: Partial<RoutingRule>) => void

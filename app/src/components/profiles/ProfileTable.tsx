@@ -7,20 +7,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProfileActionsMenu } from '@/components/profiles/ProfileActionsMenu'
 import { ResultBadge } from '@/components/common/ResultBadge'
 import { cn } from '@/lib/utils'
-import type { Profile, TestMethod } from '@/types/kagerou'
+import type { Profile, ProfileGroup, TestMethod } from '@/types/kagerou'
 
 interface ProfileTableProps {
   profiles: Profile[]
+  movableGroups: ProfileGroup[]
   runningTests: Record<string, boolean>
   onSelect: (id: string) => void
   onRename: (profile: Profile) => void
   onMove: (id: string, direction: 'up' | 'down') => void
+  onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
   onTest: (id: string, method: TestMethod) => void
   onReorder: (fromId: string, toId: string) => void
 }
 
-export function ProfileTable({ profiles, runningTests, onSelect, onRename, onMove, onDelete, onTest, onReorder }: ProfileTableProps) {
+export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, onRename, onMove, onMoveToGroup, onDelete, onTest, onReorder }: ProfileTableProps) {
   const [draggedId, setDraggedId] = React.useState<string | null>(null)
 
   return (
@@ -64,14 +66,14 @@ export function ProfileTable({ profiles, runningTests, onSelect, onRename, onMov
                 <TableCell className="max-w-[330px] px-3 py-4 align-middle">
                   <div className="min-w-0">
                     <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[14px] font-medium text-primary">{profile.name}</span><Badge className={cn('h-5 rounded-md px-1.5 py-0 text-[10px] font-semibold', profile.origin === 'local' ? 'bg-lavender/15 text-lavender-hi' : 'bg-good/15 text-good')} variant="outline">{profile.origin === 'local' ? 'Local' : 'Imported'}</Badge></div>
-                    <span className="mt-1 block truncate text-[11px] text-muted-copy">{profile.origin === 'local' ? 'Local profile' : `From ${profile.sourceId === 'personal' ? 'Personal / North America' : 'Work / Europe'}`}</span>
+                    <span className="mt-1 block truncate text-[11px] text-muted-copy">{profile.origin === 'local' ? 'Local profile' : 'Managed by subscription'}</span>
                   </div>
                 </TableCell>
                 <TableCell className="px-3 py-4 align-middle"><span className="inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[10px] text-body">{profile.protocol}</span></TableCell>
                 <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={runningTcp ? 'warn' : profile.tcp.tone} value={runningTcp ? 'Running…' : profile.tcp.value} /></TableCell>
                 <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={runningUrl ? 'warn' : profile.url.tone} value={runningUrl ? 'Running…' : profile.url.value} /></TableCell>
                 <TableCell className="px-3 py-4 align-middle"><Button aria-pressed={profile.selected} className="h-[34px] gap-1.5 rounded-md border-hairline px-2.5 text-[11px] text-body hover:border-[#464650] hover:bg-raised hover:text-primary aria-pressed:border-transparent aria-pressed:bg-lavender aria-pressed:font-bold aria-pressed:text-ink aria-pressed:hover:bg-lavender-hi" onClick={() => onSelect(profile.id)} type="button" variant="outline">{profile.selected ? <Check aria-hidden="true" className="size-3" strokeWidth={2.5} /> : null}{profile.selected ? 'Selected' : 'Use'}</Button></TableCell>
-                <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu onDelete={() => onDelete(profile)} onMove={(direction) => onMove(profile.id, direction)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} /></TableCell>
+                <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMove={(direction) => onMove(profile.id, direction)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} /></TableCell>
               </TableRow>
             )
           })}

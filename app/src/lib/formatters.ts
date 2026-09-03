@@ -13,3 +13,12 @@ export const formatLogCount = (count: number, query: string) =>
     : `${count} entries`
 
 export const formatSourceTimestamp = (value: string) => value
+
+export const deriveSubscriptionName = (value: string, fallbackNumber: number) => {
+  try {
+    const host = new URL(value).hostname.replace(/^www\./i, '')
+    return host || `Subscription ${String(fallbackNumber).padStart(2, '0')}`
+  } catch {
+    return `Subscription ${String(fallbackNumber).padStart(2, '0')}`
+  }
+}

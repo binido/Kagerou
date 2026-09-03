@@ -9,6 +9,7 @@ import type { Source } from '@/types/kagerou'
 
 interface SourceCardProps {
   source: Source
+  profileCount: number
   refreshing: boolean
   onRefresh: () => void
   onEdit: () => void
@@ -22,7 +23,7 @@ const statusCopy: Record<Source['status'], string> = {
   updating: 'Updating…',
 }
 
-export function SourceCard({ source, refreshing, onRefresh, onEdit, onRemove }: SourceCardProps) {
+export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit, onRemove }: SourceCardProps) {
   const isKey = source.type === 'key'
   const statusTone = source.status === 'refresh-due' || source.status === 'updating' ? 'warn' : source.status === 'ready' ? 'neutral' : 'good'
   const Icon = isKey ? KeyRound : Rss
@@ -59,11 +60,11 @@ export function SourceCard({ source, refreshing, onRefresh, onEdit, onRemove }: 
         <code className="min-w-0 truncate font-mono text-[11px] text-body">{displayedValue}</code>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-5 border-t border-hairline pt-3.5 max-[640px]:grid-cols-1 max-[640px]:gap-3">
-        <div><p className="type-eyebrow !text-[10px]">Profiles</p><p className="mt-1 text-[13px] font-medium text-primary">{source.profileCount} {source.profileCount === 1 ? 'profile' : 'profiles'}</p></div>
+        <div><p className="type-eyebrow !text-[10px]">Profiles</p><p className="mt-1 text-[13px] font-medium text-primary">{profileCount} {profileCount === 1 ? 'profile' : 'profiles'}</p></div>
         <div><p className="type-eyebrow !text-[10px]">{isKey ? 'Last update' : 'Last refresh'}</p><p className="mt-1 text-[12px] text-body">{refreshing ? 'Updating now…' : source.lastRefresh}</p></div>
         <div><p className="type-eyebrow !text-[10px]">Origin</p><p className="mt-1 text-[12px] text-body">{source.originLabel}</p></div>
       </div>
-      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-copy"><span className="text-lavender">→</span>Profiles stay managed on <span className="text-body">Profiles</span></p>
+      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-copy"><span className="text-lavender">→</span>{isKey ? 'This key starts in' : 'Profiles stay grouped on'} <span className="text-body">{isKey ? 'Default' : 'Profiles'}</span></p>
     </Card>
   )
 }

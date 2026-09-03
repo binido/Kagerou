@@ -16,6 +16,10 @@ const result = (value: string, tone: Profile['tcp']['tone']): Profile['tcp'] => 
   tone,
 })
 
+const defaultGroupId = 'default'
+const personalGroupId = 'subscription-personal'
+const workGroupId = 'subscription-work'
+
 export const initialProfiles: Profile[] = [
   {
     id: 'p-seattle',
@@ -23,10 +27,24 @@ export const initialProfiles: Profile[] = [
     region: 'us-west-2',
     protocol: 'VLESS',
     origin: 'local',
+    groupId: defaultGroupId,
     selected: true,
     tcp: result('42 ms', 'good'),
     url: result('200 OK', 'good'),
     key: 'vless://local-seattle-03',
+  },
+  {
+    id: 'p-emergency',
+    name: 'Emergency access key',
+    region: 'local',
+    protocol: 'VLESS',
+    origin: 'local',
+    sourceId: 'emergency-key',
+    groupId: defaultGroupId,
+    selected: false,
+    tcp: result('Not tested', 'muted'),
+    url: result('Not tested', 'muted'),
+    key: 'vless://emergency-access-key',
   },
   {
     id: 'p-vancouver',
@@ -35,6 +53,7 @@ export const initialProfiles: Profile[] = [
     protocol: 'Trojan',
     origin: 'imported',
     sourceId: 'personal',
+    groupId: personalGroupId,
     selected: false,
     tcp: result('68 ms', 'warn'),
     url: result('200 OK', 'good'),
@@ -47,6 +66,7 @@ export const initialProfiles: Profile[] = [
     protocol: 'Hysteria2',
     origin: 'imported',
     sourceId: 'personal',
+    groupId: personalGroupId,
     selected: false,
     tcp: result('Testing…', 'warn'),
     url: result('Not tested', 'muted'),
@@ -59,6 +79,7 @@ export const initialProfiles: Profile[] = [
     protocol: 'Shadowsocks',
     origin: 'imported',
     sourceId: 'personal',
+    groupId: personalGroupId,
     selected: false,
     tcp: result('No response', 'bad'),
     url: result('Timeout', 'bad'),
@@ -71,6 +92,7 @@ export const initialProfiles: Profile[] = [
     protocol: 'VLESS',
     origin: 'imported',
     sourceId: 'personal',
+    groupId: personalGroupId,
     selected: false,
     tcp: result('74 ms', 'warn'),
     url: result('200 OK', 'good'),
@@ -83,6 +105,7 @@ export const initialProfiles: Profile[] = [
     protocol: 'VMess',
     origin: 'imported',
     sourceId: 'work',
+    groupId: workGroupId,
     selected: false,
     tcp: result('54 ms', 'good'),
     url: result('200 OK', 'good'),
@@ -95,6 +118,7 @@ export const initialProfiles: Profile[] = [
     protocol: 'VLESS',
     origin: 'imported',
     sourceId: 'work',
+    groupId: workGroupId,
     selected: false,
     tcp: result('76 ms', 'warn'),
     url: result('200 OK', 'good'),
@@ -107,6 +131,7 @@ export const initialProfiles: Profile[] = [
     protocol: 'Trojan',
     origin: 'imported',
     sourceId: 'work',
+    groupId: workGroupId,
     selected: false,
     tcp: result('81 ms', 'good'),
     url: result('200 OK', 'good'),
@@ -116,17 +141,27 @@ export const initialProfiles: Profile[] = [
 
 export const initialProfileGroups: ProfileGroup[] = [
   {
-    id: 'my-profiles',
-    label: 'My profiles',
-    profileIds: ['p-seattle', 'p-vancouver', 'p-new-york'],
+    id: defaultGroupId,
+    label: 'Default',
+    kind: 'default',
+    profileIds: ['p-seattle', 'p-emergency'],
     open: true,
   },
   {
-    id: 'imported-profiles',
-    label: 'Imported from Sources',
-    profileIds: ['p-chicago', 'p-montreal', 'p-frankfurt', 'p-amsterdam', 'p-london'],
+    id: personalGroupId,
+    label: 'Personal / North America',
+    kind: 'subscription',
+    sourceId: 'personal',
+    profileIds: ['p-vancouver', 'p-new-york', 'p-chicago', 'p-montreal'],
+    open: true,
+  },
+  {
+    id: workGroupId,
+    label: 'Work / Europe',
+    kind: 'subscription',
+    sourceId: 'work',
+    profileIds: ['p-frankfurt', 'p-amsterdam', 'p-london'],
     open: false,
-    managed: true,
   },
 ]
 
@@ -136,7 +171,6 @@ export const initialSources: Source[] = [
     name: 'Personal / North America',
     type: 'url',
     value: 'https://vpn.example.com/personal',
-    profileCount: 4,
     status: 'up-to-date',
     lastRefresh: 'Updated 12 min ago',
     originLabel: 'Remote URL',
@@ -146,7 +180,6 @@ export const initialSources: Source[] = [
     name: 'Emergency access key',
     type: 'key',
     value: 'vless://emergency-access-key',
-    profileCount: 1,
     status: 'ready',
     lastRefresh: 'Added just now',
     originLabel: 'Local key',
@@ -156,7 +189,6 @@ export const initialSources: Source[] = [
     name: 'Work / Europe',
     type: 'url',
     value: 'https://vpn.example.com/work',
-    profileCount: 3,
     status: 'refresh-due',
     lastRefresh: 'Updated 2 days ago',
     originLabel: 'Remote URL',
@@ -246,6 +278,9 @@ export const initialSettings: SettingsState = {
   language: 'English',
   startup: true,
   tunInterface: 'utun / tun0',
+  autoUpdateSubscriptions: false,
+  subscriptionUpdateInterval: '30',
+  customSubscriptionUpdateMinutes: 60,
 }
 
 export const routeOutboundOptions: Outbound[] = ['Direct', 'Proxy', 'Block']
