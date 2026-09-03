@@ -320,4 +320,40 @@ mod tests {
             "127.0.0.1:9090"
         );
     }
+
+    /// Opt-in smoke test against the real bundled binary (fetched by
+    /// `scripts/fetch-singbox.mjs`, copied into the target dir by
+    /// tauri-build): `cargo test -- --ignored`. Catches config-schema drift
+    /// when the pinned sing-box version moves — something no amount of
+    /// JSON-shape assertions above can notice.
+    #[test]
+    #[ignore = "needs the bundled sing-box binary; run with --ignored"]
+    fn the_bundled_sing_box_accepts_a_generated_config() {
+        let exe = std::env::current_exe().unwrap();
+        // target/<profile>/deps/<test binary> -> target/<profile>/sing-box
+        let binary = exe.parent().unwrap().parent().unwrap().join("sing-box");
+
+        let profiles = vec![profile(
+            "p1",
+            "vless://b831381d-6324-4d53-ad4f-8cda48b30811@a.example.com:443",
+        )];
+        let rules = vec![rule("r1", "example.com", "proxy")];
+        let config = generate(&base_input(&profiles, &rules)).unwrap();
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+        std::fs::write(&path, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+
+        let output = std::process::Command::new(&binary)
+            .arg("check")
+            .arg("-c")
+            .arg(&path)
+            .output()
+            .unwrap_or_else(|e| panic!("could not run {}: {e}", binary.display()));
+        assert!(
+            output.status.success(),
+            "sing-box rejected the generated config:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 }
