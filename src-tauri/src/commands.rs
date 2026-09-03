@@ -629,12 +629,31 @@ fn parsed_outbound_to_new_profile(
     NewProfile {
         id: new_id("imported"),
         name: outbound.name().to_string(),
-        region: outbound.server().to_string(),
+        region: region_from_name(outbound.name()),
         protocol,
         origin: "imported".to_string(),
         group_id: group_id.to_string(),
         source_id: Some(source_id.to_string()),
         key: subscription::to_uri(outbound),
+    }
+}
+
+/// Subscriptions conventionally prefix the profile name with a flag emoji, and
+/// a flag is just two regional-indicator code points that map 1:1 onto the
+/// letters of the ISO 3166-1 alpha-2 country code. Names without one get an
+/// empty region: the server hostname used to go here, but it says nothing
+/// about location, so a blank is at least honest.
+// ponytail: no geo-IP lookup; add one only if names stop carrying flags.
+fn region_from_name(name: &str) -> String {
+    fn letter(c: char) -> Option<char> {
+        ('\u{1F1E6}'..='\u{1F1FF}')
+            .contains(&c)
+            .then(|| (b'A' + (c as u32 - 0x1F1E6) as u8) as char)
+    }
+    let mut chars = name.trim_start().chars();
+    match (chars.next().and_then(letter), chars.next().and_then(letter)) {
+        (Some(a), Some(b)) => format!("{a}{b}"),
+        _ => String::new(),
     }
 }
 
@@ -754,4 +773,24 @@ pub fn update_settings(patch: SettingsPatchInput, state: State<AppState>) -> Res
         },
     )
     .map_err(to_err)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::region_from_name;
+
+    #[test]
+    fn flag_emoji_becomes_a_country_code() {
+        assert_eq!(region_from_name("🇦🇹 ALL VPN | Австрия"), "AT");
+        assert_eq!(region_from_name("  🇵🇱 ALL VPN"), "PL");
+    }
+
+    #[test]
+    fn names_without_a_flag_have_no_region() {
+        assert_eq!(region_from_name("Fast Node 03"), "");
+        assert_eq!(region_from_name(""), "");
+        assert_eq!(region_from_name("🚀 Boost"), "");
+        // A lone regional indicator is not a flag.
+        assert_eq!(region_from_name("🇦 Node"), "");
+    }
 }
