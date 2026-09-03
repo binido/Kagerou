@@ -1,3 +1,4 @@
+pub mod singbox;
 pub mod storage;
 pub mod subscription;
 
