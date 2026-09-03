@@ -215,6 +215,17 @@
   .log-toolbar-search {
     max-width: var(--log-toolbar-width);
   }
+
+  .number-input-no-spinners {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .number-input-no-spinners::-webkit-inner-spin-button,
+  .number-input-no-spinners::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
