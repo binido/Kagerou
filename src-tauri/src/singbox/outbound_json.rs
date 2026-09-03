@@ -43,6 +43,15 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
                 }
                 tls["reality"] = reality;
             }
+            // sing-box rejects a REALITY client that has no uTLS fingerprint,
+            // and subscriptions routinely omit `fp=`; chrome is what every
+            // other client defaults to.
+            if o.reality_public_key.is_some() || o.fingerprint.is_some() {
+                tls["utls"] = json!({
+                    "enabled": true,
+                    "fingerprint": o.fingerprint.clone().unwrap_or_else(|| "chrome".into()),
+                });
+            }
             let mut value = json!({
                 "type": "vless", "tag": tag, "server": o.server, "server_port": o.port,
                 "uuid": o.uuid, "tls": tls,
@@ -131,6 +140,7 @@ mod tests {
             ws_host: None,
             reality_public_key: Some("pbk".into()),
             reality_short_id: Some("sid".into()),
+            fingerprint: None,
         });
         let json = to_singbox_outbound(&parsed, "profile-1");
         assert_eq!(json["type"], "vless");
@@ -138,6 +148,7 @@ mod tests {
         assert_eq!(json["tls"]["reality"]["public_key"], "pbk");
         assert_eq!(json["tls"]["reality"]["short_id"], "sid");
         assert_eq!(json["flow"], "xtls-rprx-vision");
+        assert_eq!(json["tls"]["utls"]["fingerprint"], "chrome");
         assert!(
             json.get("transport").is_none(),
             "tcp network should not emit a transport block"

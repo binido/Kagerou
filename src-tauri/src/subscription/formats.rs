@@ -148,6 +148,7 @@ fn convert_singbox_outbound(
                 ws_host,
                 reality_public_key: json_str(&reality, "public_key"),
                 reality_short_id: json_str(&reality, "short_id"),
+                fingerprint: tls.get("utls").and_then(|u| json_str(u, "fingerprint")),
             }))
         }
         "vmess" => Ok(ParsedOutbound::Vmess(VmessOutbound {
@@ -289,6 +290,7 @@ fn convert_clash_proxy(
                 ws_host,
                 reality_public_key: yaml_str(&reality_opts, "public-key"),
                 reality_short_id: yaml_str(&reality_opts, "short-id"),
+                fingerprint: yaml_str(entry, "client-fingerprint"),
             }))
         }
         "vmess" => Ok(ParsedOutbound::Vmess(VmessOutbound {

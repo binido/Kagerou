@@ -304,6 +304,27 @@ mod tests {
         assert_eq!(rules_json[4]["ip_cidr"], json!(["10.0.0.5/32"]));
     }
 
+    /// The whole import path in miniature: a subscription line goes through
+    /// the parser and back out as a stored key, and the generated outbound
+    /// still has to carry REALITY. It used to come out as plaintext.
+    #[test]
+    fn an_imported_reality_subscription_still_generates_a_reality_outbound() {
+        let line = "vless://11111111-2222-3333-4444-555555555555@example.com:443?encryption=none&security=reality&sni=cdn.example.com&type=tcp&flow=xtls-rprx-vision&pbk=abc123&sid=de#My%20Node";
+        let imported = subscription::parse_subscription(line).unwrap();
+        let key = subscription::to_uri(&imported[0]);
+
+        let profiles = vec![profile("p1", &key)];
+        let config = generate(&base_input(&profiles, &[])).unwrap();
+        let outbound = &config["outbounds"][0];
+
+        assert_eq!(outbound["tls"]["enabled"], true);
+        assert_eq!(outbound["tls"]["server_name"], "cdn.example.com");
+        assert_eq!(outbound["tls"]["reality"]["enabled"], true);
+        assert_eq!(outbound["tls"]["reality"]["public_key"], "abc123");
+        assert_eq!(outbound["tls"]["reality"]["short_id"], "de");
+        assert_eq!(outbound["flow"], "xtls-rprx-vision");
+    }
+
     #[test]
     fn route_final_is_the_proxy_selector() {
         let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
@@ -335,7 +356,7 @@ mod tests {
 
         let profiles = vec![profile(
             "p1",
-            "vless://b831381d-6324-4d53-ad4f-8cda48b30811@a.example.com:443",
+            "vless://b831381d-6324-4d53-ad4f-8cda48b30811@a.example.com:443?encryption=none&security=reality&sni=cdn.example.com&type=tcp&flow=xtls-rprx-vision&pbk=jNXHt1yRo0vDuchQlIP6Z0ZvjT3KtzVI-T4E7RoLJS0&sid=de&fp=chrome#Node",
         )];
         let rules = vec![rule("r1", "example.com", "proxy")];
         let config = generate(&base_input(&profiles, &rules)).unwrap();
