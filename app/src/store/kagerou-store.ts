@@ -80,7 +80,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     hydrated: false,
     sidebarCollapsed: false,
     connected: false,
-    tunMode: true,
+    tunMode: false,
     systemProxy: false,
     activeProfileId: '',
     profiles: [],

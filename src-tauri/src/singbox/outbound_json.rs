@@ -2,15 +2,22 @@ use serde_json::{json, Value};
 
 use crate::subscription::model::ParsedOutbound;
 
-fn tls_block(enabled: bool, sni: Option<&str>, insecure: bool) -> Value {
-    let mut tls = json!({ "enabled": enabled });
+/// `None` for a plaintext outbound: sing-box 1.14 still builds a TLS
+/// dialer from a present-but-disabled `tls` object and then panics on the
+/// nil client config, so the key has to be absent rather than `enabled:
+/// false`.
+fn tls_block(enabled: bool, sni: Option<&str>, insecure: bool) -> Option<Value> {
+    if !enabled {
+        return None;
+    }
+    let mut tls = json!({ "enabled": true });
     if let Some(sni) = sni {
         tls["server_name"] = json!(sni);
     }
     if insecure {
         tls["insecure"] = json!(true);
     }
-    tls
+    Some(tls)
 }
 
 fn transport_block(network: &str, ws_path: Option<&str>, ws_host: Option<&str>) -> Option<Value> {
@@ -35,27 +42,29 @@ fn transport_block(network: &str, ws_path: Option<&str>, ws_host: Option<&str>) 
 pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
     match parsed {
         ParsedOutbound::Vless(o) => {
-            let mut tls = tls_block(o.tls, o.sni.as_deref(), false);
-            if let Some(pbk) = &o.reality_public_key {
-                let mut reality = json!({ "enabled": true, "public_key": pbk });
-                if let Some(sid) = &o.reality_short_id {
-                    reality["short_id"] = json!(sid);
-                }
-                tls["reality"] = reality;
-            }
-            // sing-box rejects a REALITY client that has no uTLS fingerprint,
-            // and subscriptions routinely omit `fp=`; chrome is what every
-            // other client defaults to.
-            if o.reality_public_key.is_some() || o.fingerprint.is_some() {
-                tls["utls"] = json!({
-                    "enabled": true,
-                    "fingerprint": o.fingerprint.clone().unwrap_or_else(|| "chrome".into()),
-                });
-            }
             let mut value = json!({
                 "type": "vless", "tag": tag, "server": o.server, "server_port": o.port,
-                "uuid": o.uuid, "tls": tls,
+                "uuid": o.uuid,
             });
+            if let Some(mut tls) = tls_block(o.tls, o.sni.as_deref(), false) {
+                if let Some(pbk) = &o.reality_public_key {
+                    let mut reality = json!({ "enabled": true, "public_key": pbk });
+                    if let Some(sid) = &o.reality_short_id {
+                        reality["short_id"] = json!(sid);
+                    }
+                    tls["reality"] = reality;
+                }
+                // sing-box rejects a REALITY client that has no uTLS
+                // fingerprint, and subscriptions routinely omit `fp=`;
+                // chrome is what every other client defaults to.
+                if o.reality_public_key.is_some() || o.fingerprint.is_some() {
+                    tls["utls"] = json!({
+                        "enabled": true,
+                        "fingerprint": o.fingerprint.clone().unwrap_or_else(|| "chrome".into()),
+                    });
+                }
+                value["tls"] = tls;
+            }
             if let Some(flow) = &o.flow {
                 value["flow"] = json!(flow);
             }
@@ -70,8 +79,10 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
             let mut value = json!({
                 "type": "vmess", "tag": tag, "server": o.server, "server_port": o.port,
                 "uuid": o.uuid, "alter_id": o.alter_id, "security": o.security,
-                "tls": tls_block(o.tls, o.sni.as_deref(), false),
             });
+            if let Some(tls) = tls_block(o.tls, o.sni.as_deref(), false) {
+                value["tls"] = tls;
+            }
             if let Some(transport) =
                 transport_block(&o.network, o.ws_path.as_deref(), o.ws_host.as_deref())
             {
@@ -82,7 +93,7 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
         ParsedOutbound::Trojan(o) => {
             let mut value = json!({
                 "type": "trojan", "tag": tag, "server": o.server, "server_port": o.port,
-                "password": o.password, "tls": tls_block(true, o.sni.as_deref(), false),
+                "password": o.password, "tls": tls_block(true, o.sni.as_deref(), false).unwrap(),
             });
             if let Some(transport) = transport_block(&o.network, None, None) {
                 value["transport"] = transport;
@@ -96,7 +107,7 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
         ParsedOutbound::Hysteria2(o) => {
             let mut value = json!({
                 "type": "hysteria2", "tag": tag, "server": o.server, "server_port": o.port,
-                "password": o.password, "tls": tls_block(true, o.sni.as_deref(), o.insecure),
+                "password": o.password, "tls": tls_block(true, o.sni.as_deref(), o.insecure).unwrap(),
             });
             if o.obfs.is_some() || o.obfs_password.is_some() {
                 value["obfs"] = json!({ "type": o.obfs.clone().unwrap_or_default(), "password": o.obfs_password.clone().unwrap_or_default() });
@@ -104,7 +115,7 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
             value
         }
         ParsedOutbound::Tuic(o) => {
-            let mut tls = tls_block(true, o.sni.as_deref(), false);
+            let mut tls = tls_block(true, o.sni.as_deref(), false).unwrap();
             if !o.alpn.is_empty() {
                 tls["alpn"] = json!(o.alpn);
             }
@@ -152,6 +163,30 @@ mod tests {
         assert!(
             json.get("transport").is_none(),
             "tcp network should not emit a transport block"
+        );
+    }
+
+    #[test]
+    fn a_plaintext_vless_outbound_omits_the_tls_block_entirely() {
+        let parsed = ParsedOutbound::Vless(VlessOutbound {
+            name: "n".into(),
+            server: "127.0.0.1".into(),
+            port: 18443,
+            uuid: "uuid".into(),
+            flow: None,
+            network: "tcp".into(),
+            tls: false,
+            sni: None,
+            ws_path: None,
+            ws_host: None,
+            reality_public_key: None,
+            reality_short_id: None,
+            fingerprint: None,
+        });
+        let json = to_singbox_outbound(&parsed, "profile-1");
+        assert!(
+            json.get("tls").is_none(),
+            "sing-box panics on a disabled-but-present tls block: {json}"
         );
     }
 

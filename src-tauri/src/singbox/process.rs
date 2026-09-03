@@ -6,6 +6,8 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use thiserror::Error;
 
+use crate::privilege::{self, TargetOs};
+
 const MAX_BUFFERED_LOG_LINES: usize = 500;
 
 #[derive(Debug, Error)]
@@ -47,7 +49,9 @@ impl ChildHandle {
 }
 
 pub trait Launcher: Send + Sync {
-    fn launch(&self, config_path: &Path) -> Result<ChildHandle, ProcessError>;
+    /// `tun` says the process needs to create a TUN device, which needs
+    /// privileges the app itself doesn't have — see `crate::privilege`.
+    fn launch(&self, config_path: &Path, tun: bool) -> Result<ChildHandle, ProcessError>;
 }
 
 /// Resolves a `bundle.externalBin` sidecar: Tauri drops it next to the app's
@@ -82,12 +86,47 @@ pub struct SidecarLauncher {
     pub binary_path: PathBuf,
 }
 
+impl SidecarLauncher {
+    /// Without TUN the binary runs as-is; with it, the launch goes through
+    /// `privilege::plan_launch`, which wraps it in the platform's
+    /// privilege-escalation command (UAC / osascript / pkexec).
+    fn command_for(&self, config_path: &Path, tun: bool) -> Command {
+        if !tun {
+            let mut command = Command::new(&self.binary_path);
+            command.args(["run", "-c"]).arg(config_path);
+            return command;
+        }
+        let args = vec![
+            "run".to_string(),
+            "-c".to_string(),
+            config_path.to_string_lossy().into_owned(),
+        ];
+        #[cfg(target_os = "linux")]
+        let has_cap = privilege::current_process_has_cap_net_admin();
+        #[cfg(not(target_os = "linux"))]
+        let has_cap = false;
+        match TargetOs::current() {
+            Some(os) => privilege::to_command(&privilege::plan_launch(
+                os,
+                &self.binary_path,
+                &args,
+                has_cap,
+            )),
+            // ponytail: unknown OS — no escalation strategy to pick, so run
+            // it plainly and let sing-box report the permission failure.
+            None => {
+                let mut command = Command::new(&self.binary_path);
+                command.args(args);
+                command
+            }
+        }
+    }
+}
+
 impl Launcher for SidecarLauncher {
-    fn launch(&self, config_path: &Path) -> Result<ChildHandle, ProcessError> {
-        let mut child = Command::new(&self.binary_path)
-            .arg("run")
-            .arg("-c")
-            .arg(config_path)
+    fn launch(&self, config_path: &Path, tun: bool) -> Result<ChildHandle, ProcessError> {
+        let mut child = self
+            .command_for(config_path, tun)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -187,11 +226,11 @@ impl<L: Launcher> Supervisor<L> {
         self.logs.iter()
     }
 
-    pub fn start(&mut self, config_path: &Path) -> Result<(), ProcessError> {
+    pub fn start(&mut self, config_path: &Path, tun: bool) -> Result<(), ProcessError> {
         if matches!(self.status, Status::Running) {
             return Err(ProcessError::AlreadyRunning);
         }
-        let child = self.launcher.launch(config_path)?;
+        let child = self.launcher.launch(config_path, tun)?;
         self.child = Some(child);
         self.status = Status::Running;
         Ok(())
@@ -268,7 +307,7 @@ mod tests {
     struct FakeLauncher(FakeControl);
 
     impl Launcher for FakeLauncher {
-        fn launch(&self, _config_path: &Path) -> Result<ChildHandle, ProcessError> {
+        fn launch(&self, _config_path: &Path, _tun: bool) -> Result<ChildHandle, ProcessError> {
             if std::mem::replace(&mut *self.0.fail_next.lock().unwrap(), false) {
                 return Err(ProcessError::SpawnFailed("fake failure".into()));
             }
@@ -293,15 +332,15 @@ mod tests {
     #[test]
     fn start_sets_status_to_running() {
         let (mut sup, _control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         assert_eq!(*sup.status(), Status::Running);
     }
 
     #[test]
     fn starting_twice_is_an_error_and_does_not_disturb_the_first_child() {
         let (mut sup, control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
-        let err = sup.start(Path::new("/tmp/config.json")).unwrap_err();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
+        let err = sup.start(Path::new("/tmp/config.json"), false).unwrap_err();
         assert!(matches!(err, ProcessError::AlreadyRunning));
         assert_eq!(*sup.status(), Status::Running);
         assert_eq!(control.kill_count(), 0);
@@ -310,7 +349,7 @@ mod tests {
     #[test]
     fn stop_kills_the_child_and_sets_status_to_stopped() {
         let (mut sup, control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         sup.stop().unwrap();
         assert_eq!(*sup.status(), Status::Stopped);
         assert_eq!(control.kill_count(), 1);
@@ -326,7 +365,7 @@ mod tests {
     fn a_spawn_failure_leaves_status_stopped_and_is_reported() {
         let (mut sup, control) = supervisor();
         control.set_fail_next();
-        let err = sup.start(Path::new("/tmp/config.json")).unwrap_err();
+        let err = sup.start(Path::new("/tmp/config.json"), false).unwrap_err();
         assert!(matches!(err, ProcessError::SpawnFailed(_)));
         assert_eq!(*sup.status(), Status::Stopped);
     }
@@ -334,7 +373,7 @@ mod tests {
     #[test]
     fn poll_events_buffers_log_lines_in_order() {
         let (mut sup, control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         control.send_event(ProcessEvent::Log("line 1".into()));
         control.send_event(ProcessEvent::Log("line 2".into()));
         sup.poll_events();
@@ -345,7 +384,7 @@ mod tests {
     #[test]
     fn poll_events_detects_a_crash_and_records_the_exit_code() {
         let (mut sup, control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         control.send_event(ProcessEvent::Exited { code: Some(1) });
         sup.poll_events();
         assert_eq!(*sup.status(), Status::Crashed { exit_code: Some(1) });
@@ -354,7 +393,7 @@ mod tests {
     #[test]
     fn the_log_buffer_is_capped_so_a_noisy_process_cannot_grow_it_unbounded() {
         let (mut sup, control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         for i in 0..(MAX_BUFFERED_LOG_LINES + 50) {
             control.send_event(ProcessEvent::Log(format!("line {i}")));
         }
@@ -370,7 +409,7 @@ mod tests {
     #[test]
     fn can_restart_after_a_crash() {
         let (mut sup, control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         control.send_event(ProcessEvent::Exited { code: Some(137) });
         sup.poll_events();
         assert_eq!(
@@ -380,14 +419,14 @@ mod tests {
             }
         );
 
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         assert_eq!(*sup.status(), Status::Running);
     }
 
     #[test]
     fn stopping_after_a_crash_is_an_error_since_there_is_no_live_child() {
         let (mut sup, control) = supervisor();
-        sup.start(Path::new("/tmp/config.json")).unwrap();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
         control.send_event(ProcessEvent::Exited { code: None });
         sup.poll_events();
         assert!(matches!(sup.stop().unwrap_err(), ProcessError::NotRunning));
@@ -404,13 +443,33 @@ mod tests {
         assert_eq!(resolved, Path::new(expected));
     }
 
+    /// On Linux with CAP_NET_ADMIN already set the plan is `Direct`, so
+    /// the "not the bare binary" half of this only holds elsewhere.
+    #[test]
+    #[cfg(not(target_os = "linux"))]
+    fn tun_mode_wraps_the_binary_in_an_elevation_command() {
+        let launcher = SidecarLauncher {
+            binary_path: PathBuf::from("/opt/kagerou/sing-box"),
+        };
+        let config = Path::new("/tmp/config.json");
+        assert_eq!(
+            launcher.command_for(config, false).get_program(),
+            launcher.binary_path.as_os_str()
+        );
+        assert_ne!(
+            launcher.command_for(config, true).get_program(),
+            launcher.binary_path.as_os_str(),
+            "TUN needs root, so the binary must be wrapped in an elevation command"
+        );
+    }
+
     #[test]
     fn the_real_launcher_reports_a_spawn_failure_for_a_nonexistent_binary_without_touching_a_real_process(
     ) {
         let launcher = SidecarLauncher {
             binary_path: PathBuf::from("/definitely/not/a/real/sing-box/binary"),
         };
-        match launcher.launch(Path::new("/tmp/config.json")) {
+        match launcher.launch(Path::new("/tmp/config.json"), false) {
             Err(ProcessError::SpawnFailed(_)) => {}
             other => panic!("expected SpawnFailed, got {}", other.is_ok()),
         }
