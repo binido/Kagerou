@@ -1,0 +1,29 @@
+[package]
+name = "kagerou"
+version = "0.0.0"
+description = "A cleaner, cross-platform sing-box VPN client for desktop"
+authors = ["Binido"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "kagerou_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
