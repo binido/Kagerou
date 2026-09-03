@@ -8,7 +8,18 @@
 ## Prerequisites
 
 - [Rust](https://rustup.rs/) (stable) and [pnpm](https://pnpm.io/)
-- A `sing-box` binary on your `PATH` — not bundled in this repo. See [sing-box's install docs](https://sing-box.sagernet.org/installation/).
+
+## The sing-box core
+
+Kagerou bundles sing-box as a [Tauri sidecar](https://tauri.app/develop/sidecar/). The binaries aren't committed — fetch the pinned release for your host first:
+
+```bash
+node scripts/fetch-singbox.mjs
+```
+
+It lands in `src-tauri/binaries/sing-box-<target-triple>`, which `cargo build` (via `tauri-build`) then copies next to the app executable. Without it the Rust build fails, so run it once after cloning; `pnpm tauri dev` and `pnpm tauri build` run it for you.
+
+Pass a target triple to fetch for another platform (`node scripts/fetch-singbox.mjs x86_64-pc-windows-msvc`) — that's what a cross-platform release build needs. Bumping the version means editing `VERSION` and the pinned checksums at the top of the script; the mismatch error prints the hash it actually got.
 
 ## Development
 
@@ -23,8 +34,9 @@ Run from the repo root (not `app/`) — the Tauri CLI expects `src-tauri/` as a 
 ## Testing
 
 ```bash
-cd src-tauri && cargo test    # Rust backend
-cd app && pnpm test           # frontend store logic (Vitest)
+cd src-tauri && cargo test              # Rust backend
+cd src-tauri && cargo test -- --ignored # plus the smoke test against the real sing-box binary
+cd app && pnpm test                     # frontend store logic (Vitest)
 ```
 
 New backend logic should ship with tests covering edge cases and error paths, not just the happy path — see the existing `#[cfg(test)] mod tests` blocks in `src-tauri/src/` for the pattern (mocked launchers/HTTP servers instead of touching a real sing-box process). Frontend tests target the Zustand store's business logic, not component rendering.

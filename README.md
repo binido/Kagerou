@@ -45,7 +45,7 @@ No prebuilt releases yet — build it yourself. See [CONTRIBUTING.md](CONTRIBUTI
 No. Kagerou only asks for elevated privileges when you turn on TUN mode, since creating a TUN interface requires it — on Windows via a UAC prompt, on macOS via the system admin-password prompt, on Linux via a one-time `pkexec` prompt (or none at all, if the sing-box binary already has `CAP_NET_ADMIN` set).
 
 **TUN mode isn't working.** <br/>
-Make sure a `sing-box` binary is on your `PATH` (Kagerou doesn't bundle one yet) and that you accepted the elevation prompt. If it still doesn't come up, check the Logs page for what sing-box itself reported.
+Make sure you accepted the elevation prompt — Kagerou ships with its own sing-box core, so there's nothing to install separately. If it still doesn't come up, check the Logs page for what sing-box itself reported.
 
 **Where is my data stored?** <br/>
 Profiles, subscriptions, routing rules, and settings live in a local SQLite database under your OS's app-data directory — nothing is synced anywhere.
