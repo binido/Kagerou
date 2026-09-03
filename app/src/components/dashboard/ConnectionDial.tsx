@@ -18,7 +18,7 @@ export function ConnectionDial({ connected, onToggle }: ConnectionDialProps) {
       aria-label={t('connection.control', { state: stateLabel })}
       aria-pressed={connected}
       className={cn(
-        'group/dial size-[190px] rounded-full border-[3px] bg-canvas p-2 shadow-[0_20px_64px_rgba(9,8,13,.2)] hover:bg-selected active:translate-y-px',
+        'group/dial size-[190px] rounded-full border-[3px] bg-canvas p-2 theme-shadow hover:bg-selected active:translate-y-px',
         connected ? 'border-lavender' : 'border-hairline',
       )}
       onClick={onToggle}

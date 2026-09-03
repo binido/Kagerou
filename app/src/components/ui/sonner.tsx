@@ -9,9 +9,16 @@ import {
   TriangleAlertIcon,
 } from 'lucide-react'
 
-const Toaster = ({ ...props }: ToasterProps) => (
+import { getTheme } from '@/themes'
+import { useKagerouStore } from '@/store/kagerou-store'
+
+const Toaster = ({ ...props }: ToasterProps) => {
+  const themeId = useKagerouStore((state) => state.settings.theme)
+  const theme = getTheme(themeId)
+
+  return (
   <Sonner
-    theme="dark"
+    theme={theme?.isDark ? 'dark' : 'light'}
     className="toaster group"
     icons={{
       success: <CircleCheckIcon className="size-4" />,
@@ -30,6 +37,7 @@ const Toaster = ({ ...props }: ToasterProps) => (
     }
     {...props}
   />
-)
+  )
+}
 
 export { Toaster }

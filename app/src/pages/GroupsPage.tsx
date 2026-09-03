@@ -184,7 +184,7 @@ export function GroupsPage() {
       <ProfileGroupDialog key={`${groupDialogTarget?.id ?? 'new'}-${groupDialogOpen}`} group={groupDialogTarget} onOpenChange={(open) => { setGroupDialogOpen(open); if (!open) setGroupDialogTarget(null) }} onSubmit={handleGroupSubmit} open={groupDialogOpen} />
 
       <Dialog onOpenChange={(open) => { setAddOpen(open); if (!open) setAddError('') }} open={addOpen}>
-        <DialogContent className="border-[#3b3a45] bg-raised text-primary sm:max-w-[480px]">
+        <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle className="type-display text-2xl text-primary">{t('dialogs.add.title')}</DialogTitle>
             <DialogDescription className="text-[12px] leading-5 text-muted-copy">{t('dialogs.add.description')}</DialogDescription>
@@ -192,11 +192,11 @@ export function GroupsPage() {
           <form className="space-y-5" onSubmit={submitAdd}>
             <Field>
               <FieldLabel className="text-[12px] text-primary" htmlFor="new-profile-name">{t('dialogs.add.nameLabel')}</FieldLabel>
-              <Input autoComplete="off" className="h-[42px] border-white/10 bg-surface text-[13px]" id="new-profile-name" onChange={(event) => setName(event.target.value)} placeholder={t('dialogs.add.namePlaceholder')} value={name} />
+              <Input autoComplete="off" className="h-[42px] border-hairline bg-surface text-[13px]" id="new-profile-name" onChange={(event) => setName(event.target.value)} placeholder={t('dialogs.add.namePlaceholder')} value={name} />
             </Field>
             <Field>
               <FieldLabel className="text-[12px] text-primary" htmlFor="new-profile-key">{t('dialogs.add.keyLabel')}</FieldLabel>
-              <Textarea className="min-h-[86px] resize-y border-white/10 bg-surface font-mono text-[11px]" id="new-profile-key" onChange={(event) => setKey(event.target.value)} placeholder={t('dialogs.add.keyPlaceholder')} value={key} />
+              <Textarea className="min-h-[86px] resize-y border-hairline bg-surface font-mono text-[11px]" id="new-profile-key" onChange={(event) => setKey(event.target.value)} placeholder={t('dialogs.add.keyPlaceholder')} value={key} />
               <FieldDescription className="text-[11px] text-muted-copy">{t('dialogs.add.helper')}</FieldDescription>
             </Field>
             {addError ? <FieldError className="text-[11px]">{addError}</FieldError> : null}
@@ -209,17 +209,17 @@ export function GroupsPage() {
       </Dialog>
 
       <Dialog onOpenChange={(open) => { if (!open) setRenameTarget(null) }} open={Boolean(renameTarget)}>
-        <DialogContent className="border-[#3b3a45] bg-raised text-primary sm:max-w-[420px]">
+        <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[420px]">
           <DialogHeader><DialogTitle className="type-display text-2xl text-primary">{t('dialogs.rename.title')}</DialogTitle><DialogDescription className="text-[12px] text-muted-copy">{t('dialogs.rename.description')}</DialogDescription></DialogHeader>
           <form className="space-y-5" onSubmit={submitRename}>
-            <Field><FieldLabel className="text-[12px] text-primary" htmlFor="rename-profile">{t('dialogs.rename.nameLabel')}</FieldLabel><Input autoFocus className="h-[42px] border-white/10 bg-surface text-[13px]" id="rename-profile" onChange={(event) => setRenameValue(event.target.value)} value={renameValue} /></Field>
+            <Field><FieldLabel className="text-[12px] text-primary" htmlFor="rename-profile">{t('dialogs.rename.nameLabel')}</FieldLabel><Input autoFocus className="h-[42px] border-hairline bg-surface text-[13px]" id="rename-profile" onChange={(event) => setRenameValue(event.target.value)} value={renameValue} /></Field>
             <DialogFooter><Button onClick={() => setRenameTarget(null)} type="button" variant="ghost">{t('dialogs.rename.cancel')}</Button><Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit"><Check aria-hidden="true" className="size-3.5" />{t('dialogs.rename.submit')}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       <AlertDialog onOpenChange={(open) => { if (!open) setDeleteTarget(null) }} open={Boolean(deleteTarget)}>
-        <AlertDialogContent className="border-[#3b3a45] bg-raised text-primary sm:max-w-[440px]">
+        <AlertDialogContent className="border-hairline bg-raised text-primary sm:max-w-[440px]">
           <AlertDialogHeader><AlertDialogTitle className="type-display text-2xl text-primary">{t('dialogs.delete.title')}</AlertDialogTitle><AlertDialogDescription className="text-[12px] leading-5 text-muted-copy">{t('dialogs.delete.description')}</AlertDialogDescription></AlertDialogHeader>
           <div className="border-l-2 border-bad bg-bad/10 px-3 py-2.5 text-[12px] leading-5 text-body">{t('dialogs.delete.warningPrefix')} <strong className="text-primary">{deleteTarget?.name}</strong>{t('dialogs.delete.warningSuffix')}</div>
           <AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteTarget(null)}>{t('dialogs.delete.cancel')}</AlertDialogCancel><AlertDialogAction className="bg-bad text-primary hover:bg-bad/85" onClick={() => { if (!deleteTarget) return; const nameToDelete = deleteTarget.name; deleteProfile(deleteTarget.id); setDeleteTarget(null); setMessage(t('feedback.deleted', { name: nameToDelete }), 'good') }}>{t('dialogs.delete.submit')}</AlertDialogAction></AlertDialogFooter>

@@ -30,7 +30,7 @@ export function SettingNumberRow({ id, label, description, value, onChange }: Se
   }
 
   return (
-    <div className="flex min-h-14 items-start justify-between gap-8 border-b border-white/[0.055] py-3">
+    <div className="flex min-h-14 items-start justify-between gap-8 border-b border-hairline/55 py-3">
       <div className="min-w-0 pt-1">
         <Label className="text-[14px] leading-5 text-body" htmlFor={id}>{label}</Label>
         {description ? <p className="mt-1 text-[11px] leading-4 text-muted-copy">{description}</p> : null}

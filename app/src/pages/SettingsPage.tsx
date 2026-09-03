@@ -7,13 +7,14 @@ import { SettingNumberRow } from '@/components/settings/SettingNumberRow'
 import { SettingSelectRow } from '@/components/settings/SettingSelectRow'
 import { SettingSwitchRow } from '@/components/settings/SettingSwitchRow'
 import { SettingsSection } from '@/components/settings/SettingsSection'
-import { ThemeToggle } from '@/components/settings/ThemeToggle'
+import { ThemePicker } from '@/components/settings/ThemePicker'
 import { useKagerouStore } from '@/store/kagerou-store'
-import type { GroupSortMode, SubscriptionUpdateInterval, Theme, TunInterface } from '@/types/kagerou'
+import type { GroupSortMode, SubscriptionUpdateInterval, TunInterface } from '@/types/kagerou'
 
 export function SettingsPage() {
   const { t } = useTranslation('settings')
   const settings = useKagerouStore((state) => state.settings)
+  const setTheme = useKagerouStore((state) => state.setTheme)
   const updateSettings = useKagerouStore((state) => state.updateSettings)
   const subscriptionIntervalOptions = [
     { value: '5', label: t('options.interval5') },
@@ -30,13 +31,13 @@ export function SettingsPage() {
   ] as const
 
   return (
-    <div className="min-h-screen min-w-0 bg-canvas px-6 py-8 lg:px-[68px] lg:py-[52px]">
-      <div className="w-full max-w-[920px] 2xl:mx-auto">
-        <div className="w-[680px] max-w-full">
+    <div className="flex min-h-screen min-w-0 flex-col bg-canvas px-6 py-8 lg:px-[68px] lg:py-[52px]">
+      <div className="flex w-full max-w-[920px] flex-1 2xl:mx-auto">
+        <div className="flex w-[680px] max-w-full flex-1 flex-col">
           <PageHeader actions={<p className="mb-0.5 text-[12px] leading-4 text-muted-copy">{t('page.instant')}</p>} title={t('page.title')} />
-          <div className="mt-12">
+          <div className="mt-12 flex flex-1 flex-col">
             <SettingsSection title={t('sections.appearance')}>
-              <div className="flex min-h-14 items-center justify-between gap-8 border-b border-white/[0.055]"><span className="text-[14px] leading-5 text-body">{t('fields.theme')}</span><ThemeToggle onChange={(theme: Theme) => updateSettings({ theme })} value={settings.theme} /></div>
+              <div className="flex min-h-14 items-center justify-between gap-8 border-b border-hairline max-[639px]:flex-col max-[639px]:items-stretch max-[639px]:gap-3 max-[639px]:py-3"><span className="text-[14px] leading-5 text-body">{t('fields.theme')}</span><ThemePicker onChange={setTheme} value={settings.theme} /></div>
               <LanguageSwitcher />
             </SettingsSection>
             <SettingsSection title={t('sections.startup')}><SettingSwitchRow checked={settings.startup} label={t('fields.startAutomatically')} onChange={(startup) => updateSettings({ startup })} /></SettingsSection>
@@ -51,7 +52,9 @@ export function SettingsPage() {
             </SettingsSection>
             <SettingsSection title={t('sections.groups')}><SettingSelectRow id="group-sort" label={t('fields.sortVpns')} onChange={(groupSort) => updateSettings({ groupSort: groupSort as GroupSortMode })} options={groupSortOptions} value={settings.groupSort} /></SettingsSection>
             <SettingsSection title={t('sections.network')}><SettingSelectRow id="tun-interface" label={t('fields.tunInterface')} onChange={(tunInterface) => updateSettings({ tunInterface: tunInterface as TunInterface })} options={[{ value: 'utun / tun0', label: t('options.tunBoth') }, { value: 'utun', label: t('options.utun') }, { value: 'tun0', label: t('options.tun0') }]} value={settings.tunInterface} /></SettingsSection>
-            <SettingsFooter />
+            <div className="mt-auto">
+              <SettingsFooter />
+            </div>
           </div>
         </div>
       </div>

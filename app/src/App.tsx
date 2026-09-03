@@ -9,11 +9,13 @@ import { GroupsPage } from '@/pages/GroupsPage'
 import { RoutingRulesPage } from '@/pages/RoutingRulesPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { SourcesPage } from '@/pages/SourcesPage'
+import { ThemeProvider } from '@/themes/ThemeProvider'
 
 function App() {
   return (
-    <BrowserRouter>
-      <TooltipProvider delayDuration={150}>
+    <ThemeProvider>
+      <BrowserRouter>
+        <TooltipProvider delayDuration={150}>
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<Navigate replace to="/dashboard" />} />
@@ -28,9 +30,10 @@ function App() {
             <Route path="*" element={<Navigate replace to="/dashboard" />} />
           </Route>
         </Routes>
-        <Toaster position="bottom-right" />
-      </TooltipProvider>
-    </BrowserRouter>
+          <Toaster position="bottom-right" />
+        </TooltipProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 

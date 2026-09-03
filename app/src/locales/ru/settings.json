@@ -42,7 +42,11 @@
   "theme": {
     "dark": "Тёмная",
     "light": "Светлая",
-    "ariaLabel": "Тема"
+    "ariaLabel": "Тема",
+    "use": "Использовать",
+    "active": "Активна",
+    "installed": "{{installed}} / {{total}} установлено",
+    "keyboard": "↑↓ перемещение · Enter применить · Esc закрыть"
   },
   "language": {
     "options": {

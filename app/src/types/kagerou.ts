@@ -1,3 +1,5 @@
+import type { ThemeId } from '@/themes/types'
+
 export type RouteKey =
   | 'dashboard'
   | 'groups'
@@ -21,7 +23,6 @@ export type SourceStatus = 'up-to-date' | 'ready' | 'refresh-due' | 'updating'
 export type Outbound = 'Direct' | 'Proxy' | 'Block'
 export type LogLevel = 'INFO' | 'WARN' | 'ERROR'
 export type Language = 'en' | 'ru'
-export type Theme = 'dark' | 'light'
 export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
 export type SubscriptionUpdateInterval = '5' | '10' | '15' | '30' | '60' | 'custom'
 export type GroupSortMode = 'ping' | 'name' | 'protocol'
@@ -107,7 +108,7 @@ export interface TelemetryPoint {
 }
 
 export interface SettingsState {
-  theme: Theme
+  theme: ThemeId
   language: Language
   startup: boolean
   tunInterface: TunInterface
@@ -152,5 +153,6 @@ export interface KagerouStore {
   setPreset: (id: string, enabled: boolean) => void
   selectRule: (id: string) => void
   updateRule: (id: string, patch: Partial<RoutingRule>) => void
+  setTheme: (themeId: ThemeId) => void
   updateSettings: (patch: Partial<SettingsState>) => void
 }

@@ -18,6 +18,7 @@
   --color-row-hover: var(--row-hover);
   --color-hairline: var(--hairline);
   --color-viewport: var(--viewport);
+  --color-overlay: var(--overlay);
   --color-text-primary: var(--text-primary);
   --color-body: var(--body-copy);
   --color-muted-copy: var(--text-muted);
@@ -69,61 +70,10 @@
 }
 
 :root {
-  --canvas: #1a1b1e;
-  --sidebar: #17181b;
-  --surface: #222329;
-  --raised: #292a31;
-  --selected: #312e3b;
-  --row-hover: #282930;
-  --hairline: #2a2b31;
-  --viewport: #141518;
-  --text-primary: #f2f0f6;
-  --body-copy: #c8c5d0;
-  --text-muted: #918d99;
-  --text-quiet: #77747f;
-  --lavender: #aa9bd7;
-  --lavender-hi: #c3b7e6;
-  --ink: #211f27;
-  --good: #70b68e;
-  --warn: #d1aa64;
-  --bad: #cf747b;
-  --upload-line: #8b9aae;
-
   --font-body: 'Inter', sans-serif;
   --font-display-family: 'Inter Tight', sans-serif;
   --font-data: 'IBM Plex Mono', monospace;
   --log-toolbar-width: 35rem;
-
-  --background: var(--canvas);
-  --foreground: var(--text-primary);
-  --card: var(--surface);
-  --card-foreground: var(--text-primary);
-  --popover: #25262d;
-  --popover-foreground: var(--text-primary);
-  --primary: var(--text-primary);
-  --primary-foreground: var(--ink);
-  --secondary: var(--raised);
-  --secondary-foreground: var(--body-copy);
-  --muted: var(--raised);
-  --muted-foreground: var(--text-muted);
-  --accent: var(--selected);
-  --accent-foreground: var(--text-primary);
-  --destructive: var(--bad);
-  --border: var(--hairline);
-  --input: var(--surface);
-  --ring: var(--lavender);
-  --chart-1: var(--lavender);
-  --chart-2: var(--upload-line);
-  --chart-3: var(--good);
-  --chart-4: var(--warn);
-  --chart-5: var(--bad);
-  --sidebar-foreground: var(--body-copy);
-  --sidebar-primary: var(--lavender);
-  --sidebar-primary-foreground: var(--ink);
-  --sidebar-accent: var(--selected);
-  --sidebar-accent-foreground: var(--text-primary);
-  --sidebar-border: var(--hairline);
-  --sidebar-ring: var(--lavender);
   --radius: 0.625rem;
 }
 
@@ -191,6 +141,10 @@
 @utility focus-ring {
   outline: 2px solid var(--lavender);
   outline-offset: 3px;
+}
+
+@utility theme-shadow {
+  box-shadow: 0 20px 64px var(--shadow-color);
 }
 
 @utility scrollbar-hidden {

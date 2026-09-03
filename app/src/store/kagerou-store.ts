@@ -15,6 +15,8 @@ import {
   canMoveProfileToGroup,
   normalizeGroupName,
 } from '@/lib/profile-groups'
+import { getInitialThemeId, getTheme } from '@/themes'
+import { persistThemeId } from '@/themes/runtime'
 import type {
   AddLocalProfileInput,
   AddSourceInput,
@@ -116,7 +118,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => ({
   routingRules: initialRoutingRules,
   logs: initialLogs,
   telemetry: initialTelemetry,
-  settings: initialSettings,
+  settings: { ...initialSettings, theme: getInitialThemeId() },
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   toggleConnection: () => set((state) => ({ connected: !state.connected })),
@@ -351,5 +353,11 @@ export const useKagerouStore = create<KagerouStore>((set, get) => ({
     set((state) => ({
       routingRules: state.routingRules.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)),
     })),
+  setTheme: (themeId) => {
+    const theme = getTheme(themeId)
+    if (!theme) return
+    set((state) => ({ settings: { ...state.settings, theme: theme.id } }))
+    persistThemeId(theme.id)
+  },
   updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
 }))

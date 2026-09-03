@@ -56,7 +56,7 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
     : source.lastRefresh
 
   return (
-    <Card className={cn('gap-0 rounded-[10px] border border-hairline bg-surface p-5 shadow-none transition-colors duration-150 hover:border-[#3a3942] hover:bg-row-hover', refreshing && 'border-warn/40')}>
+    <Card className={cn('gap-0 rounded-[10px] border border-hairline bg-surface p-5 shadow-none', refreshing && 'border-warn/40')}>
       <div className="flex items-start justify-between gap-5">
         <div className="flex min-w-0 items-start gap-3.5">
           <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-[9px] bg-raised text-lavender-hi', isKey && 'text-good')}><Icon aria-hidden="true" className="size-[19px]" strokeWidth={1.7} /></span>

@@ -21,7 +21,7 @@ export function RemoveSourceDialog({ source, onOpenChange, onConfirm }: RemoveSo
           <AlertDialogDescription className="text-[13px] leading-5 text-body">{subscription ? t('removeDialog.subscriptionDescription') : t('removeDialog.keyDescription')}</AlertDialogDescription>
         </AlertDialogHeader>
         <p className="rounded-lg bg-canvas px-3 py-2.5 font-mono text-[11px] text-muted-copy">{source?.name}</p>
-        <AlertDialogFooter><AlertDialogCancel>{t('removeDialog.keep')}</AlertDialogCancel><AlertDialogAction className="bg-bad text-[#21171a] hover:bg-bad/85" onClick={onConfirm}>{t('removeDialog.remove')}</AlertDialogAction></AlertDialogFooter>
+        <AlertDialogFooter><AlertDialogCancel>{t('removeDialog.keep')}</AlertDialogCancel><AlertDialogAction className="bg-bad text-ink hover:bg-bad/85" onClick={onConfirm}>{t('removeDialog.remove')}</AlertDialogAction></AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   )

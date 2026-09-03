@@ -11,7 +11,7 @@ export function SettingsFooter({ version = APP_VERSION }: SettingsFooterProps) {
   const { t } = useTranslation('settings')
 
   return (
-    <footer className="mt-12 pt-5 text-[11px] leading-4 text-muted-copy">
+    <footer className="pt-5 text-[11px] leading-4 text-muted-copy">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <a
           aria-label={t('footer.openRepository')}

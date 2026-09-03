@@ -1,3 +1,4 @@
+import { DEFAULT_THEME_ID } from '@/themes'
 import type {
   LogLevel,
   LogEntry,
@@ -274,7 +275,7 @@ export const initialTelemetry: TelemetryPoint[] = [
 ]
 
 export const initialSettings: SettingsState = {
-  theme: 'dark',
+  theme: DEFAULT_THEME_ID,
   language: 'en',
   startup: true,
   tunInterface: 'utun / tun0',

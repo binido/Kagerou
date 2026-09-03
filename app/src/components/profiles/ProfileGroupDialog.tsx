@@ -49,7 +49,7 @@ export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: Prof
         <form className="space-y-5" onSubmit={handleSubmit}>
           <Field>
             <FieldLabel className="text-[12px] text-primary" htmlFor="profile-group-name">{t('dialogs.group.nameLabel')}</FieldLabel>
-            <Input aria-describedby="profile-group-helper" autoFocus className="h-[42px] border-white/10 bg-surface text-[13px]" id="profile-group-name" onChange={(event) => { setLabel(event.target.value); setError('') }} placeholder={t('dialogs.group.placeholder')} value={label} />
+            <Input aria-describedby="profile-group-helper" autoFocus className="h-[42px] border-hairline bg-surface text-[13px]" id="profile-group-name" onChange={(event) => { setLabel(event.target.value); setError('') }} placeholder={t('dialogs.group.placeholder')} value={label} />
             <FieldDescription className="text-[11px] leading-4 text-muted-copy" id="profile-group-helper">{t('dialogs.group.helper')}</FieldDescription>
           </Field>
           {error ? <FieldError className="text-[11px]">{error}</FieldError> : null}

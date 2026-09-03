@@ -65,12 +65,12 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
         <form className="space-y-4" onSubmit={handleSubmit}>
           <Field>
             <FieldLabel className="text-[13px] text-primary" htmlFor="source-name">{type === 'url' ? t('dialog.subscriptionName') : t('dialog.vpnName')}</FieldLabel>
-            <Input autoComplete="off" className="h-11 border-white/10 bg-surface text-[13px]" disabled={submitting} id="source-name" onChange={(event) => setName(event.target.value)} placeholder={type === 'url' ? t('dialog.subscriptionNamePlaceholder') : t('dialog.vpnNamePlaceholder')} value={name} />
+            <Input autoComplete="off" className="h-11 border-hairline/55 bg-surface text-[13px]" disabled={submitting} id="source-name" onChange={(event) => setName(event.target.value)} placeholder={type === 'url' ? t('dialog.subscriptionNamePlaceholder') : t('dialog.vpnNamePlaceholder')} value={name} />
             <FieldDescription className="text-[11px] leading-4 text-muted-copy">{type === 'url' ? t('dialog.urlNameHelp') : t('dialog.keyNameHelp')}</FieldDescription>
           </Field>
           <Field>
             <FieldLabel className="text-[13px] text-primary" htmlFor="source-value">{type === 'url' ? t('dialog.sourceUrl') : t('dialog.vpnKey')}</FieldLabel>
-            <Input aria-describedby="source-helper" autoFocus={!name} className="h-11 border-white/10 bg-surface text-[13px] font-mono" disabled={submitting} id="source-value" onChange={(event) => setValue(event.target.value)} placeholder={type === 'url' ? t('dialog.urlPlaceholder') : t('dialog.keyPlaceholder')} value={value} />
+            <Input aria-describedby="source-helper" autoFocus={!name} className="h-11 border-hairline/55 bg-surface text-[13px] font-mono" disabled={submitting} id="source-value" onChange={(event) => setValue(event.target.value)} placeholder={type === 'url' ? t('dialog.urlPlaceholder') : t('dialog.keyPlaceholder')} value={value} />
             <FieldDescription className="flex items-center gap-1.5 text-[11px] leading-4 text-muted-copy" id="source-helper"><Info aria-hidden="true" className="size-3.5" />{type === 'url' ? t('dialog.urlValueHelp') : t('dialog.keyValueHelp')}</FieldDescription>
           </Field>
           {error ? <FieldError className="text-[11px]">{error}</FieldError> : null}

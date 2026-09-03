@@ -42,7 +42,11 @@
   "theme": {
     "dark": "Dark",
     "light": "Light",
-    "ariaLabel": "Theme"
+    "ariaLabel": "Theme",
+    "use": "Use",
+    "active": "Active",
+    "installed": "{{installed}} / {{total}} installed",
+    "keyboard": "↑↓ move · Enter use · Esc close"
   },
   "language": {
     "options": {
