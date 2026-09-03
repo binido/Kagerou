@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "identifier": "com.binido.kagerou",
   "build": {
-    "beforeDevCommand": "pnpm --dir app dev",
-    "beforeBuildCommand": "pnpm --dir app build",
+    "beforeDevCommand": "node scripts/fetch-singbox.mjs && pnpm --dir app dev",
+    "beforeBuildCommand": "node scripts/fetch-singbox.mjs && pnpm --dir app build",
     "devUrl": "http://localhost:5173",
     "frontendDist": "../app/dist"
   },
@@ -27,6 +27,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": ["binaries/sing-box"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
