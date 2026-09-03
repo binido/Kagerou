@@ -81,6 +81,7 @@ impl std::str::FromStr for Protocol {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Profile {
     pub id: String,
     pub name: String,
@@ -96,6 +97,7 @@ pub struct Profile {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewProfile {
     pub id: String,
     pub name: String,
@@ -108,6 +110,7 @@ pub struct NewProfile {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProfileGroup {
     pub id: String,
     pub label: String,
@@ -118,6 +121,7 @@ pub struct ProfileGroup {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewProfileGroup {
     pub id: String,
     pub label: String,
@@ -126,6 +130,7 @@ pub struct NewProfileGroup {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Source {
     pub id: String,
     pub name: String,
@@ -138,6 +143,7 @@ pub struct Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewSource {
     pub id: String,
     pub name: String,
@@ -150,6 +156,7 @@ pub struct NewSource {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RoutingPreset {
     pub id: String,
     pub label: String,
@@ -158,6 +165,7 @@ pub struct RoutingPreset {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RoutingRule {
     pub id: String,
     #[serde(rename = "match")]
@@ -167,6 +175,7 @@ pub struct RoutingRule {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewRoutingRule {
     pub id: String,
     pub match_value: String,
@@ -174,6 +183,7 @@ pub struct NewRoutingRule {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub theme: String,
     pub language: String,

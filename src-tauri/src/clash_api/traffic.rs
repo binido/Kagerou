@@ -6,7 +6,8 @@ use tokio_tungstenite::tungstenite::Message;
 
 use super::model::TrafficSample;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
 pub enum TrafficEvent {
     Sample(TrafficSample),
     Disconnected,
@@ -26,6 +27,14 @@ pub struct TrafficWatcher {
 impl TrafficWatcher {
     pub fn stop(&self) {
         let _ = self.stop.send(true);
+    }
+
+    /// Splits the watcher into its receiver and a cloneable stop handle,
+    /// for callers that want to move the receiver into a forwarding task
+    /// (e.g. one that re-emits each `TrafficEvent` as a Tauri event) while
+    /// keeping the ability to stop that task from elsewhere.
+    pub fn into_parts(self) -> (mpsc::UnboundedReceiver<TrafficEvent>, watch::Sender<bool>) {
+        (self.events, self.stop)
     }
 }
 

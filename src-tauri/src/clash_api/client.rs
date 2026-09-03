@@ -13,6 +13,7 @@ use super::model::{ConnectionsResponse, ProxiesResponse, SelectOutboundBody, Ver
 /// "canceled"/"incomplete message" `reqwest::Error` that doesn't reliably
 /// report `is_timeout() == true`, which would misclassify a real timeout
 /// as a plain connection error.
+#[derive(Clone)]
 pub struct ClashApiClient {
     base_url: String,
     http: reqwest::Client,
@@ -68,6 +69,28 @@ impl ClashApiClient {
 
     pub async fn get_connections(&self) -> Result<ConnectionsResponse, ClashApiError> {
         self.get_json("/connections").await
+    }
+
+    /// Runs sing-box's built-in latency probe for one outbound (`GET
+    /// /proxies/{name}/delay`), used to power the "test" action on a
+    /// profile. Returns the round-trip time in milliseconds.
+    pub async fn test_delay(
+        &self,
+        name: &str,
+        test_url: &str,
+        timeout_ms: u32,
+    ) -> Result<u32, ClashApiError> {
+        #[derive(serde::Deserialize)]
+        struct DelayResponse {
+            delay: u32,
+        }
+        let path = format!(
+            "/proxies/{}/delay?timeout={timeout_ms}&url={}",
+            percent_encoding::utf8_percent_encode(name, percent_encoding::NON_ALPHANUMERIC),
+            percent_encoding::utf8_percent_encode(test_url, percent_encoding::NON_ALPHANUMERIC),
+        );
+        let response = self.get_json::<DelayResponse>(&path).await?;
+        Ok(response.delay)
     }
 
     /// Switches a `selector`-type proxy group (typically our `proxy` group)
@@ -186,6 +209,35 @@ mod tests {
         );
         let err = client.get_version().await.unwrap_err();
         assert!(matches!(err, ClashApiError::Timeout));
+    }
+
+    #[tokio::test]
+    async fn test_delay_parses_the_delay_field() {
+        let base_url = spawn_http_mock(|_req| http_response(200, "OK", br#"{"delay":42}"#)).await;
+        let client = ClashApiClient::new(base_url);
+        let delay = client
+            .test_delay("profile-tokyo", "http://www.gstatic.com/generate_204", 5000)
+            .await
+            .unwrap();
+        assert_eq!(delay, 42);
+    }
+
+    #[tokio::test]
+    async fn test_delay_on_an_unreachable_outbound_is_reported() {
+        let base_url = spawn_http_mock(|_req| {
+            http_response(
+                504,
+                "Gateway Timeout",
+                br#"{"message":"context deadline exceeded"}"#,
+            )
+        })
+        .await;
+        let client = ClashApiClient::new(base_url);
+        let err = client
+            .test_delay("profile-tokyo", "http://www.gstatic.com/generate_204", 5000)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, ClashApiError::Http { status: 504, .. }));
     }
 
     #[tokio::test]

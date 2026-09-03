@@ -99,6 +99,34 @@ pub fn update_rule_outbound(db: &Db, id: &str, outbound: &str) -> Result<(), Sto
     Ok(())
 }
 
+#[derive(Default)]
+pub struct RulePatch<'a> {
+    pub match_value: Option<&'a str>,
+    pub outbound: Option<&'a str>,
+}
+
+/// General partial update for a rule's match pattern and/or outbound.
+/// Selection state is intentionally not patchable here — use
+/// `select_rule`, which enforces the single-selected-rule invariant.
+pub fn update_rule(db: &Db, id: &str, patch: &RulePatch) -> Result<(), StorageError> {
+    if let Some(m) = patch.match_value {
+        if m.trim().is_empty() {
+            return Err(StorageError::InvalidInput(
+                "rule match pattern cannot be empty".into(),
+            ));
+        }
+    }
+    let conn = db.lock();
+    let affected = conn.execute(
+        "UPDATE routing_rules SET match_value = COALESCE(?1, match_value), outbound = COALESCE(?2, outbound) WHERE id = ?3",
+        params![patch.match_value.map(str::trim), patch.outbound, id],
+    )?;
+    if affected == 0 {
+        return Err(StorageError::NotFound);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -222,5 +250,77 @@ mod tests {
             matches!(err, StorageError::Sqlite(_)),
             "the CHECK constraint should reject an unknown outbound"
         );
+    }
+
+    #[test]
+    fn update_rule_patches_only_the_provided_fields() {
+        let db = Db::open_in_memory().unwrap();
+        insert_rule(
+            &db,
+            &NewRoutingRule {
+                id: "r1".into(),
+                match_value: "a".into(),
+                outbound: "Direct".into(),
+            },
+        )
+        .unwrap();
+        update_rule(
+            &db,
+            "r1",
+            &RulePatch {
+                match_value: Some("b.example.com"),
+                outbound: None,
+            },
+        )
+        .unwrap();
+        let rule = list_rules(&db)
+            .unwrap()
+            .into_iter()
+            .find(|r| r.id == "r1")
+            .unwrap();
+        assert_eq!(rule.match_value, "b.example.com");
+        assert_eq!(
+            rule.outbound, "Direct",
+            "untouched field must survive a partial patch"
+        );
+    }
+
+    #[test]
+    fn update_rule_rejects_a_blank_match_pattern() {
+        let db = Db::open_in_memory().unwrap();
+        insert_rule(
+            &db,
+            &NewRoutingRule {
+                id: "r1".into(),
+                match_value: "a".into(),
+                outbound: "Direct".into(),
+            },
+        )
+        .unwrap();
+        let err = update_rule(
+            &db,
+            "r1",
+            &RulePatch {
+                match_value: Some("   "),
+                outbound: None,
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, StorageError::InvalidInput(_)));
+    }
+
+    #[test]
+    fn update_rule_on_an_unknown_rule_is_not_found() {
+        let db = Db::open_in_memory().unwrap();
+        let err = update_rule(
+            &db,
+            "ghost",
+            &RulePatch {
+                match_value: None,
+                outbound: Some("Block"),
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, StorageError::NotFound));
     }
 }

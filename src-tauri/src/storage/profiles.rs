@@ -196,6 +196,41 @@ pub fn move_to_group(db: &Db, id: &str, target_group_id: &str) -> Result<(), Sto
     Ok(())
 }
 
+/// Rewrites the `position` of every profile in `group_id` to match the
+/// order of `ordered_ids`. Used to implement both "move up/down" (compute
+/// the swapped order, then reorder) and drag-to-reorder in one primitive
+/// rather than two position-swap-specific queries. Rejects the whole
+/// operation — no partial reorder — if `ordered_ids` doesn't contain
+/// exactly the profiles currently in that group.
+pub fn reorder(db: &Db, group_id: &str, ordered_ids: &[String]) -> Result<(), StorageError> {
+    let mut conn = db.lock();
+    let tx = conn.transaction()?;
+
+    let mut current: Vec<String> = {
+        let mut stmt =
+            tx.prepare("SELECT id FROM profiles WHERE group_id = ?1 ORDER BY position")?;
+        let rows = stmt.query_map(params![group_id], |row| row.get::<_, String>(0))?;
+        rows.collect::<Result<Vec<_>, _>>()?
+    };
+    current.sort();
+    let mut requested = ordered_ids.to_vec();
+    requested.sort();
+    if current != requested {
+        return Err(StorageError::InvalidInput(
+            "ordered_ids must be exactly the profiles currently in the group".into(),
+        ));
+    }
+
+    for (position, id) in ordered_ids.iter().enumerate() {
+        tx.execute(
+            "UPDATE profiles SET position = ?1 WHERE id = ?2",
+            params![position as i64, id],
+        )?;
+    }
+    tx.commit()?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -417,5 +452,42 @@ mod tests {
             )
             .unwrap();
         assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn reorder_applies_the_given_order() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        insert(&db, &new_profile("p2", "default")).unwrap();
+        insert(&db, &new_profile("p3", "default")).unwrap();
+
+        reorder(&db, "default", &["p3".into(), "p1".into(), "p2".into()]).unwrap();
+
+        let ids: Vec<_> = list_all(&db).unwrap().into_iter().map(|p| p.id).collect();
+        assert_eq!(ids, vec!["p3", "p1", "p2"]);
+    }
+
+    #[test]
+    fn reorder_rejects_a_set_that_omits_a_profile_in_the_group() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        insert(&db, &new_profile("p2", "default")).unwrap();
+
+        let err = reorder(&db, "default", &["p1".into()]).unwrap_err();
+        assert!(matches!(err, StorageError::InvalidInput(_)));
+
+        // Nothing should have changed.
+        let ids: Vec<_> = list_all(&db).unwrap().into_iter().map(|p| p.id).collect();
+        assert_eq!(ids, vec!["p1", "p2"]);
+    }
+
+    #[test]
+    fn reorder_rejects_an_id_from_a_different_group() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        insert(&db, &new_profile("p2", "custom")).unwrap();
+
+        let err = reorder(&db, "default", &["p1".into(), "p2".into()]).unwrap_err();
+        assert!(matches!(err, StorageError::InvalidInput(_)));
     }
 }
