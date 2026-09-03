@@ -1,0 +1,19 @@
+import type { SVGProps } from 'react'
+
+export const KITSUNE_MARK_PATH =
+  'M50 88C43 88 38 83 35 76L13 79L27 64C20 61 15 56 11 49L28 49L22 11L42 36Q50 33 58 36L78 11L72 49L89 49C85 56 80 61 73 64L87 79L65 76C62 83 57 88 50 88ZM27 23L37 37Q33 39 30 44Q28 35 27 23ZM73 23L63 37Q67 39 70 44Q72 35 73 23ZM26 50L40 46L46 51L40 56L30 55L26 50ZM74 50L60 46L54 51L60 56L70 55L74 50ZM16 56Q27 56 39 65L42 74L30 68Q22 63 16 56ZM84 56Q73 56 61 65L58 74L70 68Q78 63 84 56ZM43 58L50 63L57 58L60 67L55 75Q50 81 45 75L40 67L43 58Z'
+
+export function LogoIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path d={KITSUNE_MARK_PATH} fill="currentColor" fillRule="evenodd" />
+    </svg>
+  )
+}
