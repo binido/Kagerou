@@ -1,4 +1,5 @@
 pub mod clash_api;
+pub mod privilege;
 pub mod singbox;
 pub mod storage;
 pub mod subscription;
