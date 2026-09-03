@@ -24,6 +24,7 @@ export type Language = 'English' | '中文' | '日本語'
 export type Theme = 'dark' | 'light'
 export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
 export type SubscriptionUpdateInterval = '5' | '10' | '15' | '30' | '60' | 'custom'
+export type GroupSortMode = 'ping' | 'name' | 'protocol'
 
 export interface TestResult {
   value: string
@@ -113,6 +114,7 @@ export interface SettingsState {
   autoUpdateSubscriptions: boolean
   subscriptionUpdateInterval: SubscriptionUpdateInterval
   customSubscriptionUpdateMinutes: number
+  groupSort: GroupSortMode
 }
 
 export interface KagerouStore {

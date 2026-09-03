@@ -1,7 +1,5 @@
 import {
-  ArrowDown,
   ArrowRight,
-  ArrowUp,
   ExternalLink,
   MoreHorizontal,
   Pencil,
@@ -28,13 +26,12 @@ interface ProfileActionsMenuProps {
   profile: Profile
   movableGroups: ProfileGroup[]
   onRename: () => void
-  onMove: (direction: 'up' | 'down') => void
   onMoveToGroup: (groupId: string) => void
   onDelete: () => void
   onTest: (method: TestMethod) => void
 }
 
-export function ProfileActionsMenu({ profile, movableGroups, onRename, onMove, onMoveToGroup, onDelete, onTest }: ProfileActionsMenuProps) {
+export function ProfileActionsMenu({ profile, movableGroups, onRename, onMoveToGroup, onDelete, onTest }: ProfileActionsMenuProps) {
   const local = profile.origin === 'local'
   const targetGroups = movableGroups.filter((group) => group.kind !== 'subscription' && group.id !== profile.groupId)
 
@@ -49,14 +46,6 @@ export function ProfileActionsMenu({ profile, movableGroups, onRename, onMove, o
         <DropdownMenuItem disabled={!local} onSelect={onRename}>
           <Pencil aria-hidden="true" className="size-3.5" />
           <span>Rename VPN</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => onMove('up')}>
-          <ArrowUp aria-hidden="true" className="size-3.5" />
-          <span>Move up</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => onMove('down')}>
-          <ArrowDown aria-hidden="true" className="size-3.5" />
-          <span>Move down</span>
         </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger disabled={!local || targetGroups.length === 0}>

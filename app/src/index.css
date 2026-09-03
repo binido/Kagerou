@@ -187,6 +187,7 @@
   letter-spacing: 0.01em;
 }
 
+
 @utility focus-ring {
   outline: 2px solid var(--lavender);
   outline-offset: 3px;
@@ -196,6 +197,19 @@
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@layer components {
+  .log-row-grid {
+    grid-template-columns: 186px 54px minmax(0, 1fr);
+  }
+
+  .log-toolbar-control {
+    box-sizing: border-box;
+    height: 48px;
+    min-height: 48px;
+    padding-inline: 14px !important;
   }
 }
 

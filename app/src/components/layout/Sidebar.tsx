@@ -34,7 +34,7 @@ export function Sidebar() {
     <aside
       aria-label="Primary navigation"
       className={cn(
-        'group/sidebar flex min-h-screen shrink-0 flex-col border-r border-hairline bg-sidebar px-3 py-6 transition-[width,padding] duration-200',
+        'group/sidebar sticky top-0 flex h-screen max-h-screen min-h-screen shrink-0 flex-col overflow-y-auto border-r border-hairline bg-sidebar px-3 py-6 transition-[width,padding] duration-200',
         collapsed ? 'w-[68px] px-3' : 'w-[216px]',
         'max-[960px]:w-[68px] max-[960px]:px-3',
       )}

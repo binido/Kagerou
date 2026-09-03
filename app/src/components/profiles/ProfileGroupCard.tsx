@@ -17,14 +17,12 @@ interface ProfileGroupCardProps {
   onRenameGroup: (group: ProfileGroup) => void
   onSelect: (id: string) => void
   onRename: (profile: Profile) => void
-  onMove: (id: string, direction: 'up' | 'down') => void
   onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
   onTest: (id: string, method: TestMethod) => void
-  onReorder: (fromId: string, toId: string) => void
 }
 
-export function ProfileGroupCard({ group, profiles, movableGroups, runningTests, onToggle, onRenameGroup, onSelect, onRename, onMove, onMoveToGroup, onDelete, onTest, onReorder }: ProfileGroupCardProps) {
+export function ProfileGroupCard({ group, profiles, movableGroups, runningTests, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileGroupCardProps) {
   const isSubscription = group.kind === 'subscription'
   const isDefault = group.kind === 'default'
 
@@ -51,7 +49,7 @@ export function ProfileGroupCard({ group, profiles, movableGroups, runningTests,
       </div>
       {group.open ? (
         <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
-          <ProfileTable movableGroups={movableGroups} onDelete={onDelete} onMove={onMove} onMoveToGroup={onMoveToGroup} onRename={onRename} onReorder={onReorder} onSelect={onSelect} onTest={onTest} profiles={profiles} runningTests={runningTests} />
+          <ProfileTable movableGroups={movableGroups} onDelete={onDelete} onMoveToGroup={onMoveToGroup} onRename={onRename} onSelect={onSelect} onTest={onTest} profiles={profiles} runningTests={runningTests} />
           {isSubscription ? (
             <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Radar aria-hidden="true" className="size-3.5 text-lavender" />Subscription VPNs stay with this source. Rename or refresh the source to update them.</div>
           ) : isDefault ? (

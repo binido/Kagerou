@@ -13,6 +13,7 @@ import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
 import { mockApi } from '@/lib/mock-api'
 import { useKagerouStore } from '@/store/kagerou-store'
+import { sortProfiles } from '@/lib/profile-sorting'
 import type { Profile, ProfileGroup, TestMethod } from '@/types/kagerou'
 
 export function GroupsPage() {
@@ -25,9 +26,8 @@ export function GroupsPage() {
   const addProfileGroup = useKagerouStore((state) => state.addProfileGroup)
   const renameProfileGroup = useKagerouStore((state) => state.renameProfileGroup)
   const deleteProfile = useKagerouStore((state) => state.deleteProfile)
-  const moveProfile = useKagerouStore((state) => state.moveProfile)
   const moveProfileToGroup = useKagerouStore((state) => state.moveProfileToGroup)
-  const reorderProfiles = useKagerouStore((state) => state.reorderProfiles)
+  const groupSort = useKagerouStore((state) => state.settings.groupSort)
   const setTestResult = useKagerouStore((state) => state.setTestResult)
 
   const [addOpen, setAddOpen] = useState(false)
@@ -121,6 +121,7 @@ export function GroupsPage() {
 
   const groupsForRender = groups
   const movableGroups = groups.filter((group) => group.kind !== 'subscription')
+  const sortedGroupProfiles = (group: ProfileGroup) => sortProfiles(visibleGroupProfiles(group), groupSort)
 
   return (
     <div className="min-h-screen min-w-0 bg-canvas px-6 pb-10 pt-8 lg:px-12 lg:pt-10">
@@ -154,7 +155,6 @@ export function GroupsPage() {
               key={group.id}
               movableGroups={movableGroups}
               onDelete={setDeleteTarget}
-              onMove={(id, direction) => { const moved = moveProfile(id, direction); setMessage(moved ? `VPN moved ${direction}.` : 'VPN is already at the edge of its group.', moved ? 'good' : 'muted') }}
               onMoveToGroup={(profileId, targetGroupId) => {
                 const target = groups.find((candidate) => candidate.id === targetGroupId)
                 const moved = moveProfileToGroup(profileId, targetGroupId)
@@ -162,11 +162,10 @@ export function GroupsPage() {
               }}
               onRename={(profile) => { setRenameTarget(profile); setRenameValue(profile.name) }}
               onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}
-              onReorder={(fromId, toId) => { const moved = reorderProfiles(fromId, toId); setMessage(moved ? 'VPN order updated.' : 'VPNs can only be reordered within their group.', moved ? 'good' : 'bad') }}
               onSelect={(id) => { selectProfile(id); const selected = profilesById.get(id); if (selected) setMessage(`${selected.name} is ready for the next connection.`, 'good') }}
               onTest={runTest}
               onToggle={() => setProfileGroupOpen(group.id, !group.open)}
-              profiles={visibleGroupProfiles(group)}
+              profiles={sortedGroupProfiles(group)}
               runningTests={runningTests}
             />
           ))}

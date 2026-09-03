@@ -3,9 +3,10 @@ import { SettingNumberRow } from '@/components/settings/SettingNumberRow'
 import { SettingSelectRow } from '@/components/settings/SettingSelectRow'
 import { SettingSwitchRow } from '@/components/settings/SettingSwitchRow'
 import { SettingsSection } from '@/components/settings/SettingsSection'
+import { groupSortLabels } from '@/lib/profile-sorting'
 import { ThemeToggle } from '@/components/settings/ThemeToggle'
 import { useKagerouStore } from '@/store/kagerou-store'
-import type { Language, SubscriptionUpdateInterval, Theme, TunInterface } from '@/types/kagerou'
+import type { GroupSortMode, Language, SubscriptionUpdateInterval, Theme, TunInterface } from '@/types/kagerou'
 
 const subscriptionIntervalOptions = [
   { value: '5', label: '5 minutes' },
@@ -16,13 +17,19 @@ const subscriptionIntervalOptions = [
   { value: 'custom', label: 'Custom' },
 ] as const
 
+const groupSortOptions = [
+  { value: 'ping', label: groupSortLabels.ping },
+  { value: 'name', label: groupSortLabels.name },
+  { value: 'protocol', label: groupSortLabels.protocol },
+] as const
+
 export function SettingsPage() {
   const settings = useKagerouStore((state) => state.settings)
   const updateSettings = useKagerouStore((state) => state.updateSettings)
 
   return (
     <div className="min-h-screen min-w-0 bg-canvas px-6 py-8 lg:px-[68px] lg:py-[52px]">
-      <div className="w-full max-w-[920px]">
+      <div className="w-full max-w-[920px] 2xl:mx-auto">
         <PageHeader actions={<p className="mb-0.5 text-[12px] leading-4 text-muted-copy">Changes apply instantly</p>} title="Settings" />
         <div className="mt-12 w-[680px] max-w-full">
           <SettingsSection title="Appearance">
@@ -39,6 +46,7 @@ export function SettingsPage() {
               </>
             ) : null}
           </SettingsSection>
+          <SettingsSection title="Groups"><SettingSelectRow id="group-sort" label="Sort VPNs by" onChange={(groupSort) => updateSettings({ groupSort: groupSort as GroupSortMode })} options={groupSortOptions} value={settings.groupSort} /></SettingsSection>
           <SettingsSection title="Network"><SettingSelectRow id="tun-interface" label="TUN interface" onChange={(tunInterface) => updateSettings({ tunInterface: tunInterface as TunInterface })} options={['utun / tun0', 'utun', 'tun0']} value={settings.tunInterface} /></SettingsSection>
         </div>
       </div>

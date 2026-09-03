@@ -281,6 +281,7 @@ export const initialSettings: SettingsState = {
   autoUpdateSubscriptions: false,
   subscriptionUpdateInterval: '30',
   customSubscriptionUpdateMinutes: 60,
+  groupSort: 'ping',
 }
 
 export const routeOutboundOptions: Outbound[] = ['Direct', 'Proxy', 'Block']
