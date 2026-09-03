@@ -24,6 +24,10 @@ base64 = "0.22"
 serde_yaml = "0.9"
 url = "2"
 percent-encoding = "2"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
 
 [dev-dependencies]
 tempfile = "3"
