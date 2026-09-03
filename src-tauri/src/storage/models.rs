@@ -49,6 +49,7 @@ pub enum Protocol {
     Trojan,
     Shadowsocks,
     Hysteria2,
+    Tuic,
 }
 
 impl Protocol {
@@ -59,6 +60,7 @@ impl Protocol {
             Protocol::Trojan => "Trojan",
             Protocol::Shadowsocks => "Shadowsocks",
             Protocol::Hysteria2 => "Hysteria2",
+            Protocol::Tuic => "Tuic",
         }
     }
 }
@@ -73,6 +75,7 @@ impl std::str::FromStr for Protocol {
             "Trojan" => Ok(Protocol::Trojan),
             "Shadowsocks" => Ok(Protocol::Shadowsocks),
             "Hysteria2" => Ok(Protocol::Hysteria2),
+            "Tuic" => Ok(Protocol::Tuic),
             other => Err(super::StorageError::InvalidInput(format!(
                 "unknown protocol: {other}"
             ))),

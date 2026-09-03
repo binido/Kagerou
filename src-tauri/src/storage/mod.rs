@@ -97,7 +97,7 @@ mod tests {
             let db = Db::open(&path).expect("first open should create + migrate");
             db.lock()
                 .execute(
-                    "INSERT INTO profile_groups (id, label, kind, source_id, is_open, position) VALUES ('default', 'Default', 'default', NULL, 1, 0)",
+                    "INSERT INTO profile_groups (id, label, kind, source_id, is_open, position) VALUES ('custom-1', 'Custom Group', 'custom', NULL, 1, 1)",
                     [],
                 )
                 .unwrap();
@@ -107,12 +107,12 @@ mod tests {
         let label: String = db
             .lock()
             .query_row(
-                "SELECT label FROM profile_groups WHERE id = 'default'",
+                "SELECT label FROM profile_groups WHERE id = 'custom-1'",
                 [],
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(label, "Default");
+        assert_eq!(label, "Custom Group");
     }
 
     #[test]

@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { mockApi } from '@/lib/mock-api'
+import { kagerouApi } from '@/lib/tauri-api'
 import type { AddSourceInput, Source, SourceType } from '@/types/kagerou'
 
 interface SourceDialogProps {
@@ -29,13 +29,14 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmedValue = value.trim()
-    const validationError = mockApi.validateSource(type, trimmedValue)
+    setSubmitting(true)
+    const validationError = await kagerouApi.validateSource(type, trimmedValue)
     if (validationError) {
       setError(validationError === 'invalidUrl' ? t('feedback.invalidUrl') : t('feedback.invalidKey'))
+      setSubmitting(false)
       return
     }
 
-    setSubmitting(true)
     try {
       await onSubmit({ type, name: name.trim() || undefined, value: trimmedValue })
       setError('')

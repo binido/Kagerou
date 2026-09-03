@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -9,9 +10,19 @@ import { GroupsPage } from '@/pages/GroupsPage'
 import { RoutingRulesPage } from '@/pages/RoutingRulesPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { SourcesPage } from '@/pages/SourcesPage'
+import { useKagerouStore } from '@/store/kagerou-store'
 import { ThemeProvider } from '@/themes/ThemeProvider'
 
 function App() {
+  const hydrated = useKagerouStore((state) => state.hydrated)
+  const hydrate = useKagerouStore((state) => state.hydrate)
+
+  useEffect(() => {
+    void hydrate()
+  }, [hydrate])
+
+  if (!hydrated) return null
+
   return (
     <ThemeProvider>
       <BrowserRouter>

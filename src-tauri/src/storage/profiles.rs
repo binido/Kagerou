@@ -237,18 +237,10 @@ mod tests {
     use crate::storage::groups;
     use crate::storage::models::NewProfileGroup;
 
+    /// The base migration already seeds a `default` group; this only adds
+    /// the extra `custom` one these tests need.
     fn seeded_db() -> Db {
         let db = Db::open_in_memory().unwrap();
-        groups::insert(
-            &db,
-            &NewProfileGroup {
-                id: "default".into(),
-                label: "Default".into(),
-                kind: "default".into(),
-                source_id: None,
-            },
-        )
-        .unwrap();
         groups::insert(
             &db,
             &NewProfileGroup {

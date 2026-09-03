@@ -13,7 +13,6 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
 import { localizeResultValue } from '@/lib/result-copy'
-import { mockApi } from '@/lib/mock-api'
 import { sortProfiles } from '@/lib/profile-sorting'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type { Profile, ProfileGroup, TestMethod } from '@/types/kagerou'
@@ -32,7 +31,7 @@ export function GroupsPage() {
   const deleteProfile = useKagerouStore((state) => state.deleteProfile)
   const moveProfileToGroup = useKagerouStore((state) => state.moveProfileToGroup)
   const groupSort = useKagerouStore((state) => state.settings.groupSort)
-  const setTestResult = useKagerouStore((state) => state.setTestResult)
+  const runProfileTest = useKagerouStore((state) => state.runProfileTest)
 
   const [addOpen, setAddOpen] = useState(false)
   const [name, setName] = useState('')
@@ -62,13 +61,16 @@ export function GroupsPage() {
     const profile = profilesById.get(profileId)
     setRunningTests((state) => ({ ...state, [keyName]: true }))
     setMessage(t('feedback.testRunning', { method: methodLabel, name: profile?.name ?? t('fallback.vpn') }))
-    const result = await mockApi.runProfileTest(profileId, method)
-    setTestResult(profileId, method, result)
+    const result = await runProfileTest(profileId, method)
     setRunningTests((state) => {
       const next = { ...state }
       delete next[keyName]
       return next
     })
+    if (!result) {
+      setMessage(t('feedback.testFinished', { method: methodLabel, name: profile?.name ?? t('fallback.vpn'), value: localizeResultValue('Not connected', tc) }), 'bad')
+      return
+    }
     setMessage(t('feedback.testFinished', { method: methodLabel, name: profile?.name ?? t('fallback.vpn'), value: localizeResultValue(result.value, tc) }), result.tone === 'bad' ? 'bad' : 'good')
   }
 
@@ -78,7 +80,7 @@ export function GroupsPage() {
     setMessage(t('feedback.testRunningAll', { method: methodLabel }))
   }
 
-  const submitAdd = (event: FormEvent<HTMLFormElement>) => {
+  const submitAdd = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmedName = name.trim()
     const trimmedKey = key.trim()
@@ -86,11 +88,15 @@ export function GroupsPage() {
       setAddError(t('dialogs.add.nameRequired'))
       return
     }
-    if (!/^(vless|vmess|trojan|ss|hysteria2):\/\/[^\s]+$/i.test(trimmedKey)) {
+    if (!/^(vless|vmess|trojan|ss|hysteria2|tuic):\/\/[^\s]+$/i.test(trimmedKey)) {
       setAddError(t('dialogs.add.keyInvalid'))
       return
     }
-    addLocalProfile({ key: trimmedKey, name: trimmedName })
+    const id = await addLocalProfile({ key: trimmedKey, name: trimmedName })
+    if (!id) {
+      setAddError(t('dialogs.add.keyInvalid'))
+      return
+    }
     setName('')
     setKey('')
     setAddError('')
@@ -98,7 +104,7 @@ export function GroupsPage() {
     setMessage(t('feedback.added', { name: trimmedName }), 'good')
   }
 
-  const submitRename = (event: FormEvent<HTMLFormElement>) => {
+  const submitRename = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmed = renameValue.trim()
     if (!renameTarget) return
@@ -106,7 +112,7 @@ export function GroupsPage() {
       setMessage(t('feedback.vpnNameEmpty'), 'bad')
       return
     }
-    const renamed = renameProfile(renameTarget.id, trimmed)
+    const renamed = await renameProfile(renameTarget.id, trimmed)
     if (!renamed) {
       setMessage(t('feedback.renameLocalOnly'), 'bad')
       return
@@ -115,13 +121,13 @@ export function GroupsPage() {
     setRenameTarget(null)
   }
 
-  const handleGroupSubmit = (label: string) => {
+  const handleGroupSubmit = async (label: string) => {
     if (groupDialogTarget) {
-      const updated = renameProfileGroup(groupDialogTarget.id, label)
+      const updated = await renameProfileGroup(groupDialogTarget.id, label)
       if (updated) setMessage(t('feedback.groupRenamed', { name: label }), 'good')
       return updated
     }
-    const id = addProfileGroup(label)
+    const id = await addProfileGroup(label)
     if (id) setMessage(t('feedback.groupCreated', { name: label }), 'good')
     return Boolean(id)
   }
@@ -164,8 +170,9 @@ export function GroupsPage() {
               onDelete={setDeleteTarget}
               onMoveToGroup={(profileId, targetGroupId) => {
                 const target = groups.find((candidate) => candidate.id === targetGroupId)
-                const moved = moveProfileToGroup(profileId, targetGroupId)
-                setMessage(moved ? t('feedback.moved', { group: groupLabel(target) }) : t('feedback.moveSubscription'), moved ? 'good' : 'bad')
+                void moveProfileToGroup(profileId, targetGroupId).then((moved) => {
+                  setMessage(moved ? t('feedback.moved', { group: groupLabel(target) }) : t('feedback.moveSubscription'), moved ? 'good' : 'bad')
+                })
               }}
               onRename={(profile) => { setRenameTarget(profile); setRenameValue(profile.name) }}
               onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}

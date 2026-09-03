@@ -171,7 +171,8 @@ mod tests {
             .into_iter()
             .map(|g| g.label)
             .collect();
-        assert_eq!(labels, vec!["A", "B"]);
+        // The base migration seeds "Default" first, so it leads.
+        assert_eq!(labels, vec!["Default", "A", "B"]);
     }
 
     #[test]
@@ -195,8 +196,8 @@ mod tests {
 
     #[test]
     fn rename_refuses_the_default_group() {
+        // The base migration always seeds the "default" group already.
         let db = Db::open_in_memory().unwrap();
-        insert(&db, &group("default", "Default", "default")).unwrap();
         let err = rename(&db, "default", "Renamed").unwrap_err();
         assert!(matches!(err, StorageError::InvalidInput(_)));
         assert_eq!(get(&db, "default").unwrap().label, "Default");

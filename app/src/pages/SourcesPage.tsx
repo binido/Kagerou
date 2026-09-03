@@ -9,7 +9,6 @@ import { SourceCard } from '@/components/sources/SourceCard'
 import { SourceDialog } from '@/components/sources/SourceDialog'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { deriveSubscriptionName } from '@/lib/formatters'
-import { mockApi } from '@/lib/mock-api'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type { AddSourceInput, Source, SourceType } from '@/types/kagerou'
 
@@ -19,7 +18,7 @@ export function SourcesPage() {
   const profiles = useKagerouStore((state) => state.profiles)
   const addSource = useKagerouStore((state) => state.addSource)
   const updateSource = useKagerouStore((state) => state.updateSource)
-  const replaceSubscriptionProfiles = useKagerouStore((state) => state.replaceSubscriptionProfiles)
+  const refreshSource = useKagerouStore((state) => state.refreshSource)
   const removeSource = useKagerouStore((state) => state.removeSource)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogType, setDialogType] = useState<SourceType>('url')
@@ -47,12 +46,11 @@ export function SourcesPage() {
   const handleSourceSubmit = async (input: AddSourceInput) => {
     if (editingSource) {
       const nextName = input.name ?? editingSource.name
-      if (!updateSource(editingSource.id, { name: nextName, value: input.value })) {
+      if (!(await updateSource(editingSource.id, { name: nextName, value: input.value }))) {
         throw new Error(t('feedback.nameError'))
       }
       if (editingSource.type === 'url') {
-        const imported = await mockApi.importSubscription(input.value)
-        replaceSubscriptionProfiles(editingSource.id, imported.profiles)
+        await refreshSource(editingSource.id)
       }
       toast.success(t('feedback.saved'))
       return
@@ -61,8 +59,7 @@ export function SourcesPage() {
     const sourceName = input.name ?? (input.type === 'url'
       ? deriveSubscriptionName(input.value, sources.length + 1, t('defaults.subscription'))
       : t('defaults.keyName', { scheme: input.value.split('://')[0]?.toUpperCase() || 'VPN', number: String(sources.length + 1).padStart(2, '0') }))
-    const imported = input.type === 'url' ? await mockApi.importSubscription(input.value) : undefined
-    const sourceId = addSource({ ...input, name: sourceName }, imported?.profiles)
+    const sourceId = await addSource({ ...input, name: sourceName })
     if (!sourceId) throw new Error(t('feedback.importError'))
     toast.success(input.type === 'url' ? t('feedback.subscriptionAdded') : t('feedback.keyAdded'))
   }
@@ -70,15 +67,11 @@ export function SourcesPage() {
   const refresh = async (source: Source) => {
     if (refreshingIds[source.id]) return
     setRefreshingIds((state) => ({ ...state, [source.id]: true }))
-    updateSource(source.id, { status: 'updating' })
     const toastId = toast.loading(t('feedback.refreshing', { name: source.name }))
     try {
-      const imported = await mockApi.refreshSource(source)
-      if (source.type === 'url') replaceSubscriptionProfiles(source.id, imported.profiles)
-      updateSource(source.id, { status: source.type === 'key' ? 'ready' : 'up-to-date', lastRefresh: source.type === 'key' ? 'Checked just now' : 'Updated just now' })
+      await refreshSource(source.id)
       toast.success(t('feedback.refreshed'), { id: toastId })
     } catch (refreshError) {
-      updateSource(source.id, { status: 'refresh-due' })
       toast.error(refreshError instanceof Error ? refreshError.message : t('feedback.refreshFailed'), { id: toastId })
     } finally {
       setRefreshingIds((state) => { const next = { ...state }; delete next[source.id]; return next })

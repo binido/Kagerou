@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::app_state::AppState;
 use crate::clash_api::{self, ClashApiClient};
@@ -25,10 +25,7 @@ fn new_id(prefix: &str) -> String {
 /// storing a profile: a successful parse gives the real protocol, and an
 /// unparseable-but-plausible-looking key still gets a scheme-based guess
 /// rather than rejecting the add outright (mirrors the frontend's existing
-/// leniency). Note: `Protocol` has no `Tuic` variant yet (tracked in
-/// CLAUDE.md's stage 3 note — the frontend type needs it added first), so
-/// a tuic:// key is stored as VLESS for now, same as the old mock did for
-/// any unrecognized scheme.
+/// leniency).
 fn detect_protocol(key: &str) -> Protocol {
     if let Ok(parsed) = subscription::parse_uri(key) {
         return match parsed.protocol_label() {
@@ -36,6 +33,7 @@ fn detect_protocol(key: &str) -> Protocol {
             "Trojan" => Protocol::Trojan,
             "Shadowsocks" => Protocol::Shadowsocks,
             "Hysteria2" => Protocol::Hysteria2,
+            "Tuic" => Protocol::Tuic,
             _ => Protocol::VLESS,
         };
     }
@@ -51,6 +49,7 @@ fn detect_protocol(key: &str) -> Protocol {
         "trojan" => Protocol::Trojan,
         "ss" => Protocol::Shadowsocks,
         "hysteria2" | "hy2" => Protocol::Hysteria2,
+        "tuic" => Protocol::Tuic,
         _ => Protocol::VLESS,
     }
 }
@@ -131,6 +130,41 @@ pub async fn connect(tun: bool, app: AppHandle, state: State<'_, AppState>) -> R
     tauri::async_runtime::spawn(async move {
         while let Some(event) = events.recv().await {
             let _ = traffic_app.emit("kagerou://traffic", &event);
+        }
+    });
+
+    let log_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut forwarded = 0usize;
+        let mut ticker = tokio::time::interval(Duration::from_millis(500));
+        loop {
+            ticker.tick().await;
+            let state = log_app.state::<AppState>();
+            let (logs, status) = {
+                let mut supervisor = state.supervisor.lock().unwrap();
+                supervisor.poll_events();
+                (
+                    supervisor.recent_logs().cloned().collect::<Vec<_>>(),
+                    supervisor.status().clone(),
+                )
+            };
+            let new_lines = if logs.len() >= forwarded {
+                &logs[forwarded..]
+            } else {
+                &logs[..]
+            };
+            for line in new_lines {
+                let _ = log_app.emit("kagerou://log", line);
+            }
+            forwarded = logs.len();
+            if let singbox::Status::Crashed { exit_code } = status {
+                let _ = log_app.emit("kagerou://connection-changed", false);
+                let _ = log_app.emit("kagerou://crashed", exit_code);
+                break;
+            }
+            if matches!(status, singbox::Status::Stopped) {
+                break;
+            }
         }
     });
 
@@ -403,6 +437,32 @@ pub struct AddSourceInput {
     pub value: String,
 }
 
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSourceInput {
+    pub name: Option<String>,
+    pub value: Option<String>,
+}
+
+#[tauri::command]
+pub fn update_source(
+    id: String,
+    patch: UpdateSourceInput,
+    state: State<AppState>,
+) -> Result<(), String> {
+    sources::update(
+        &state.db,
+        &id,
+        &sources::SourcePatch {
+            name: patch.name.as_deref(),
+            value: patch.value.as_deref(),
+            status: None,
+            last_refresh: None,
+        },
+    )
+    .map_err(to_err)
+}
+
 #[tauri::command]
 pub fn validate_source(kind: String, value: String) -> Option<String> {
     let value = value.trim();
@@ -563,6 +623,7 @@ fn parsed_outbound_to_new_profile(
         "Trojan" => Protocol::Trojan,
         "Shadowsocks" => Protocol::Shadowsocks,
         "Hysteria2" => Protocol::Hysteria2,
+        "Tuic" => Protocol::Tuic,
         _ => Protocol::VLESS,
     };
     NewProfile {

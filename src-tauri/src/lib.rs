@@ -46,6 +46,7 @@ pub fn run() {
             commands::rename_profile_group,
             commands::validate_source,
             commands::add_source,
+            commands::update_source,
             commands::refresh_source,
             commands::remove_source,
             commands::set_preset,

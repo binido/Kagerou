@@ -132,17 +132,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn set_preset_toggles_enabled_flag() {
+    fn the_base_migration_seeds_the_default_presets() {
         let db = Db::open_in_memory().unwrap();
         let presets = list_presets(&db).unwrap();
-        assert!(
-            presets.is_empty(),
-            "no presets are seeded by the base migration"
-        );
+        let ids: Vec<_> = presets.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(ids, vec!["bypass-lan", "block-ads"]);
+        assert!(presets.iter().all(|p| p.enabled), "defaults ship enabled");
+    }
 
-        db.lock()
-            .execute("INSERT INTO routing_presets (id, label, description, enabled, position) VALUES ('bypass-lan', 'Bypass LAN', 'd', 1, 0)", [])
-            .unwrap();
+    #[test]
+    fn set_preset_toggles_enabled_flag() {
+        let db = Db::open_in_memory().unwrap();
         set_preset(&db, "bypass-lan", false).unwrap();
         let presets = list_presets(&db).unwrap();
         assert!(!presets[0].enabled);

@@ -12,23 +12,27 @@ interface ProfileGroupDialogProps {
   open: boolean
   group?: ProfileGroup | null
   onOpenChange: (open: boolean) => void
-  onSubmit: (label: string) => boolean
+  onSubmit: (label: string) => boolean | Promise<boolean>
 }
 
 export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: ProfileGroupDialogProps) {
   const { t } = useTranslation('profiles')
   const [label, setLabel] = useState(group?.label ?? '')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const isRename = Boolean(group)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmed = label.trim().replace(/\s+/g, ' ')
     if (!trimmed) {
       setError(t('dialogs.group.empty'))
       return
     }
-    if (!onSubmit(trimmed)) {
+    setSubmitting(true)
+    const ok = await onSubmit(trimmed)
+    setSubmitting(false)
+    if (!ok) {
       setError(t('dialogs.group.duplicate'))
       return
     }
@@ -55,7 +59,7 @@ export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: Prof
           {error ? <FieldError className="text-[11px]">{error}</FieldError> : null}
           <DialogFooter>
             <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">{t('dialogs.group.cancel')}</Button>
-            <Button className="gap-1.5 bg-lavender text-ink hover:bg-lavender-hi" type="submit"><Check aria-hidden="true" className="size-3.5" />{isRename ? t('dialogs.group.save') : t('dialogs.group.create')}</Button>
+            <Button className="gap-1.5 bg-lavender text-ink hover:bg-lavender-hi" disabled={submitting} type="submit"><Check aria-hidden="true" className="size-3.5" />{isRename ? t('dialogs.group.save') : t('dialogs.group.create')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

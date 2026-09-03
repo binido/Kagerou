@@ -1,363 +1,307 @@
 import { create } from 'zustand'
 
-import {
-  initialLogs,
-  initialProfileGroups,
-  initialProfiles,
-  initialRoutingPresets,
-  initialRoutingRules,
-  initialSettings,
-  initialSources,
-  initialTelemetry,
-} from '@/lib/mock-data'
-import {
-  DEFAULT_PROFILE_GROUP_ID,
-  canMoveProfileToGroup,
-  normalizeGroupName,
-} from '@/lib/profile-groups'
+import { kagerouApi, type AppSnapshot } from '@/lib/tauri-api'
 import { getInitialThemeId, getTheme } from '@/themes'
 import { persistThemeId } from '@/themes/runtime'
 import type {
   AddLocalProfileInput,
   AddSourceInput,
   KagerouStore,
-  Profile,
-  ProfileDraft,
-  ProfileGroup,
+  LogEntry,
+  LogLevel,
   Source,
+  TelemetryPoint,
 } from '@/types/kagerou'
 
-let localProfileSequence = 1
+const DEFAULT_PROFILE_GROUP_ID = 'default'
+const MAX_LOG_ENTRIES = 500
+const MAX_TELEMETRY_POINTS = 60
 
-const createId = (prefix: string) => `${prefix}-${Date.now()}-${localProfileSequence++}`
+let logSequence = 0
+let backendEventsSubscribed = false
 
-const protocolFromKey = (key: string): Profile['protocol'] => {
-  const scheme = key.trim().split('://')[0]?.toLowerCase()
-  if (scheme === 'vmess') return 'VMess'
-  if (scheme === 'trojan') return 'Trojan'
-  if (scheme === 'ss') return 'Shadowsocks'
-  if (scheme === 'hysteria2') return 'Hysteria2'
-  return 'VLESS'
+/** Test-only: lets each test re-arm event subscription instead of being
+ * stuck with whichever mock handler happened to be installed first. */
+export const __resetBackendEventSubscriptionForTests = () => {
+  backendEventsSubscribed = false
 }
 
-const createLocalProfile = ({ name, key, groupId, sourceId }: AddLocalProfileInput, id = createId('local')): Profile => ({
-  id,
-  name: name.trim(),
-  region: 'Local profile',
-  protocol: protocolFromKey(key),
-  origin: 'local',
-  groupId: groupId ?? DEFAULT_PROFILE_GROUP_ID,
-  sourceId,
-  selected: false,
-  tcp: { value: 'Not tested', tone: 'muted' },
-  url: { value: 'Not tested', tone: 'muted' },
-  key: key.trim(),
+const applySnapshot = (snapshot: AppSnapshot) => ({
+  activeProfileId: snapshot.activeProfileId,
+  profiles: snapshot.profiles,
+  profileGroups: snapshot.profileGroups,
+  sources: snapshot.sources,
+  routingPresets: snapshot.routingPresets,
+  routingRules: snapshot.routingRules,
+  settings: snapshot.settings,
 })
 
-const createImportedProfile = (draft: ProfileDraft, groupId: string, sourceId: string, id = createId('imported')): Profile => ({
-  ...draft,
-  id,
-  groupId,
-  sourceId,
-  selected: false,
-})
-
-const groupForProfile = (profileId: string, groups: ProfileGroup[]) =>
-  groups.find((group) => group.profileIds.includes(profileId))
-
-const sourceGroupForSource = (sourceId: string, groups: ProfileGroup[]) =>
-  groups.find((group) => group.kind === 'subscription' && group.sourceId === sourceId)
-
-const sourceNameForKey = (value: string, fallbackNumber: number) => {
-  const scheme = value.split('://')[0]?.toUpperCase() || 'VPN'
-  return `${scheme} key ${String(fallbackNumber).padStart(2, '0')}`
+const detectLogLevel = (line: string): LogLevel => {
+  if (/\berror\b/i.test(line)) return 'ERROR'
+  if (/\bwarn(ing)?\b/i.test(line)) return 'WARN'
+  return 'INFO'
 }
 
-const replaceGroupProfiles = (
-  state: Pick<KagerouStore, 'profiles' | 'profileGroups' | 'activeProfileId'>,
-  sourceId: string,
-  drafts: ProfileDraft[],
-) => {
-  const group = sourceGroupForSource(sourceId, state.profileGroups)
-  if (!group) return null
+const toLogEntry = (line: string): LogEntry => ({
+  id: `log-${Date.now()}-${logSequence++}`,
+  timestamp: new Date().toISOString(),
+  level: detectLogLevel(line),
+  message: line,
+})
 
-  const existing = state.profiles.filter((profile) => profile.groupId === group.id)
-  const existingByKey = new Map(existing.map((profile) => [profile.key, profile]))
-  const activeProfile = state.profiles.find((profile) => profile.id === state.activeProfileId)
-  const nextProfiles = drafts.map((draft) => {
-    const matching = existingByKey.get(draft.key)
-    return createImportedProfile(draft, group.id, sourceId, matching?.id)
-  })
-  const nextIds = new Set(nextProfiles.map((profile) => profile.id))
-  const nextActiveId = activeProfile && activeProfile.groupId === group.id
-    ? nextProfiles.find((profile) => profile.key === activeProfile.key)?.id ?? nextProfiles[0]?.id ?? state.activeProfileId
-    : state.activeProfileId
+export const useKagerouStore = create<KagerouStore>((set, get) => {
+  const refresh = async () => {
+    const snapshot = await kagerouApi.getAppState()
+    set(applySnapshot(snapshot))
+  }
+
+  const subscribeToBackendEvents = () => {
+    if (backendEventsSubscribed) return
+    backendEventsSubscribed = true
+
+    void kagerouApi.onConnectionChanged((connected) => set({ connected }))
+
+    void kagerouApi.onTraffic((event) => {
+      if (event.kind !== 'sample') return
+      set((state) => {
+        const point: TelemetryPoint = { label: 'now', download: event.down, upload: event.up }
+        return { telemetry: [...state.telemetry.slice(-(MAX_TELEMETRY_POINTS - 1)), point] }
+      })
+    })
+
+    void kagerouApi.onLog((line) => {
+      set((state) => ({ logs: [...state.logs.slice(-(MAX_LOG_ENTRIES - 1)), toLogEntry(line)] }))
+    })
+
+    void kagerouApi.onCrashed(() => set({ connected: false }))
+  }
 
   return {
-    profileGroups: state.profileGroups.map((candidate) =>
-      candidate.id === group.id ? { ...candidate, profileIds: nextProfiles.map((profile) => profile.id) } : candidate,
-    ),
-    profiles: [
-      ...state.profiles.filter((profile) => profile.groupId !== group.id && !nextIds.has(profile.id)),
-      ...nextProfiles.map((profile) => ({ ...profile, selected: profile.id === nextActiveId })),
-    ],
-    activeProfileId: nextActiveId,
-  }
-}
+    hydrated: false,
+    sidebarCollapsed: false,
+    connected: false,
+    tunMode: true,
+    systemProxy: false,
+    activeProfileId: '',
+    profiles: [],
+    profileGroups: [],
+    sources: [],
+    routingPresets: [],
+    routingRules: [],
+    logs: [],
+    telemetry: [],
+    settings: {
+      theme: getInitialThemeId(),
+      language: 'en',
+      startup: true,
+      tunInterface: 'utun / tun0',
+      autoUpdateSubscriptions: false,
+      subscriptionUpdateInterval: '30',
+      customSubscriptionUpdateMinutes: 60,
+      groupSort: 'ping',
+    },
 
-export const useKagerouStore = create<KagerouStore>((set, get) => ({
-  sidebarCollapsed: false,
-  connected: true,
-  tunMode: true,
-  systemProxy: false,
-  activeProfileId: 'p-seattle',
-  profiles: initialProfiles,
-  profileGroups: initialProfileGroups,
-  sources: initialSources,
-  routingPresets: initialRoutingPresets,
-  routingRules: initialRoutingRules,
-  logs: initialLogs,
-  telemetry: initialTelemetry,
-  settings: { ...initialSettings, theme: getInitialThemeId() },
+    hydrate: async () => {
+      subscribeToBackendEvents()
+      const snapshot = await kagerouApi.getAppState()
+      set({ ...applySnapshot(snapshot), hydrated: true })
+    },
 
-  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  toggleConnection: () => set((state) => ({ connected: !state.connected })),
-  toggleMode: (mode) =>
-    set((state) => (mode === 'tun' ? { tunMode: !state.tunMode } : { systemProxy: !state.systemProxy })),
-  setProfileGroupOpen: (id, open) =>
-    set((state) => ({
-      profileGroups: state.profileGroups.map((group) =>
-        group.id === id ? { ...group, open } : group,
-      ),
-    })),
-  addProfileGroup: (label) => {
-    const trimmed = label.trim().replace(/\s+/g, ' ')
-    if (!trimmed || get().profileGroups.some((group) => normalizeGroupName(group.label) === normalizeGroupName(trimmed))) return null
+    toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
-    const id = createId('group')
-    set((state) => ({
-      profileGroups: [
-        ...state.profileGroups,
-        { id, label: trimmed, kind: 'custom', profileIds: [], open: true },
-      ],
-    }))
-    return id
-  },
-  renameProfileGroup: (id, label) => {
-    const trimmed = label.trim().replace(/\s+/g, ' ')
-    const current = get().profileGroups.find((group) => group.id === id)
-    if (
-      !trimmed ||
-      !current ||
-      current.kind === 'default' ||
-      get().profileGroups.some((group) => group.id !== id && normalizeGroupName(group.label) === normalizeGroupName(trimmed))
-    ) return false
+    toggleConnection: async () => {
+      const { connected, tunMode } = get()
+      try {
+        if (connected) await kagerouApi.disconnect()
+        else await kagerouApi.connect(tunMode)
+      } catch (error) {
+        console.error('toggleConnection failed', error)
+      }
+    },
 
-    set((state) => ({
-      profileGroups: state.profileGroups.map((group) => (group.id === id ? { ...group, label: trimmed } : group)),
-      sources: current.sourceId
-        ? state.sources.map((source) => (source.id === current.sourceId ? { ...source, name: trimmed } : source))
-        : state.sources,
-    }))
-    return true
-  },
-  selectProfile: (id) => {
-    if (!get().profiles.some((profile) => profile.id === id)) return
-    set((state) => ({
-      activeProfileId: id,
-      profiles: state.profiles.map((profile) => ({
-        ...profile,
-        selected: profile.id === id,
-      })),
-    }))
-  },
-  renameProfile: (id, name) => {
-    const trimmed = name.trim().replace(/\s+/g, ' ')
-    const profile = get().profiles.find((candidate) => candidate.id === id)
-    if (!profile || profile.origin !== 'local' || !trimmed) return false
-    set((state) => ({
-      profiles: state.profiles.map((candidate) => candidate.id === id ? { ...candidate, name: trimmed } : candidate),
-    }))
-    return true
-  },
-  addLocalProfile: (input) => {
-    const targetGroupId = input.groupId ?? DEFAULT_PROFILE_GROUP_ID
-    const targetGroup = get().profileGroups.find((group) => group.id === targetGroupId)
-    if (!targetGroup || targetGroup.kind === 'subscription') return null
+    toggleMode: (mode) =>
+      set((state) => (mode === 'tun' ? { tunMode: !state.tunMode } : { systemProxy: !state.systemProxy })),
 
-    const profile = createLocalProfile({ ...input, groupId: targetGroupId })
-    set((state) => ({
-      profiles: [...state.profiles, profile],
-      profileGroups: state.profileGroups.map((group) =>
-        group.id === targetGroupId ? { ...group, profileIds: [...group.profileIds, profile.id], open: true } : group,
-      ),
-    }))
-    return profile.id
-  },
-  deleteProfile: (id) => {
-    const profile = get().profiles.find((candidate) => candidate.id === id)
-    if (!profile || profile.origin !== 'local') return
-    const remaining = get().profiles.filter((candidate) => candidate.id !== id)
-    const nextActive = get().activeProfileId === id ? remaining[0]?.id ?? '' : get().activeProfileId
-    set((state) => ({
-      activeProfileId: nextActive,
-      profiles: state.profiles
-        .filter((candidate) => candidate.id !== id)
-        .map((candidate) => ({ ...candidate, selected: candidate.id === nextActive })),
-      profileGroups: state.profileGroups.map((group) => ({
-        ...group,
-        profileIds: group.profileIds.filter((profileId) => profileId !== id),
-      })),
-    }))
-  },
-  moveProfileToGroup: (profileId, targetGroupId) => {
-    const profile = get().profiles.find((candidate) => candidate.id === profileId)
-    const currentGroup = profile ? groupForProfile(profileId, get().profileGroups) : undefined
-    const targetGroup = get().profileGroups.find((group) => group.id === targetGroupId)
-    if (!profile || !canMoveProfileToGroup(profile, currentGroup, targetGroup)) return false
-
-    set((state) => ({
-      profiles: state.profiles.map((candidate) => candidate.id === profileId ? { ...candidate, groupId: targetGroupId } : candidate),
-      profileGroups: state.profileGroups.map((group) => {
-        if (group.id === currentGroup?.id) return { ...group, profileIds: group.profileIds.filter((id) => id !== profileId) }
-        if (group.id === targetGroupId) return { ...group, profileIds: [...group.profileIds, profileId], open: true }
-        return group
-      }),
-    }))
-    return true
-  },
-  moveProfile: (id, direction) => {
-    const profile = get().profiles.find((candidate) => candidate.id === id)
-    const group = profile ? groupForProfile(id, get().profileGroups) : undefined
-    if (!profile || !group) return false
-    const index = group.profileIds.indexOf(id)
-    const nextIndex = direction === 'up' ? index - 1 : index + 1
-    if (index < 0 || nextIndex < 0 || nextIndex >= group.profileIds.length) return false
-    const profileIds = [...group.profileIds]
-    ;[profileIds[index], profileIds[nextIndex]] = [profileIds[nextIndex], profileIds[index]]
-    set((state) => ({
-      profileGroups: state.profileGroups.map((candidate) =>
-        candidate.id === group.id ? { ...candidate, profileIds } : candidate,
-      ),
-    }))
-    return true
-  },
-  reorderProfiles: (fromId, toId) => {
-    if (fromId === toId) return false
-    const fromProfile = get().profiles.find((profile) => profile.id === fromId)
-    const toProfile = get().profiles.find((profile) => profile.id === toId)
-    if (!fromProfile || !toProfile || fromProfile.groupId !== toProfile.groupId) return false
-    const group = get().profileGroups.find((candidate) => candidate.id === fromProfile.groupId)
-    if (!group) return false
-    const profileIds = [...group.profileIds]
-    const fromIndex = profileIds.indexOf(fromId)
-    const toIndex = profileIds.indexOf(toId)
-    if (fromIndex < 0 || toIndex < 0) return false
-    profileIds.splice(fromIndex, 1)
-    profileIds.splice(toIndex, 0, fromId)
-    set((state) => ({
-      profileGroups: state.profileGroups.map((candidate) =>
-        candidate.id === group.id ? { ...candidate, profileIds } : candidate,
-      ),
-    }))
-    return true
-  },
-  setTestResult: (id, method, result) =>
-    set((state) => ({
-      profiles: state.profiles.map((profile) =>
-        profile.id === id ? { ...profile, [method]: result } : profile,
-      ),
-    })),
-  replaceSubscriptionProfiles: (sourceId, drafts) => {
-    const replacement = replaceGroupProfiles(get(), sourceId, drafts)
-    if (!replacement) return false
-    set(replacement)
-    return true
-  },
-  addSource: (input: AddSourceInput, importedProfiles = []) => {
-    const value = input.value.trim()
-    const sourceId = createId('source')
-    const name = input.name?.trim() || (input.type === 'key' ? sourceNameForKey(value, get().sources.length + 1) : `Subscription ${String(get().sources.length + 1).padStart(2, '0')}`)
-    const source: Source = {
-      id: sourceId,
-      name,
-      type: input.type,
-      value,
-      status: input.type === 'url' ? 'up-to-date' : 'ready',
-      lastRefresh: input.type === 'url' ? 'Updated just now' : 'Added just now',
-      originLabel: input.type === 'url' ? 'Remote URL' : 'Local key',
-    }
-
-    if (input.type === 'key') {
-      const profile = createLocalProfile({ name, key: value, sourceId })
+    setProfileGroupOpen: (id, open) => {
       set((state) => ({
-        sources: [...state.sources, source],
-        profiles: [...state.profiles, profile],
-        profileGroups: state.profileGroups.map((group) => group.id === DEFAULT_PROFILE_GROUP_ID
-          ? { ...group, profileIds: [...group.profileIds, profile.id], open: true }
-          : group),
+        profileGroups: state.profileGroups.map((group) => (group.id === id ? { ...group, open } : group)),
       }))
-      return sourceId
-    }
+      void kagerouApi.setProfileGroupOpen(id, open).catch((error) => console.error('setProfileGroupOpen failed', error))
+    },
 
-    const groupId = `subscription-${sourceId}`
-    const profiles = importedProfiles.map((profile) => createImportedProfile(profile, groupId, sourceId))
-    set((state) => ({
-      sources: [...state.sources, source],
-      profiles: [...state.profiles, ...profiles],
-      profileGroups: [
-        ...state.profileGroups,
-        { id: groupId, label: name, kind: 'subscription', sourceId, profileIds: profiles.map((profile) => profile.id), open: true },
-      ],
-    }))
-    return sourceId
-  },
-  updateSource: (id, patch) => {
-    const source = get().sources.find((candidate) => candidate.id === id)
-    if (!source) return false
-    const nextName = patch.name?.trim()
-    if (patch.name !== undefined && !nextName) return false
+    addProfileGroup: async (label) => {
+      try {
+        const id = await kagerouApi.addProfileGroup(label)
+        await refresh()
+        return id
+      } catch {
+        return null
+      }
+    },
 
-    set((state) => ({
-      sources: state.sources.map((candidate) => candidate.id === id ? { ...candidate, ...patch, ...(nextName ? { name: nextName } : {}) } : candidate),
-      profileGroups: source.type === 'url' && nextName
-        ? state.profileGroups.map((group) => group.sourceId === id ? { ...group, label: nextName } : group)
-        : state.profileGroups,
-    }))
-    return true
-  },
-  removeSource: (id) => {
-    const source = get().sources.find((candidate) => candidate.id === id)
-    if (!source) return false
+    renameProfileGroup: async (id, label) => {
+      try {
+        await kagerouApi.renameProfileGroup(id, label)
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
 
-    set((state) => ({
-      sources: state.sources.filter((candidate) => candidate.id !== id),
-      profiles: state.profiles.map((profile) => profile.sourceId === id ? { ...profile, sourceId: undefined, origin: source.type === 'url' ? 'local' : profile.origin } : profile),
-      profileGroups: state.profileGroups.map((group) => group.sourceId === id
-        ? { ...group, kind: 'custom', sourceId: undefined }
-        : group),
-    }))
-    return true
-  },
-  setPreset: (id, enabled) =>
-    set((state) => ({
-      routingPresets: state.routingPresets.map((preset) =>
-        preset.id === id ? { ...preset, enabled } : preset,
-      ),
-    })),
-  selectRule: (id) =>
-    set((state) => ({
-      routingRules: state.routingRules.map((rule) => ({ ...rule, selected: rule.id === id })),
-    })),
-  updateRule: (id, patch) =>
-    set((state) => ({
-      routingRules: state.routingRules.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)),
-    })),
-  setTheme: (themeId) => {
-    const theme = getTheme(themeId)
-    if (!theme) return
-    set((state) => ({ settings: { ...state.settings, theme: theme.id } }))
-    persistThemeId(theme.id)
-  },
-  updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
-}))
+    selectProfile: async (id) => {
+      if (!get().profiles.some((profile) => profile.id === id)) return
+      set((state) => ({
+        activeProfileId: id,
+        profiles: state.profiles.map((profile) => ({ ...profile, selected: profile.id === id })),
+      }))
+      try {
+        await kagerouApi.selectProfile(id)
+      } catch (error) {
+        console.error('selectProfile failed', error)
+        await refresh()
+      }
+    },
+
+    addLocalProfile: async (input: AddLocalProfileInput) => {
+      try {
+        const id = await kagerouApi.addLocalProfile({ ...input, groupId: input.groupId ?? DEFAULT_PROFILE_GROUP_ID })
+        await refresh()
+        return id
+      } catch {
+        return null
+      }
+    },
+
+    renameProfile: async (id, name) => {
+      try {
+        await kagerouApi.renameProfile(id, name)
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+
+    deleteProfile: async (id) => {
+      try {
+        await kagerouApi.deleteProfile(id)
+        await refresh()
+      } catch (error) {
+        console.error('deleteProfile failed', error)
+      }
+    },
+
+    moveProfileToGroup: async (profileId, targetGroupId) => {
+      try {
+        await kagerouApi.moveProfileToGroup(profileId, targetGroupId)
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+
+    moveProfile: async (id, direction) => {
+      try {
+        await kagerouApi.moveProfile(id, direction)
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+
+    reorderProfiles: async (fromId, toId) => {
+      try {
+        await kagerouApi.reorderProfiles(fromId, toId)
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+
+    runProfileTest: async (id, method) => {
+      try {
+        const result = await kagerouApi.runProfileTest(id, method)
+        set((state) => ({
+          profiles: state.profiles.map((profile) => (profile.id === id ? { ...profile, [method]: result } : profile)),
+        }))
+        return result
+      } catch (error) {
+        console.error('runProfileTest failed', error)
+        return null
+      }
+    },
+
+    addSource: async (input: AddSourceInput) => {
+      try {
+        const id = await kagerouApi.addSource(input)
+        await refresh()
+        return id
+      } catch {
+        return null
+      }
+    },
+
+    updateSource: async (id, patch: Partial<Pick<Source, 'name' | 'value'>>) => {
+      try {
+        await kagerouApi.updateSource(id, patch)
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+
+    refreshSource: async (id) => {
+      await kagerouApi.refreshSource(id)
+      await refresh()
+    },
+
+    removeSource: async (id) => {
+      try {
+        await kagerouApi.removeSource(id)
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+
+    setPreset: (id, enabled) => {
+      set((state) => ({
+        routingPresets: state.routingPresets.map((preset) => (preset.id === id ? { ...preset, enabled } : preset)),
+      }))
+      void kagerouApi.setPreset(id, enabled).catch((error) => console.error('setPreset failed', error))
+    },
+
+    selectRule: (id) => {
+      set((state) => ({
+        routingRules: state.routingRules.map((rule) => ({ ...rule, selected: rule.id === id })),
+      }))
+      void kagerouApi.selectRule(id).catch((error) => console.error('selectRule failed', error))
+    },
+
+    updateRule: (id, patch) => {
+      set((state) => ({
+        routingRules: state.routingRules.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)),
+      }))
+      void kagerouApi.updateRule(id, patch).catch((error) => console.error('updateRule failed', error))
+    },
+
+    setTheme: (themeId) => {
+      const theme = getTheme(themeId)
+      if (!theme) return
+      set((state) => ({ settings: { ...state.settings, theme: theme.id } }))
+      persistThemeId(theme.id)
+      void kagerouApi.setTheme(theme.id).catch((error) => console.error('setTheme failed', error))
+    },
+
+    updateSettings: (patch) => {
+      set((state) => ({ settings: { ...state.settings, ...patch } }))
+      void kagerouApi.updateSettings(patch).catch((error) => console.error('updateSettings failed', error))
+    },
+  }
+})

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { routeOutboundOptions } from '@/lib/mock-data'
+import { routeOutboundOptions } from '@/types/kagerou'
 import type { Outbound, RoutingRule } from '@/types/kagerou'
 
 type OutboundTranslationKey = 'table.direct' | 'table.proxy' | 'table.block'
