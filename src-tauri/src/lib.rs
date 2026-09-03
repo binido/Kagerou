@@ -20,11 +20,7 @@ pub fn run() {
 
             let db = storage::Db::open(app_data_dir.join("kagerou.sqlite3"))?;
             let config_path = app_data_dir.join("sing-box-config.json");
-            // "sing-box" is resolved via PATH at spawn time; once the real
-            // binary is bundled as a Tauri sidecar this should become the
-            // resolved sidecar path instead (see CLAUDE.md's notes on
-            // stage 9's known limitations).
-            let sing_box_binary = std::path::PathBuf::from("sing-box");
+            let sing_box_binary = singbox::sidecar_path("sing-box")?;
 
             app.manage(AppState::new(db, sing_box_binary, config_path));
             Ok(())

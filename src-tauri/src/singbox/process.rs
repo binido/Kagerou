@@ -21,6 +21,9 @@ pub enum ProcessError {
 
     #[error("failed to stop sing-box: {0}")]
     KillFailed(String),
+
+    #[error("could not locate the bundled sing-box binary: {0}")]
+    SidecarNotFound(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -45,6 +48,29 @@ impl ChildHandle {
 
 pub trait Launcher: Send + Sync {
     fn launch(&self, config_path: &Path) -> Result<ChildHandle, ProcessError>;
+}
+
+/// Resolves a `bundle.externalBin` sidecar: Tauri drops it next to the app's
+/// own executable, with the target triple stripped from the name.
+/// `tauri_plugin_shell` resolves it the same way but only hands back a
+/// ready-to-spawn `Command`; we need the path itself, because TUN mode has to
+/// wrap the binary in an elevation command of its own (see `crate::privilege`).
+pub fn sidecar_path(name: &str) -> Result<PathBuf, ProcessError> {
+    let exe = tauri::utils::platform::current_exe()
+        .map_err(|e| ProcessError::SidecarNotFound(e.to_string()))?;
+    let dir = exe
+        .parent()
+        .ok_or_else(|| ProcessError::SidecarNotFound(format!("{} has no parent", exe.display())))?;
+    Ok(sidecar_in(dir, name))
+}
+
+fn sidecar_in(exe_dir: &Path, name: &str) -> PathBuf {
+    let mut path = exe_dir.join(name);
+    if cfg!(windows) {
+        // Not `set_extension`: that would eat any dot already in the name.
+        path.as_mut_os_string().push(".exe");
+    }
+    path
 }
 
 /// Spawns the real sing-box binary via `std::process::Command`, streaming
@@ -365,6 +391,17 @@ mod tests {
         control.send_event(ProcessEvent::Exited { code: None });
         sup.poll_events();
         assert!(matches!(sup.stop().unwrap_err(), ProcessError::NotRunning));
+    }
+
+    #[test]
+    fn a_sidecar_sits_next_to_the_executable_under_its_platform_name() {
+        let resolved = sidecar_in(Path::new("/apps/Kagerou.app/Contents/MacOS"), "sing-box");
+        let expected = if cfg!(windows) {
+            "/apps/Kagerou.app/Contents/MacOS/sing-box.exe"
+        } else {
+            "/apps/Kagerou.app/Contents/MacOS/sing-box"
+        };
+        assert_eq!(resolved, Path::new(expected));
     }
 
     #[test]
