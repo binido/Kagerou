@@ -60,7 +60,7 @@ export function SourcesPage() {
     const imported = input.type === 'url' ? await mockApi.importSubscription(input.value) : undefined
     const sourceId = addSource({ ...input, name: sourceName }, imported?.profiles)
     if (!sourceId) throw new Error('The source could not be added.')
-    toast.success(input.type === 'url' ? 'Subscription added · profiles grouped' : 'Single key added to Default')
+    toast.success(input.type === 'url' ? 'Subscription added · VPNs grouped' : 'Single key added to Default')
   }
 
   const refresh = async (source: Source) => {
@@ -72,7 +72,7 @@ export function SourcesPage() {
       const imported = await mockApi.refreshSource(source)
       if (source.type === 'url') replaceSubscriptionProfiles(source.id, imported.profiles)
       updateSource(source.id, { status: source.type === 'key' ? 'ready' : 'up-to-date', lastRefresh: source.type === 'key' ? 'Checked just now' : 'Updated just now' })
-      toast.success('Source refreshed · profiles are ready', { id: toastId })
+      toast.success('Source refreshed · VPNs are ready', { id: toastId })
     } catch (refreshError) {
       updateSource(source.id, { status: 'refresh-due' })
       toast.error(refreshError instanceof Error ? refreshError.message : 'Source refresh failed.', { id: toastId })
@@ -86,7 +86,7 @@ export function SourcesPage() {
     const name = removingSource.name
     removeSource(removingSource.id)
     setRemovingSource(null)
-    toast.success(`${name} removed · profiles are now local`)
+    toast.success(`${name} removed · VPNs are now local`)
   }
 
   const profileCount = profiles.length
@@ -94,12 +94,12 @@ export function SourcesPage() {
   return (
     <div className="min-h-screen min-w-0 bg-canvas px-6 pb-12 pt-8 lg:px-12 lg:pt-10">
       <div className="mx-auto w-full max-w-[1040px]">
-        <PageHeader actions={<AddSourceMenu onChoose={openAdd} />} description="Manage subscriptions and single keys that provide profiles to Kagerou." eyebrow="Kagerou  /  Profile sources" title="Sources" />
+        <PageHeader actions={<AddSourceMenu onChoose={openAdd} />} description="Manage subscriptions and single keys that provide VPNs to Kagerou." eyebrow="Kagerou  /  VPN sources" title="Sources" />
         <div className="mt-8 flex items-center justify-between border-b border-hairline pb-3 max-[720px]:items-start max-[720px]:gap-4">
-          <p className="type-data text-body">{sources.length} sources <span className="px-1.5 text-quiet">·</span> {profileCount} profiles</p>
-          <p className="flex items-center gap-2 text-[11px] text-muted-copy max-[720px]:text-right"><Info aria-hidden="true" className="size-3.5 shrink-0" />Groups and order live on Profiles</p>
+          <p className="type-data text-body">{sources.length} sources <span className="px-1.5 text-quiet">·</span> {profileCount} VPNs</p>
+          <p className="flex items-center gap-2 text-[11px] text-muted-copy max-[720px]:text-right"><Info aria-hidden="true" className="size-3.5 shrink-0" />Groups and order live on Groups</p>
         </div>
-        <section aria-label="Profile sources" className="mt-4 space-y-3">
+        <section aria-label="VPN sources" className="mt-4 space-y-3">
           {sources.map((source) => <SourceCard key={source.id} onEdit={() => openEdit(source)} onRefresh={() => void refresh(source)} onRemove={() => setRemovingSource(source)} profileCount={profileCountBySourceId[source.id] ?? 0} refreshing={Boolean(refreshingIds[source.id])} source={source} />)}
         </section>
       </div>

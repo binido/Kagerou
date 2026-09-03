@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const navigation: Array<{ key: RouteKey; label: string; to: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { key: 'profiles', label: 'Profiles', to: '/profiles', icon: Server },
+  { key: 'groups', label: 'Groups', to: '/groups', icon: Server },
   { key: 'sources', label: 'Sources', to: '/sources', icon: Rss },
   { key: 'routing-rules', label: 'Routing rules', to: '/routing-rules', icon: Route },
   { key: 'logs', label: 'Logs', to: '/logs', icon: FileText },

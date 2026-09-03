@@ -16,7 +16,7 @@ export function RemoveSourceDialog({ source, onOpenChange, onConfirm }: RemoveSo
         <AlertDialogHeader>
           <p className="type-eyebrow !text-bad">Remove source</p>
           <AlertDialogTitle className="type-display mt-2 text-[23px] text-primary">Remove this source?</AlertDialogTitle>
-          <AlertDialogDescription className="text-[13px] leading-5 text-body">{subscription ? 'The subscription will stop refreshing. Its profiles stay available in a new local group that you can reorganize.' : 'The key source will be removed. Its local profile stays in Default and remains available.'}</AlertDialogDescription>
+          <AlertDialogDescription className="text-[13px] leading-5 text-body">{subscription ? 'The subscription will stop refreshing. Its VPNs stay available in a new local group that you can reorganize.' : 'The key source will be removed. Its local VPN stays in Default and remains available.'}</AlertDialogDescription>
         </AlertDialogHeader>
         <p className="rounded-lg bg-canvas px-3 py-2.5 font-mono text-[11px] text-muted-copy">{source?.name}</p>
         <AlertDialogFooter><AlertDialogCancel>Keep source</AlertDialogCancel><AlertDialogAction className="bg-bad text-[#21171a] hover:bg-bad/85" onClick={onConfirm}>Remove source</AlertDialogAction></AlertDialogFooter>

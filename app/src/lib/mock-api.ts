@@ -110,7 +110,7 @@ export const mockApi = {
 
     return /^(vless|vmess|trojan|ss|hysteria2):\/\/[^\s]+$/i.test(value)
       ? null
-      : 'Enter a valid profile key such as vless://…'
+      : 'Enter a valid VPN key such as vless://…'
   },
 
   protocolFromKey,

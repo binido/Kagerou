@@ -1,6 +1,6 @@
 export type RouteKey =
   | 'dashboard'
-  | 'profiles'
+  | 'groups'
   | 'sources'
   | 'routing-rules'
   | 'logs'

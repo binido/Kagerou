@@ -51,9 +51,9 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
     <Dialog onOpenChange={(nextOpen) => { if (!submitting) onOpenChange(nextOpen) }} open={open}>
       <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[500px]">
         <DialogHeader>
-          <p className="type-eyebrow">Profile source</p>
+          <p className="type-eyebrow">VPN source</p>
           <DialogTitle className="type-display mt-2 text-2xl text-primary">{editing ? 'Edit source' : 'Add source'}</DialogTitle>
-          <DialogDescription className="text-[12px] leading-5 text-muted-copy">{editing ? 'Update the source label or its value. Subscription profiles stay in the same locked group.' : 'Add a subscription or a single key. Subscriptions receive their own managed profile group.'}</DialogDescription>
+          <DialogDescription className="text-[12px] leading-5 text-muted-copy">{editing ? 'Update the source label or its value. Subscription VPNs stay in the same locked group.' : 'Add a subscription or a single key. Subscriptions receive their own managed group.'}</DialogDescription>
         </DialogHeader>
         <ToggleGroup aria-label="Source type" className="grid w-full grid-cols-2 gap-1 rounded-lg bg-canvas p-1" disabled={editing || submitting} onValueChange={(next) => { if (next) { setType(next as SourceType); setError('') } }} type="single" value={type}>
           <ToggleGroupItem className="h-10 gap-2 rounded-md text-[12px] text-body data-[state=on]:bg-selected data-[state=on]:text-primary" value="url"><Rss aria-hidden="true" className="size-4" />Subscription URL</ToggleGroupItem>
@@ -62,14 +62,14 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
         {editing ? <p className="text-[11px] text-muted-copy">Source type cannot be changed while editing.</p> : null}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <Field>
-            <FieldLabel className="text-[13px] text-primary" htmlFor="source-name">{type === 'url' ? 'Subscription name (optional)' : 'Profile name (optional)'}</FieldLabel>
+            <FieldLabel className="text-[13px] text-primary" htmlFor="source-name">{type === 'url' ? 'Subscription name (optional)' : 'VPN name (optional)'}</FieldLabel>
             <Input autoComplete="off" className="h-11 border-white/10 bg-surface text-[13px]" disabled={submitting} id="source-name" onChange={(event) => setName(event.target.value)} placeholder={type === 'url' ? 'e.g. Personal / North America' : 'e.g. Emergency access'} value={name} />
             <FieldDescription className="text-[11px] leading-4 text-muted-copy">{type === 'url' ? 'Leave blank to use the subscription URL hostname.' : 'Leave blank to use the key scheme as the label.'}</FieldDescription>
           </Field>
           <Field>
-            <FieldLabel className="text-[13px] text-primary" htmlFor="source-value">{type === 'url' ? 'Source URL' : 'Profile key'}</FieldLabel>
-            <Input aria-describedby="source-helper" autoFocus={!name} className="h-11 border-white/10 bg-surface text-[13px] font-mono" disabled={submitting} id="source-value" onChange={(event) => setValue(event.target.value)} placeholder={type === 'url' ? 'https://example.com/profiles' : 'vless://your-key'} value={value} />
-            <FieldDescription className="flex items-center gap-1.5 text-[11px] leading-4 text-muted-copy" id="source-helper"><Info aria-hidden="true" className="size-3.5" />{type === 'url' ? 'All imported profiles stay together in the subscription group.' : 'Creates one local profile in Default. It can be moved later.'}</FieldDescription>
+            <FieldLabel className="text-[13px] text-primary" htmlFor="source-value">{type === 'url' ? 'Source URL' : 'VPN key'}</FieldLabel>
+            <Input aria-describedby="source-helper" autoFocus={!name} className="h-11 border-white/10 bg-surface text-[13px] font-mono" disabled={submitting} id="source-value" onChange={(event) => setValue(event.target.value)} placeholder={type === 'url' ? 'https://example.com/vpn-list' : 'vless://your-key'} value={value} />
+            <FieldDescription className="flex items-center gap-1.5 text-[11px] leading-4 text-muted-copy" id="source-helper"><Info aria-hidden="true" className="size-3.5" />{type === 'url' ? 'All imported VPNs stay together in the subscription group.' : 'Creates one local VPN in Default. It can be moved later.'}</FieldDescription>
           </Field>
           {error ? <FieldError className="text-[11px]">{error}</FieldError> : null}
           <DialogFooter>

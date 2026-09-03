@@ -31,7 +31,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
         <TableHeader>
           <TableRow className="border-b border-hairline hover:bg-transparent">
             <TableHead className="w-[58px] px-5 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">Order</TableHead>
-            <TableHead className="min-w-[270px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">Profile</TableHead>
+            <TableHead className="min-w-[270px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">VPN</TableHead>
             <TableHead className="w-[108px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">Protocol</TableHead>
             <TableHead className="w-[122px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">TCP</TableHead>
             <TableHead className="w-[126px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">URL</TableHead>
@@ -66,7 +66,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
                 <TableCell className="max-w-[330px] px-3 py-4 align-middle">
                   <div className="min-w-0">
                     <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[14px] font-medium text-primary">{profile.name}</span><Badge className={cn('h-5 rounded-md px-1.5 py-0 text-[10px] font-semibold', profile.origin === 'local' ? 'bg-lavender/15 text-lavender-hi' : 'bg-good/15 text-good')} variant="outline">{profile.origin === 'local' ? 'Local' : 'Imported'}</Badge></div>
-                    <span className="mt-1 block truncate text-[11px] text-muted-copy">{profile.origin === 'local' ? 'Local profile' : 'Managed by subscription'}</span>
+                    <span className="mt-1 block truncate text-[11px] text-muted-copy">{profile.origin === 'local' ? 'Local VPN' : 'Managed by subscription'}</span>
                   </div>
                 </TableCell>
                 <TableCell className="px-3 py-4 align-middle"><span className="inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[10px] text-body">{profile.protocol}</span></TableCell>

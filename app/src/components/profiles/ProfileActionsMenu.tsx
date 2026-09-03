@@ -48,7 +48,7 @@ export function ProfileActionsMenu({ profile, movableGroups, onRename, onMove, o
       <DropdownMenuContent align="end" className="w-56 border-hairline bg-popover p-1.5 text-[11px]" sideOffset={8}>
         <DropdownMenuItem disabled={!local} onSelect={onRename}>
           <Pencil aria-hidden="true" className="size-3.5" />
-          <span>Rename profile</span>
+          <span>Rename VPN</span>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onMove('up')}>
           <ArrowUp aria-hidden="true" className="size-3.5" />
@@ -74,7 +74,7 @@ export function ProfileActionsMenu({ profile, movableGroups, onRename, onMove, o
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-bad focus:bg-bad/10 focus:text-bad" disabled={!local} onSelect={onDelete}>
           <Trash2 aria-hidden="true" className="size-3.5" />
-          <span>Delete profile</span>
+          <span>Delete VPN</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>

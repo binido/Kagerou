@@ -38,10 +38,10 @@ export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: Prof
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[440px]">
         <DialogHeader>
-          <p className="type-eyebrow">Profile groups</p>
+          <p className="type-eyebrow">Groups</p>
           <DialogTitle className="type-display mt-2 text-2xl text-primary">{isRename ? 'Rename group' : 'New group'}</DialogTitle>
           <DialogDescription className="text-[12px] leading-5 text-muted-copy">
-            {isRename ? 'Change the label shown above this profile collection.' : 'Create a local group for single keys you want to keep together.'}
+            {isRename ? 'Change the label shown above this group.' : 'Create a local group for single keys you want to keep together.'}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-5" onSubmit={handleSubmit}>

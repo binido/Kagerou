@@ -219,8 +219,8 @@ export const initialRoutingRules: RoutingRule[] = [
 
 const logFixtures: Array<[LogLevel, string]> = [
   ['INFO', 'core service started; build 1.8.4 (linux/amd64)'],
-  ['INFO', 'loaded 3 profiles from local store'],
-  ['INFO', 'active profile set to Tokyo · Edge 01'],
+  ['INFO', 'loaded 3 VPNs from local store'],
+  ['INFO', 'active VPN set to Tokyo · Edge 01'],
   ['INFO', 'TUN interface created: kagerou0 / 10.8.0.2'],
   ['INFO', 'system proxy enabled for HTTP and SOCKS5'],
   ['INFO', 'route table synced: 18 rules / 6 direct'],

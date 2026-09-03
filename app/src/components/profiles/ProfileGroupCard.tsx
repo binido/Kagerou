@@ -35,7 +35,7 @@ export function ProfileGroupCard({ group, profiles, movableGroups, runningTests,
           {group.open ? <ChevronDown aria-hidden="true" className="size-[18px] shrink-0 text-muted-copy" strokeWidth={1.7} /> : <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-muted-copy" strokeWidth={1.7} />}
           <span className="min-w-0">
             <span className="block truncate text-[17px] font-semibold tracking-[-0.015em]">{group.label}</span>
-            <span className="mt-1 block text-[12px] font-normal text-muted-copy">{profiles.length} {profiles.length === 1 ? 'profile' : 'profiles'}{isDefault ? ' · single keys start here' : ''}</span>
+            <span className="mt-1 block text-[12px] font-normal text-muted-copy">{profiles.length} {profiles.length === 1 ? 'VPN' : 'VPNs'}{isDefault ? ' · single keys start here' : ''}</span>
           </span>
         </Button>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -53,9 +53,9 @@ export function ProfileGroupCard({ group, profiles, movableGroups, runningTests,
         <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
           <ProfileTable movableGroups={movableGroups} onDelete={onDelete} onMove={onMove} onMoveToGroup={onMoveToGroup} onRename={onRename} onReorder={onReorder} onSelect={onSelect} onTest={onTest} profiles={profiles} runningTests={runningTests} />
           {isSubscription ? (
-            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Radar aria-hidden="true" className="size-3.5 text-lavender" />Subscription profiles stay with this source. Rename or refresh the source to update them.</div>
+            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Radar aria-hidden="true" className="size-3.5 text-lavender" />Subscription VPNs stay with this source. Rename or refresh the source to update them.</div>
           ) : isDefault ? (
-            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Folder aria-hidden="true" className="size-3.5 text-lavender" />Single keys can be moved from Default into any custom group.</div>
+            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Folder aria-hidden="true" className="size-3.5 text-lavender" />Single-key VPNs can be moved from Default into any custom group.</div>
           ) : null}
         </div>
       ) : null}

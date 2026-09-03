@@ -4,7 +4,7 @@ export const pluralize = (
   plural = `${singular}s`,
 ) => `${count} ${count === 1 ? singular : plural}`
 
-export const formatProfileCount = (count: number) => pluralize(count, 'profile')
+export const formatVpnCount = (count: number) => pluralize(count, 'VPN', 'VPNs')
 export const formatSourceCount = (count: number) => pluralize(count, 'source')
 
 export const formatLogCount = (count: number, query: string) =>
