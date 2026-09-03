@@ -114,7 +114,7 @@ pub async fn connect(tun: bool, app: AppHandle, state: State<'_, AppState>) -> R
         .supervisor
         .lock()
         .unwrap()
-        .start(&state.paths.config_path)
+        .start(&state.paths.config_path, tun)
         .map_err(to_err)?;
 
     let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));

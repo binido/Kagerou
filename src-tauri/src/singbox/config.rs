@@ -72,8 +72,11 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
         "type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": input.mixed_listen_port,
     })];
     if input.tun {
+        // ponytail: no `interface_name` — sing-box picks a valid one per
+        // platform (macOS only accepts `utunN`). Set it explicitly only if
+        // users ever need to pin the device name.
         inbounds.push(json!({
-            "type": "tun", "tag": "tun-in", "interface_name": "kagerou0",
+            "type": "tun", "tag": "tun-in",
             "address": ["172.19.0.1/30"], "auto_route": true, "strict_route": true, "stack": "system",
         }));
     }
@@ -264,6 +267,17 @@ mod tests {
             .map(|i| i["type"].as_str().unwrap().to_string())
             .collect();
         assert!(inbound_types.contains(&"tun".to_string()));
+        let tun = config["inbounds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["type"] == "tun")
+            .unwrap();
+        assert!(
+            tun["interface_name"].is_null(),
+            "a hardcoded interface name is not valid on every platform; \
+             sing-box should choose one: {tun}"
+        );
 
         input.tun = false;
         let config = generate(&input).unwrap();
