@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ConnectionStage } from '@/components/dashboard/ConnectionStage'
 import { TelemetryPanel } from '@/components/dashboard/TelemetryPanel'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { getReachabilityAwarePing } from '@/lib/profile-sorting'
 import { useKagerouStore } from '@/store/kagerou-store'
 
 export function DashboardPage() {
@@ -16,6 +17,7 @@ export function DashboardPage() {
   const toggleConnection = useKagerouStore((state) => state.toggleConnection)
   const toggleMode = useKagerouStore((state) => state.toggleMode)
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0]
+  const ping = activeProfile ? getReachabilityAwarePing(activeProfile) : { value: 'Not tested', tone: 'muted' as const }
 
   return (
     <div className="min-h-screen min-w-0 bg-canvas px-6 py-7 lg:px-12 lg:py-9">
@@ -27,9 +29,9 @@ export function DashboardPage() {
               connected={connected}
               location={activeProfile ? t('connection.location', { city: activeProfile.name.split(' ')[0] }) : t('connection.fallbackLocation')}
               profileName={activeProfile ? t('connection.profile', { name: activeProfile.name }) : t('connection.fallbackProfile')}
+              ping={ping}
               systemProxy={systemProxy}
               tunMode={tunMode}
-              onDisconnect={toggleConnection}
               onToggleConnection={toggleConnection}
               onToggleMode={toggleMode}
             />

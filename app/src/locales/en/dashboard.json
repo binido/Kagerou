@@ -9,6 +9,7 @@
     "fallbackLocation": "Seattle, United States",
     "profile": "Aurora / {{name}}",
     "location": "{{city}}, United States",
+    "ping": "Ping",
     "control": "Connection control: {{state}}",
     "connected": "Connected",
     "disconnected": "Disconnected",

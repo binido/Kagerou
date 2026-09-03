@@ -9,6 +9,7 @@
     "fallbackLocation": "Сиэтл, США",
     "profile": "Aurora / {{name}}",
     "location": "{{city}}, США",
+    "ping": "Пинг",
     "control": "Управление соединением: {{state}}",
     "connected": "Подключено",
     "disconnected": "Отключено",
