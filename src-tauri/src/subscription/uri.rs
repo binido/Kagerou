@@ -134,6 +134,7 @@ fn parse_vless(line: &str) -> Result<VlessOutbound, SubscriptionError> {
         ws_host: params.get("host").cloned(),
         reality_public_key: params.get("pbk").cloned(),
         reality_short_id: params.get("sid").cloned(),
+        fingerprint: params.get("fp").cloned(),
     })
 }
 
@@ -287,13 +288,181 @@ fn parse_tuic(line: &str) -> Result<TuicOutbound, SubscriptionError> {
     })
 }
 
+// --- serialization -------------------------------------------------------
+
+/// Fragment percent-encode set, plus `%` so an already-encoded name is not
+/// double-decoded on the way back in.
+const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS
+    .add(b' ')
+    .add(b'"')
+    .add(b'<')
+    .add(b'>')
+    .add(b'`')
+    .add(b'#')
+    .add(b'%');
+
+/// Userinfo percent-encode set: everything that would otherwise end the
+/// userinfo component or split it into user/password.
+const USERINFO: &percent_encoding::AsciiSet = &FRAGMENT
+    .add(b'/')
+    .add(b'?')
+    .add(b':')
+    .add(b';')
+    .add(b'=')
+    .add(b'@')
+    .add(b'[')
+    .add(b'\\')
+    .add(b']')
+    .add(b'^')
+    .add(b'|')
+    .add(b'{')
+    .add(b'}');
+
+fn enc(value: &str, set: &'static percent_encoding::AsciiSet) -> String {
+    percent_encoding::utf8_percent_encode(value, set).to_string()
+}
+
+fn query(pairs: Vec<(&str, String)>) -> String {
+    let filtered: Vec<_> = pairs.into_iter().filter(|(_, v)| !v.is_empty()).collect();
+    if filtered.is_empty() {
+        return String::new();
+    }
+    format!(
+        "?{}",
+        url::form_urlencoded::Serializer::new(String::new())
+            .extend_pairs(filtered)
+            .finish()
+    )
+}
+
+fn opt(value: &Option<String>) -> String {
+    value.clone().unwrap_or_default()
+}
+
+/// Serializes a parsed outbound back into a subscription URI, carrying
+/// every field `parse_uri` understands — TLS/REALITY, flow, SNI, transport
+/// — so `parse_uri(to_uri(x)) == x`. This is what gets stored as a
+/// profile's key, and `singbox::config::generate` re-parses it to build the
+/// outbound, so anything dropped here is silently dropped from the tunnel.
+pub fn to_uri(outbound: &ParsedOutbound) -> String {
+    match outbound {
+        ParsedOutbound::Vless(o) => {
+            let security = if o.tls {
+                if o.reality_public_key.is_some() {
+                    "reality"
+                } else {
+                    "tls"
+                }
+            } else {
+                ""
+            };
+            format!(
+                "vless://{}@{}:{}{}#{}",
+                enc(&o.uuid, USERINFO),
+                o.server,
+                o.port,
+                query(vec![
+                    ("encryption", "none".to_string()),
+                    ("security", security.to_string()),
+                    ("type", o.network.clone()),
+                    ("flow", opt(&o.flow)),
+                    ("sni", opt(&o.sni)),
+                    ("path", opt(&o.ws_path)),
+                    ("host", opt(&o.ws_host)),
+                    ("pbk", opt(&o.reality_public_key)),
+                    ("sid", opt(&o.reality_short_id)),
+                    ("fp", opt(&o.fingerprint)),
+                ]),
+                enc(&o.name, FRAGMENT),
+            )
+        }
+        ParsedOutbound::Vmess(o) => {
+            use base64::Engine;
+            let mut json = serde_json::json!({
+                "v": "2", "ps": o.name, "add": o.server, "port": o.port.to_string(),
+                "id": o.uuid, "aid": o.alter_id.to_string(), "net": o.network,
+                "tls": if o.tls { "tls" } else { "" },
+            });
+            for (key, value) in [
+                ("scy", o.security.clone()),
+                ("sni", opt(&o.sni)),
+                ("path", opt(&o.ws_path)),
+                ("host", opt(&o.ws_host)),
+            ] {
+                if !value.is_empty() {
+                    json[key] = serde_json::json!(value);
+                }
+            }
+            format!(
+                "vmess://{}",
+                base64::engine::general_purpose::STANDARD.encode(json.to_string())
+            )
+        }
+        ParsedOutbound::Trojan(o) => format!(
+            "trojan://{}@{}:{}{}#{}",
+            enc(&o.password, USERINFO),
+            o.server,
+            o.port,
+            query(vec![("sni", opt(&o.sni)), ("type", o.network.clone()),]),
+            enc(&o.name, FRAGMENT),
+        ),
+        ParsedOutbound::Shadowsocks(o) => {
+            use base64::Engine;
+            // SIP002. Unpadded so the `=` padding does not have to survive a
+            // round trip through the URL parser's userinfo encoding.
+            let userinfo = base64::engine::general_purpose::STANDARD_NO_PAD
+                .encode(format!("{}:{}", o.method, o.password));
+            format!(
+                "ss://{}@{}:{}#{}",
+                userinfo,
+                o.server,
+                o.port,
+                enc(&o.name, FRAGMENT)
+            )
+        }
+        ParsedOutbound::Hysteria2(o) => format!(
+            "hysteria2://{}@{}:{}{}#{}",
+            enc(&o.password, USERINFO),
+            o.server,
+            o.port,
+            query(vec![
+                ("sni", opt(&o.sni)),
+                (
+                    "insecure",
+                    if o.insecure {
+                        "1".to_string()
+                    } else {
+                        String::new()
+                    }
+                ),
+                ("obfs", opt(&o.obfs)),
+                ("obfs-password", opt(&o.obfs_password)),
+            ]),
+            enc(&o.name, FRAGMENT),
+        ),
+        ParsedOutbound::Tuic(o) => format!(
+            "tuic://{}:{}@{}:{}{}#{}",
+            enc(&o.uuid, USERINFO),
+            enc(&o.password, USERINFO),
+            o.server,
+            o.port,
+            query(vec![
+                ("sni", opt(&o.sni)),
+                ("congestion_control", opt(&o.congestion_control)),
+                ("alpn", o.alpn.join(",")),
+            ]),
+            enc(&o.name, FRAGMENT),
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn parses_a_vless_uri_with_reality_params() {
-        let uri = "vless://11111111-2222-3333-4444-555555555555@example.com:443?encryption=none&security=reality&sni=cdn.example.com&type=tcp&flow=xtls-rprx-vision&pbk=abc123&sid=de#My%20Node";
+        let uri = "vless://11111111-2222-3333-4444-555555555555@example.com:443?encryption=none&security=reality&sni=cdn.example.com&type=tcp&flow=xtls-rprx-vision&pbk=abc123&sid=de&fp=chrome#My%20Node";
         let outbound = parse_uri(uri).unwrap();
         match outbound {
             ParsedOutbound::Vless(v) => {
@@ -484,5 +653,45 @@ mod tests {
         assert!(parse_uri("").is_err());
         assert!(parse_uri("not a uri at all").is_err());
         assert!(parse_uri("vless://").is_err());
+    }
+
+    /// `to_uri` is what gets stored as a profile key, and the config
+    /// generator re-parses that key, so anything dropped here is dropped
+    /// from the tunnel. Round-tripping every field the parser understands
+    /// is the only thing keeping that honest.
+    #[test]
+    fn to_uri_round_trips_every_parsed_field() {
+        let uris = [
+            "vless://11111111-2222-3333-4444-555555555555@example.com:443?encryption=none&security=reality&sni=cdn.example.com&type=tcp&flow=xtls-rprx-vision&pbk=abc123&sid=de&fp=chrome#My%20Node",
+            "vless://uuid-1@ws.example.com:443?encryption=none&security=tls&type=ws&path=/ray&host=cdn.example.com&sni=cdn.example.com#WS",
+            "vless://uuid-1@plain.example.com:80?encryption=none#Plain",
+            "trojan://p%40ss@example.com:443?sni=cdn.example.com&type=tcp#Trojan%20Node",
+            "ss://YWVzLTI1Ni1nY206c2VjcmV0@example.com:8388#SS%20Node",
+            "hysteria2://pw@example.com:443?sni=cdn.example.com&insecure=1&obfs=salamander&obfs-password=op#Hy2",
+            "tuic://uuid-1:pw@example.com:443?sni=cdn.example.com&congestion_control=bbr&alpn=h3,spdy/3.1#Tuic",
+        ];
+        for uri in uris {
+            let parsed = parse_uri(uri).unwrap();
+            let reparsed = parse_uri(&to_uri(&parsed)).unwrap();
+            assert_eq!(parsed, reparsed, "lost fields re-serializing {uri}");
+        }
+    }
+
+    #[test]
+    fn to_uri_round_trips_vmess_including_transport() {
+        let parsed = ParsedOutbound::Vmess(VmessOutbound {
+            name: "VMess Node".into(),
+            server: "example.com".into(),
+            port: 443,
+            uuid: "uuid-1".into(),
+            alter_id: 4,
+            security: "aes-128-gcm".into(),
+            network: "ws".into(),
+            tls: true,
+            sni: Some("cdn.example.com".into()),
+            ws_path: Some("/ray".into()),
+            ws_host: Some("cdn.example.com".into()),
+        });
+        assert_eq!(parse_uri(&to_uri(&parsed)).unwrap(), parsed);
     }
 }

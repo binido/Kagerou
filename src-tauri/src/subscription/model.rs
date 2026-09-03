@@ -29,6 +29,9 @@ pub struct VlessOutbound {
     pub ws_host: Option<String>,
     pub reality_public_key: Option<String>,
     pub reality_short_id: Option<String>,
+    /// uTLS fingerprint (`fp=`). sing-box refuses to start a REALITY client
+    /// without one, so `to_singbox_outbound` falls back to a default.
+    pub fingerprint: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

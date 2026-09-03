@@ -634,44 +634,7 @@ fn parsed_outbound_to_new_profile(
         origin: "imported".to_string(),
         group_id: group_id.to_string(),
         source_id: Some(source_id.to_string()),
-        key: reconstruct_key(outbound),
-    }
-}
-
-/// The subscription parser normalizes a URI into structured fields; the
-/// config generator later re-parses `profile.key` (see
-/// singbox::config::generate's doc comment) rather than trusting cached
-/// fields, so what's stored here just needs to be *a* URI that round-trips
-/// to the same outbound, not byte-identical to the original subscription
-/// line. Re-serializing from the parsed form keeps this independent of
-/// whatever the origin server's exact formatting was.
-fn reconstruct_key(outbound: &subscription::model::ParsedOutbound) -> String {
-    use subscription::model::ParsedOutbound;
-    match outbound {
-        ParsedOutbound::Vless(o) => format!(
-            "vless://{}@{}:{}?encryption=none#{}",
-            o.uuid, o.server, o.port, o.name
-        ),
-        ParsedOutbound::Vmess(o) => {
-            format!("vmess://{}@{}:{}#{}", o.uuid, o.server, o.port, o.name)
-        }
-        ParsedOutbound::Trojan(o) => {
-            format!("trojan://{}@{}:{}#{}", o.password, o.server, o.port, o.name)
-        }
-        ParsedOutbound::Shadowsocks(o) => {
-            use base64::Engine;
-            let userinfo = base64::engine::general_purpose::STANDARD
-                .encode(format!("{}:{}", o.method, o.password));
-            format!("ss://{}@{}:{}#{}", userinfo, o.server, o.port, o.name)
-        }
-        ParsedOutbound::Hysteria2(o) => format!(
-            "hysteria2://{}@{}:{}#{}",
-            o.password, o.server, o.port, o.name
-        ),
-        ParsedOutbound::Tuic(o) => format!(
-            "tuic://{}:{}@{}:{}#{}",
-            o.uuid, o.password, o.server, o.port, o.name
-        ),
+        key: subscription::to_uri(outbound),
     }
 }
 
