@@ -17,7 +17,7 @@ export function LogsPage() {
 
   return (
     <div className="flex h-screen min-h-[680px] min-w-0 flex-col bg-canvas px-6 pb-5 pt-7 lg:px-8">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="mx-auto flex min-h-0 min-w-0 w-full max-w-[1280px] flex-1 flex-col">
         <PageHeader
           description="Connection events and service output"
           status={<span className="flex items-center gap-2 text-[12px] text-muted-copy"><span aria-hidden="true" className="size-1.5 rounded-full bg-good" />Connected</span>}

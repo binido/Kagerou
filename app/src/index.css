@@ -92,6 +92,7 @@
   --font-body: 'Inter', sans-serif;
   --font-display-family: 'Inter Tight', sans-serif;
   --font-data: 'IBM Plex Mono', monospace;
+  --log-toolbar-width: 35rem;
 
   --background: var(--canvas);
   --foreground: var(--text-primary);
@@ -187,7 +188,6 @@
   letter-spacing: 0.01em;
 }
 
-
 @utility focus-ring {
   outline: 2px solid var(--lavender);
   outline-offset: 3px;
@@ -210,6 +210,10 @@
     height: 48px;
     min-height: 48px;
     padding-inline: 14px !important;
+  }
+
+  .log-toolbar-search {
+    max-width: var(--log-toolbar-width);
   }
 }
 
