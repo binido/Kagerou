@@ -1,7 +1,6 @@
 {
   "brand": {
-    "name": "Kagerou",
-    "tagline": "Панель управления"
+    "name": "Kagerou"
   },
   "sidebar": {
     "primaryNavigation": "Основная навигация",
@@ -12,7 +11,9 @@
     "logs": "Журнал",
     "settings": "Настройки",
     "collapse": "Свернуть боковую панель",
-    "expand": "Развернуть боковую панель"
+    "expand": "Развернуть боковую панель",
+    "updateAvailable": "Доступна новая версия",
+    "viewReleases": "Открыть релизы Kagerou"
   },
   "actions": {
     "cancel": "Отмена",

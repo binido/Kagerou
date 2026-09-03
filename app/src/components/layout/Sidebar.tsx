@@ -13,6 +13,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { BrandMark } from '@/components/layout/BrandMark'
+import { SidebarUpdateNotice } from '@/components/layout/SidebarUpdateNotice'
 import { cn } from '@/lib/utils'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type { RouteKey } from '@/types/kagerou'
@@ -53,7 +54,6 @@ export function Sidebar() {
         <BrandMark />
         <span className={cn('min-w-0', collapsed && 'hidden', 'max-[960px]:hidden')}>
           <span className="type-display block text-[18px] leading-none text-primary">{t('brand.name')}</span>
-          <span className="mt-2 block text-[9px] uppercase tracking-[0.2em] text-muted-copy">{t('brand.tagline')}</span>
         </span>
       </div>
 
@@ -101,7 +101,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto pt-8">
+      <div className="mt-auto space-y-3 pt-8">
+        <SidebarUpdateNotice collapsed={collapsed} />
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

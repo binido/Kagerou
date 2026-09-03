@@ -52,5 +52,10 @@
   },
   "validation": {
     "positiveInteger": "Enter a whole number greater than 0."
+  },
+  "footer": {
+    "repository": "Project repository",
+    "openRepository": "Open Kagerou repository on GitHub",
+    "version": "Version {{version}}"
   }
 }

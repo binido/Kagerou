@@ -52,5 +52,10 @@
   },
   "validation": {
     "positiveInteger": "Введите целое число больше 0."
+  },
+  "footer": {
+    "repository": "Репозиторий проекта",
+    "openRepository": "Открыть репозиторий Kagerou на GitHub",
+    "version": "Версия {{version}}"
   }
 }

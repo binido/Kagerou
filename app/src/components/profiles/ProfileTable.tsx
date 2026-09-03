@@ -34,7 +34,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
             <TableHead className="w-[108px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.protocol')}</TableHead>
             <TableHead className="w-[122px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.ping')}</TableHead>
             <TableHead className="w-[126px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.url')}</TableHead>
-            <TableHead className="w-[100px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.use')}</TableHead>
+            <TableHead className="min-w-[116px] whitespace-nowrap px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.use')}</TableHead>
             <TableHead className="w-[54px] px-3 py-3 text-right text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy"><span className="sr-only">{t('table.actions')}</span></TableHead>
           </TableRow>
         </TableHeader>
@@ -59,7 +59,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
                 <TableCell className="px-3 py-4 align-middle"><span className="inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[10px] text-body">{profile.protocol}</span></TableCell>
                 <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={pingResult.tone} value={pingResult.value} /></TableCell>
                 <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={runningUrl ? 'warn' : profile.url.tone} value={runningUrl ? 'Running…' : profile.url.value} /></TableCell>
-                <TableCell className="px-3 py-4 align-middle"><Button aria-pressed={profile.selected} className="h-[34px] w-[84px] justify-center gap-1.5 rounded-md border-hairline px-2.5 text-[11px] text-body hover:border-[#464650] hover:bg-raised hover:text-primary aria-pressed:border-transparent aria-pressed:bg-lavender aria-pressed:font-bold aria-pressed:text-ink aria-pressed:hover:bg-lavender-hi" onClick={() => onSelect(profile.id)} type="button" variant="outline">{profile.selected ? <Check aria-hidden="true" className="size-3" strokeWidth={2.5} /> : null}{profile.selected ? t('table.selected') : t('table.use')}</Button></TableCell>
+                <TableCell className="min-w-[116px] whitespace-nowrap px-3 py-4 align-middle"><Button aria-pressed={profile.selected} className="h-[34px] w-auto min-w-[84px] shrink-0 justify-center gap-1.5 whitespace-nowrap rounded-md border-hairline px-2.5 text-[11px] text-body hover:border-[#464650] hover:bg-raised hover:text-primary aria-pressed:border-transparent aria-pressed:bg-lavender aria-pressed:font-bold aria-pressed:text-ink aria-pressed:hover:bg-lavender-hi" onClick={() => onSelect(profile.id)} type="button" variant="outline">{profile.selected ? <Check aria-hidden="true" className="size-3" strokeWidth={2.5} /> : null}{profile.selected ? t('table.selected') : t('table.use')}</Button></TableCell>
                 <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} /></TableCell>
               </TableRow>
             )

@@ -1,7 +1,6 @@
 {
   "brand": {
-    "name": "Kagerou",
-    "tagline": "Instrument panel"
+    "name": "Kagerou"
   },
   "sidebar": {
     "primaryNavigation": "Primary navigation",
@@ -12,7 +11,9 @@
     "logs": "Logs",
     "settings": "Settings",
     "collapse": "Collapse sidebar",
-    "expand": "Expand sidebar"
+    "expand": "Expand sidebar",
+    "updateAvailable": "New version available",
+    "viewReleases": "View Kagerou releases"
   },
   "actions": {
     "cancel": "Cancel",

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher'
+import { SettingsFooter } from '@/components/settings/SettingsFooter'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { SettingNumberRow } from '@/components/settings/SettingNumberRow'
 import { SettingSelectRow } from '@/components/settings/SettingSelectRow'
@@ -50,6 +51,7 @@ export function SettingsPage() {
             </SettingsSection>
             <SettingsSection title={t('sections.groups')}><SettingSelectRow id="group-sort" label={t('fields.sortVpns')} onChange={(groupSort) => updateSettings({ groupSort: groupSort as GroupSortMode })} options={groupSortOptions} value={settings.groupSort} /></SettingsSection>
             <SettingsSection title={t('sections.network')}><SettingSelectRow id="tun-interface" label={t('fields.tunInterface')} onChange={(tunInterface) => updateSettings({ tunInterface: tunInterface as TunInterface })} options={[{ value: 'utun / tun0', label: t('options.tunBoth') }, { value: 'utun', label: t('options.utun') }, { value: 'tun0', label: t('options.tun0') }]} value={settings.tunInterface} /></SettingsSection>
+            <SettingsFooter />
           </div>
         </div>
       </div>
