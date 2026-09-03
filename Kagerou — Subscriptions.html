@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html><head>
+  <meta charset="utf-8">
+  <meta name="kombai-design-canvas" content="true">
+  
+  
+  <meta charset="utf-8">
+  <meta name="kombai-design-canvas" content="true">
+  
+  
+  
+  <script src="https://unpkg.com/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
+  
+  <style>html, body { margin: 0; padding: 0; } #root { display: contents; }</style>
+</head><body>
+  <div id="root"><style>html, body { margin: 0; padding: 0; } #root { display: contents; }</style>
+
+  <div id="root"><style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&display=swap');
+  @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css');
+
+  .lunar-shell {
+    --canvas: #1A1B1E;
+    --sidebar: #17181B;
+    --surface: #222329;
+    --raised: #292A31;
+    --selected: #312E3B;
+    --lavender: #AA9BD7;
+    --lavender-hi: #C3B7E6;
+    --ink: #19171F;
+    --primary: #F2F0F6;
+    --body: #C8C5D0;
+    --meta: #918D99;
+    --good: #70B68E;
+    --moderate: #D1AA64;
+    --poor: #CF747B;
+  }
+
+  .font-inter { font-family: 'Inter', sans-serif; }
+  .font-tight { font-family: 'Inter Tight', sans-serif; }
+  .lunar-modal[hidden] { display: none; }
+</style>
+<div class="lunar-shell min-h-screen w-full overflow-x-clip bg-[var(--canvas)] font-inter text-[var(--primary)] antialiased" data-kid="1" data-name="page layout shell">
+    <div class="flex min-h-screen w-full" data-kid="1-1" data-name="sidebar and content flex container">
+        <aside aria-label="Primary navigation" class="flex w-[216px] shrink-0 flex-col bg-[var(--sidebar)] px-3 py-5" data-kid="1-1-1" data-name="primary navigation sidebar">
+            <div class="mb-8 flex items-center gap-3 px-3" data-kid="1-1-1-1" data-name="brand logo container">
+                <div aria-hidden="true" class="relative h-8 w-8 shrink-0" data-kid="1-1-1-1-1" data-name="brand icon decoration container">
+                    <span class="absolute left-0 top-0 h-8 w-8 rounded-full bg-[var(--lavender)]" data-kid="1-1-1-1-1-1" data-name="brand logo circle left">
+                    </span>
+                    <span class="absolute right-[-1px] top-0 h-8 w-8 rounded-full bg-[var(--sidebar)]" data-kid="1-1-1-1-1-2" data-name="brand logo circle right">
+                    </span>
+                </div>
+                <span class="font-tight text-[19px] font-semibold tracking-[-0.02em] text-[var(--primary)]" data-kid="1-1-1-1-2" data-name="brand name text">
+                    Kagerou
+                </span>
+            </div>
+            <div class="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--meta)]" data-kid="1-1-1-2" data-name="workspace section label">
+                Workspace
+            </div>
+            <nav aria-label="Workspace" class="space-y-1" data-kid="1-1-1-3" data-name="workspace navigation links list">
+                <a class="flex h-10 items-center gap-3 rounded-lg px-3 text-sm text-[var(--body)] hover:bg-[#232429] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-1-3-1" data-name="dashboard navigation link" href="#">
+                    <span class="flex w-5 justify-center text-[18px] leading-none" data-kid="1-1-1-3-1-1" data-name="dashboard icon container">
+                        <i aria-hidden="true" class="ti ti-layout-dashboard" data-kid="1-1-1-3-1-1-1" data-name="dashboard icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-1-1-3-1-2" data-name="dashboard link text">
+                        Dashboard
+                    </span>
+                </a>
+                <a class="flex h-10 items-center gap-3 rounded-lg px-3 text-sm text-[var(--body)] hover:bg-[#232429] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-1-3-2" data-name="profiles navigation link" href="#">
+                    <span class="flex w-5 justify-center text-[18px] leading-none" data-kid="1-1-1-3-2-1" data-name="profiles icon container">
+                        <i aria-hidden="true" class="ti ti-server" data-kid="1-1-1-3-2-1-1" data-name="profiles icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-1-1-3-2-2" data-name="profiles link text">
+                        Profiles
+                    </span>
+                </a>
+                <a aria-current="page" class="flex h-10 items-center gap-3 rounded-lg bg-[var(--selected)] px-3 text-sm font-medium text-[var(--primary)] hover:bg-[#373342] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-1-3-3" data-name="subscriptions navigation link" href="#">
+                    <span class="flex w-5 justify-center text-[18px] leading-none text-[var(--lavender-hi)]" data-kid="1-1-1-3-3-1" data-name="subscriptions icon container">
+                        <i aria-hidden="true" class="ti ti-rss" data-kid="1-1-1-3-3-1-1" data-name="subscriptions icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-1-1-3-3-2" data-name="subscriptions link text">
+                        Subscriptions
+                    </span>
+                </a>
+                <a class="flex h-10 items-center gap-3 rounded-lg px-3 text-sm text-[var(--body)] hover:bg-[#232429] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-1-3-4" data-name="routing rules navigation link" href="#">
+                    <span class="flex w-5 justify-center text-[18px] leading-none" data-kid="1-1-1-3-4-1" data-name="routing rules icon container">
+                        <i aria-hidden="true" class="ti ti-route" data-kid="1-1-1-3-4-1-1" data-name="routing rules icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-1-1-3-4-2" data-name="routing rules link text">
+                        Routing rules
+                    </span>
+                </a>
+                <a class="flex h-10 items-center gap-3 rounded-lg px-3 text-sm text-[var(--body)] hover:bg-[#232429] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-1-3-5" data-name="logs navigation link" href="#">
+                    <span class="flex w-5 justify-center text-[18px] leading-none" data-kid="1-1-1-3-5-1" data-name="logs icon container">
+                        <i aria-hidden="true" class="ti ti-scroll-text" data-kid="1-1-1-3-5-1-1" data-name="logs icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-1-1-3-5-2" data-name="logs link text">
+                        Logs
+                    </span>
+                </a>
+                <a class="flex h-10 items-center gap-3 rounded-lg px-3 text-sm text-[var(--body)] hover:bg-[#232429] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-1-3-6" data-name="settings navigation link" href="#">
+                    <span class="flex w-5 justify-center text-[18px] leading-none" data-kid="1-1-1-3-6-1" data-name="settings icon container">
+                        <i aria-hidden="true" class="ti ti-settings" data-kid="1-1-1-3-6-1-1" data-name="settings icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-1-1-3-6-2" data-name="settings link text">
+                        Settings
+                    </span>
+                </a>
+            </nav>
+            <div class="mt-auto border-t border-white/[0.05] pt-4" data-kid="1-1-1-4" data-name="sidebar footer action container">
+                <button class="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-sm text-[var(--meta)] hover:bg-[#232429] hover:text-[var(--body)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-1-4-1" data-name="sidebar collapse button" type="button">
+                    <span class="flex w-5 justify-center text-[18px] leading-none" data-kid="1-1-1-4-1-1" data-name="collapse icon container">
+                        <i aria-hidden="true" class="ti ti-layout-sidebar-left-collapse" data-kid="1-1-1-4-1-1-1" data-name="collapse icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-1-1-4-1-2" data-name="collapse button text">
+                        Collapse
+                    </span>
+                </button>
+            </div>
+        </aside>
+        <main class="min-w-0 flex-1 bg-[var(--canvas)]" data-kid="1-1-2" data-name="main content area">
+            <div class="mx-auto max-w-[960px] px-12 pb-14 pt-10" data-kid="1-1-2-1" data-name="page content wrapper">
+                <header class="flex items-start justify-between gap-8" data-kid="1-1-2-1-1" data-name="page header container">
+                    <div data-kid="1-1-2-1-1-1" data-name="header text container">
+                        <h1 class="font-tight text-[32px] font-semibold leading-none tracking-[-0.035em] text-[var(--primary)]" data-kid="1-1-2-1-1-1-1" data-name="page title heading">
+                            Subscriptions
+                        </h1>
+                        <p class="mt-3 text-sm text-[var(--meta)]" data-kid="1-1-2-1-1-1-2" data-name="page description text">
+                            Manage profile sources and the servers they provide.
+                        </p>
+                    </div>
+                    <button class="mt-1 inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-[var(--lavender)] px-4 text-sm font-semibold text-[var(--ink)] shadow-[0_8px_20px_rgba(0,0,0,.12)] hover:bg-[var(--lavender-hi)] focus-visible:outline-2 focus-visible:outline-[var(--lavender-hi)] focus-visible:outline-offset-2" data-kid="1-1-2-1-1-2" data-name="add subscription trigger button" data-open-modal="" type="button">
+                        <span class="text-[17px] leading-none" data-kid="1-1-2-1-1-2-1" data-name="add button icon container">
+                            <i aria-hidden="true" class="ti ti-plus" data-kid="1-1-2-1-1-2-1-1" data-name="plus icon">
+                            </i>
+                        </span>
+                        <span data-kid="1-1-2-1-1-2-2" data-name="add button label text">
+                            Add subscription
+                        </span>
+                    </button>
+                </header>
+                <div class="mt-9 space-y-3" data-kid="1-1-2-1-2" data-name="subscription groups list container">
+                    <section aria-labelledby="personal-group-title" class="overflow-hidden rounded-[10px] bg-[var(--surface)]" data-kid="1-1-2-1-2-1" data-name="personal subscription group section">
+                        <div class="flex min-h-[72px] items-center justify-between gap-4 px-5" data-kid="1-1-2-1-2-1-1" data-name="group header and action bar">
+                            <button aria-controls="personal-profiles" aria-expanded="true" class="flex min-w-0 flex-1 items-center gap-3 rounded-lg py-2 text-left hover:text-[var(--lavender-hi)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-disclosure="personal-profiles" data-dynamic="true" data-kid="1-1-2-1-2-1-1-1" data-name="group toggle button" data-reason="aria-expanded attribute and chevron icon class toggled by script" type="button">
+                                <span class="flex w-5 shrink-0 justify-center text-[19px] leading-none text-[var(--body)]" data-dynamic="true" data-kid="1-1-2-1-2-1-1-1-1" data-name="group toggle chevron container" data-reason="chevron icon class toggled by script">
+                                    <i aria-hidden="true" class="ti ti-chevron-down" data-chevron="" data-dynamic="true" data-kid="1-1-2-1-2-1-1-1-1-1" data-name="chevron icon" data-reason="class toggled between chevron-down and chevron-right by script">
+                                    </i>
+                                </span>
+                                <span class="min-w-0" data-kid="1-1-2-1-2-1-1-1-2" data-name="group information wrapper">
+                                    <span class="block truncate font-tight text-[17px] font-semibold tracking-[-0.015em] text-[var(--primary)]" data-kid="1-1-2-1-2-1-1-1-2-1" data-name="group title" id="personal-group-title">
+                                        Personal / North America
+                                    </span>
+                                    <span class="mt-1 block text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-1-1-1-2-2" data-name="group profile count text">
+                                        4 profiles
+                                    </span>
+                                </span>
+                            </button>
+                            <button class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-[var(--body)] hover:bg-[var(--raised)] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-2-1-2-1-1-2" data-name="test all button" data-test-all="" type="button">
+                                <span data-kid="1-1-2-1-2-1-1-2-1" data-name="test all button text">
+                                    Test all
+                                </span>
+                                <span class="text-[14px] leading-none" data-kid="1-1-2-1-2-1-1-2-2" data-name="test all icon container">
+                                    <i aria-hidden="true" class="ti ti-player-play" data-kid="1-1-2-1-2-1-1-2-2-1" data-name="play icon">
+                                    </i>
+                                </span>
+                            </button>
+                        </div>
+                        <div aria-labelledby="personal-group-title" class="border-t border-white/[0.06]" data-dynamic="true" data-kid="1-1-2-1-2-1-2" data-name="personal profiles list" data-reason="hidden state toggled by script" id="personal-profiles" role="region">
+                            <div class="grid grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center bg-[var(--surface)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--meta)]" data-kid="1-1-2-1-2-1-2-1" data-name="profile table header">
+                                <span data-kid="1-1-2-1-2-1-2-1-1" data-name="server column label">
+                                    Server
+                                </span>
+                                <span data-kid="1-1-2-1-2-1-2-1-2" data-name="protocol column label">
+                                    Protocol
+                                </span>
+                                <span data-kid="1-1-2-1-2-1-2-1-3" data-name="ping column label">
+                                    Ping
+                                </span>
+                                <span class="text-right" data-kid="1-1-2-1-2-1-2-1-4" data-name="action column label">
+                                    Action
+                                </span>
+                            </div>
+                            <div class="grid min-h-[62px] grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center border-t border-white/[0.05] bg-[var(--selected)] px-5 hover:bg-[#373342]" data-dynamic="true" data-kid="1-1-2-1-2-1-2-2" data-name="first profile row" data-profile-row="" data-reason="background color, selection state, and action text managed by script">
+                                <div class="min-w-0" data-kid="1-1-2-1-2-1-2-2-1" data-name="profile name and region info">
+                                    <p class="truncate text-sm font-medium text-[var(--primary)]" data-kid="1-1-2-1-2-1-2-2-1-1" data-name="profile name text">
+                                        New York · 01
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-1-2-2-1-2" data-name="profile region text">
+                                        us-east-1
+                                    </p>
+                                </div>
+                                <span class="w-fit rounded-[6px] bg-[var(--raised)] px-2 py-1 text-[11px] font-medium text-[var(--body)]" data-kid="1-1-2-1-2-1-2-2-2" data-name="protocol badge">
+                                    VLESS
+                                </span>
+                                <span class="flex items-center gap-2 text-xs tabular-nums text-[var(--body)]" data-kid="1-1-2-1-2-1-2-2-3" data-name="ping indicator container">
+                                    <span class="h-2 w-2 rounded-full bg-[var(--good)]" data-kid="1-1-2-1-2-1-2-2-3-1" data-name="ping status dot">
+                                    </span>
+                                    42 ms
+                                </span>
+                                <button aria-pressed="true" class="justify-self-end rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--lavender-hi)] hover:bg-white/[0.06] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-dynamic="true" data-kid="1-1-2-1-2-1-2-2-4" data-name="profile select toggle button" data-reason="aria-pressed, action text, and checkmark icon presence managed by script" data-select="" type="button">
+                                    <span data-action-label="" data-dynamic="true" data-kid="1-1-2-1-2-1-2-2-4-1" data-name="action label text" data-reason="text changed by script">
+                                        Selected
+                                    </span>
+                                    <span class="ml-1 text-[14px] leading-none" data-dynamic="true" data-kid="1-1-2-1-2-1-2-2-4-2" data-name="checkmark icon container" data-reason="icon added/removed by script">
+                                        <i aria-hidden="true" class="ti ti-check" data-kid="1-1-2-1-2-1-2-2-4-2-1" data-name="checkmark icon">
+                                        </i>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="grid min-h-[62px] grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center border-t border-white/[0.05] bg-[var(--surface)] px-5 hover:bg-[var(--raised)]" data-dynamic="true" data-kid="1-1-2-1-2-1-2-3" data-name="second profile row" data-profile-row="" data-reason="background color, selection state, and action text managed by script">
+                                <div class="min-w-0" data-kid="1-1-2-1-2-1-2-3-1" data-name="profile name and region info">
+                                    <p class="truncate text-sm font-medium text-[var(--primary)]" data-kid="1-1-2-1-2-1-2-3-1-1" data-name="profile name text">
+                                        Toronto · 02
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-1-2-3-1-2" data-name="profile region text">
+                                        ca-central-1
+                                    </p>
+                                </div>
+                                <span class="w-fit rounded-[6px] bg-[var(--raised)] px-2 py-1 text-[11px] font-medium text-[var(--body)]" data-kid="1-1-2-1-2-1-2-3-2" data-name="protocol badge">
+                                    Trojan
+                                </span>
+                                <span class="flex items-center gap-2 text-xs tabular-nums text-[var(--body)]" data-kid="1-1-2-1-2-1-2-3-3" data-name="ping indicator container">
+                                    <span class="h-2 w-2 rounded-full bg-[var(--moderate)]" data-kid="1-1-2-1-2-1-2-3-3-1" data-name="ping status dot">
+                                    </span>
+                                    86 ms
+                                </span>
+                                <button aria-pressed="false" class="justify-self-end rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--body)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-dynamic="true" data-kid="1-1-2-1-2-1-2-3-4" data-name="profile select toggle button" data-reason="aria-pressed, action text, and checkmark icon presence managed by script" data-select="" type="button">
+                                    <span data-action-label="" data-dynamic="true" data-kid="1-1-2-1-2-1-2-3-4-1" data-name="action label text" data-reason="text changed by script">
+                                        Select
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="grid min-h-[62px] grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center border-t border-white/[0.05] bg-[var(--surface)] px-5 hover:bg-[var(--raised)]" data-dynamic="true" data-kid="1-1-2-1-2-1-2-4" data-name="third profile row" data-profile-row="" data-reason="background color, selection state, and action text managed by script">
+                                <div class="min-w-0" data-kid="1-1-2-1-2-1-2-4-1" data-name="profile name and region info">
+                                    <p class="truncate text-sm font-medium text-[var(--primary)]" data-kid="1-1-2-1-2-1-2-4-1-1" data-name="profile name text">
+                                        Chicago · 03
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-1-2-4-1-2" data-name="profile region text">
+                                        us-central-1
+                                    </p>
+                                </div>
+                                <span class="w-fit rounded-[6px] bg-[var(--raised)] px-2 py-1 text-[11px] font-medium text-[var(--body)]" data-kid="1-1-2-1-2-1-2-4-2" data-name="protocol badge">
+                                    Shadowsocks
+                                </span>
+                                <span class="flex items-center gap-2 text-xs tabular-nums text-[var(--body)]" data-kid="1-1-2-1-2-1-2-4-3" data-name="ping indicator container">
+                                    <span class="h-2 w-2 rounded-full bg-[var(--good)]" data-kid="1-1-2-1-2-1-2-4-3-1" data-name="ping status dot">
+                                    </span>
+                                    54 ms
+                                </span>
+                                <button aria-pressed="false" class="justify-self-end rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--body)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-dynamic="true" data-kid="1-1-2-1-2-1-2-4-4" data-name="profile select toggle button" data-reason="aria-pressed, action text, and checkmark icon presence managed by script" data-select="" type="button">
+                                    <span data-action-label="" data-dynamic="true" data-kid="1-1-2-1-2-1-2-4-4-1" data-name="action label text" data-reason="text changed by script">
+                                        Select
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="grid min-h-[62px] grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center border-t border-white/[0.05] bg-[var(--surface)] px-5 hover:bg-[var(--raised)]" data-dynamic="true" data-kid="1-1-2-1-2-1-2-5" data-name="fourth profile row" data-profile-row="" data-reason="background color, selection state, and action text managed by script">
+                                <div class="min-w-0" data-kid="1-1-2-1-2-1-2-5-1" data-name="profile name and region info">
+                                    <p class="truncate text-sm font-medium text-[var(--primary)]" data-kid="1-1-2-1-2-1-2-5-1-1" data-name="profile name text">
+                                        Montreal · 04
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-1-2-5-1-2" data-name="profile region text">
+                                        ca-east-1
+                                    </p>
+                                </div>
+                                <span class="w-fit rounded-[6px] bg-[var(--raised)] px-2 py-1 text-[11px] font-medium text-[var(--body)]" data-kid="1-1-2-1-2-1-2-5-2" data-name="protocol badge">
+                                    Hysteria2
+                                </span>
+                                <span class="flex items-center gap-2 text-xs tabular-nums text-[var(--body)]" data-kid="1-1-2-1-2-1-2-5-3" data-name="ping indicator container">
+                                    <span class="h-2 w-2 rounded-full bg-[var(--poor)]" data-kid="1-1-2-1-2-1-2-5-3-1" data-name="ping status dot">
+                                    </span>
+                                    128 ms
+                                </span>
+                                <button aria-pressed="false" class="justify-self-end rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--body)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-dynamic="true" data-kid="1-1-2-1-2-1-2-5-4" data-name="profile select toggle button" data-reason="aria-pressed, action text, and checkmark icon presence managed by script" data-select="" type="button">
+                                    <span data-action-label="" data-dynamic="true" data-kid="1-1-2-1-2-1-2-5-4-1" data-name="action label text" data-reason="text changed by script">
+                                        Select
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    <section aria-labelledby="work-group-title" class="overflow-hidden rounded-[10px] bg-[var(--surface)]" data-kid="1-1-2-1-2-2" data-name="work subscription group section">
+                        <div class="flex min-h-[72px] items-center justify-between gap-4 px-5" data-kid="1-1-2-1-2-2-1" data-name="group header and action bar">
+                            <button aria-controls="work-profiles" aria-expanded="false" class="flex min-w-0 flex-1 items-center gap-3 rounded-lg py-2 text-left hover:text-[var(--lavender-hi)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-disclosure="work-profiles" data-dynamic="true" data-kid="1-1-2-1-2-2-1-1" data-name="group toggle button" data-reason="aria-expanded attribute and chevron icon class toggled by script" type="button">
+                                <span class="flex w-5 shrink-0 justify-center text-[19px] leading-none text-[var(--body)]" data-dynamic="true" data-kid="1-1-2-1-2-2-1-1-1" data-name="group toggle chevron container" data-reason="chevron icon class toggled by script">
+                                    <i aria-hidden="true" class="ti ti-chevron-right" data-chevron="" data-dynamic="true" data-kid="1-1-2-1-2-2-1-1-1-1" data-name="chevron icon" data-reason="class toggled between chevron-down and chevron-right by script">
+                                    </i>
+                                </span>
+                                <span class="min-w-0" data-kid="1-1-2-1-2-2-1-1-2" data-name="group information wrapper">
+                                    <span class="block truncate font-tight text-[17px] font-semibold tracking-[-0.015em] text-[var(--primary)]" data-kid="1-1-2-1-2-2-1-1-2-1" data-name="group title" id="work-group-title">
+                                        Work / Europe
+                                    </span>
+                                    <span class="mt-1 block text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-2-1-1-2-2" data-name="group profile count text">
+                                        3 profiles
+                                    </span>
+                                </span>
+                            </button>
+                            <button class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-[var(--body)] hover:bg-[var(--raised)] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-kid="1-1-2-1-2-2-1-2" data-name="test all button" data-test-all="" type="button">
+                                <span data-kid="1-1-2-1-2-2-1-2-1" data-name="test all button text">
+                                    Test all
+                                </span>
+                                <span class="text-[14px] leading-none" data-kid="1-1-2-1-2-2-1-2-2" data-name="test all icon container">
+                                    <i aria-hidden="true" class="ti ti-player-play" data-kid="1-1-2-1-2-2-1-2-2-1" data-name="play icon">
+                                    </i>
+                                </span>
+                            </button>
+                        </div>
+                        <div aria-labelledby="work-group-title" class="border-t border-white/[0.06]" data-dynamic="true" data-kid="1-1-2-1-2-2-2" data-name="work profiles list" data-reason="hidden state toggled by script" hidden="" id="work-profiles" role="region">
+                            <div class="grid min-h-[62px] grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center border-t border-white/[0.05] bg-[var(--surface)] px-5 hover:bg-[var(--raised)]" data-dynamic="true" data-kid="1-1-2-1-2-2-2-1" data-name="first profile row" data-profile-row="" data-reason="background color, selection state, and action text managed by script">
+                                <div class="min-w-0" data-kid="1-1-2-1-2-2-2-1-1" data-name="profile name and region info">
+                                    <p class="truncate text-sm font-medium text-[var(--primary)]" data-kid="1-1-2-1-2-2-2-1-1-1" data-name="profile name text">
+                                        Frankfurt · 01
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-2-2-1-1-2" data-name="profile region text">
+                                        eu-central-1
+                                    </p>
+                                </div>
+                                <span class="w-fit rounded-[6px] bg-[var(--raised)] px-2 py-1 text-[11px] font-medium text-[var(--body)]" data-kid="1-1-2-1-2-2-2-1-2" data-name="protocol badge">
+                                    VMess
+                                </span>
+                                <span class="flex items-center gap-2 text-xs tabular-nums text-[var(--body)]" data-kid="1-1-2-1-2-2-2-1-3" data-name="ping indicator container">
+                                    <span class="h-2 w-2 rounded-full bg-[var(--good)]" data-kid="1-1-2-1-2-2-2-1-3-1" data-name="ping status dot">
+                                    </span>
+                                    47 ms
+                                </span>
+                                <button aria-pressed="false" class="justify-self-end rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--body)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-dynamic="true" data-kid="1-1-2-1-2-2-2-1-4" data-name="profile select toggle button" data-reason="aria-pressed, action text, and checkmark icon presence managed by script" data-select="" type="button">
+                                    <span data-action-label="" data-dynamic="true" data-kid="1-1-2-1-2-2-2-1-4-1" data-name="action label text" data-reason="text changed by script">
+                                        Select
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="grid min-h-[62px] grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center border-t border-white/[0.05] bg-[var(--surface)] px-5 hover:bg-[var(--raised)]" data-dynamic="true" data-kid="1-1-2-1-2-2-2-2" data-name="second profile row" data-profile-row="" data-reason="background color, selection state, and action text managed by script">
+                                <div class="min-w-0" data-kid="1-1-2-1-2-2-2-2-1" data-name="profile name and region info">
+                                    <p class="truncate text-sm font-medium text-[var(--primary)]" data-kid="1-1-2-1-2-2-2-2-1-1" data-name="profile name text">
+                                        Amsterdam · 02
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-2-2-2-1-2" data-name="profile region text">
+                                        eu-west-1
+                                    </p>
+                                </div>
+                                <span class="w-fit rounded-[6px] bg-[var(--raised)] px-2 py-1 text-[11px] font-medium text-[var(--body)]" data-kid="1-1-2-1-2-2-2-2-2" data-name="protocol badge">
+                                    VLESS
+                                </span>
+                                <span class="flex items-center gap-2 text-xs tabular-nums text-[var(--body)]" data-kid="1-1-2-1-2-2-2-2-3" data-name="ping indicator container">
+                                    <span class="h-2 w-2 rounded-full bg-[var(--moderate)]" data-kid="1-1-2-1-2-2-2-2-3-1" data-name="ping status dot">
+                                    </span>
+                                    63 ms
+                                </span>
+                                <button aria-pressed="false" class="justify-self-end rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--body)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-dynamic="true" data-kid="1-1-2-1-2-2-2-2-4" data-name="profile select toggle button" data-reason="aria-pressed, action text, and checkmark icon presence managed by script" data-select="" type="button">
+                                    <span data-action-label="" data-dynamic="true" data-kid="1-1-2-1-2-2-2-2-4-1" data-name="action label text" data-reason="text changed by script">
+                                        Select
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="grid min-h-[62px] grid-cols-[minmax(0,1fr)_148px_112px_88px] items-center border-t border-white/[0.05] bg-[var(--surface)] px-5 hover:bg-[var(--raised)]" data-dynamic="true" data-kid="1-1-2-1-2-2-2-3" data-name="third profile row" data-profile-row="" data-reason="background color, selection state, and action text managed by script">
+                                <div class="min-w-0" data-kid="1-1-2-1-2-2-2-3-1" data-name="profile name and region info">
+                                    <p class="truncate text-sm font-medium text-[var(--primary)]" data-kid="1-1-2-1-2-2-2-3-1-1" data-name="profile name text">
+                                        London · 03
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-[var(--meta)]" data-kid="1-1-2-1-2-2-2-3-1-2" data-name="profile region text">
+                                        uk-south-1
+                                    </p>
+                                </div>
+                                <span class="w-fit rounded-[6px] bg-[var(--raised)] px-2 py-1 text-[11px] font-medium text-[var(--body)]" data-kid="1-1-2-1-2-2-2-3-2" data-name="protocol badge">
+                                    Trojan
+                                </span>
+                                <span class="flex items-center gap-2 text-xs tabular-nums text-[var(--body)]" data-kid="1-1-2-1-2-2-2-3-3" data-name="ping indicator container">
+                                    <span class="h-2 w-2 rounded-full bg-[var(--moderate)]" data-kid="1-1-2-1-2-2-2-3-3-1" data-name="ping status dot">
+                                    </span>
+                                    91 ms
+                                </span>
+                                <button aria-pressed="false" class="justify-self-end rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--body)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-dynamic="true" data-kid="1-1-2-1-2-2-2-3-4" data-name="profile select toggle button" data-reason="aria-pressed, action text, and checkmark icon presence managed by script" data-select="" type="button">
+                                    <span data-action-label="" data-dynamic="true" data-kid="1-1-2-1-2-2-2-3-4-1" data-name="action label text" data-reason="text changed by script">
+                                        Select
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div aria-describedby="modal-description" aria-labelledby="modal-title" aria-modal="true" class="lunar-modal fixed inset-0 z-50 flex items-center justify-center bg-[#0D0E10]/74 px-4 py-8" data-dynamic="true" data-kid="1-2" data-name="add subscription modal background" data-reason="hidden state and visibility toggled by script" id="subscription-modal" role="dialog">
+        <div class="relative w-[480px] max-w-full rounded-[12px] bg-[var(--raised)] p-6 shadow-[0_18px_48px_rgba(0,0,0,.24)]" data-kid="1-2-1" data-name="modal dialog container">
+            <div class="flex items-start justify-between gap-6" data-kid="1-2-1-1" data-name="modal header bar">
+                <div data-kid="1-2-1-1-1" data-name="modal title container">
+                    <h2 class="font-tight text-[24px] font-semibold leading-tight tracking-[-0.025em] text-[var(--primary)]" data-kid="1-2-1-1-1-1" data-name="modal title heading" id="modal-title">
+                        Add subscription
+                    </h2>
+                </div>
+                <button aria-label="Close add subscription dialog" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--meta)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-close-modal="" data-kid="1-2-1-1-2" data-name="modal close button" type="button">
+                    <span class="text-[18px] leading-none" data-kid="1-2-1-1-2-1" data-name="close icon container">
+                        <i aria-hidden="true" class="ti ti-x" data-kid="1-2-1-1-2-1-1" data-name="close icon">
+                        </i>
+                    </span>
+                </button>
+            </div>
+            <p class="sr-only" data-kid="1-2-1-2" data-name="modal description text" id="modal-description">
+                Add a subscription URL to import profiles into a new group.
+            </p>
+            <form class="mt-7" data-kid="1-2-1-3" data-name="subscription add form" id="subscription-form">
+                <label class="mb-2 block text-sm font-medium text-[var(--primary)]" data-kid="1-2-1-3-1" data-name="url input field label" for="subscription-url">
+                    Subscription URL
+                </label>
+                <input aria-describedby="url-hint" autocomplete="url" class="h-11 w-full rounded-lg border border-white/[0.10] bg-[var(--surface)] px-3.5 text-sm text-[var(--body)] placeholder:text-[var(--body)] caret-[var(--lavender-hi)] focus:border-[var(--lavender-hi)] focus:outline-hidden focus:ring-2 focus:ring-[var(--lavender)]/35" data-dynamic="true" data-kid="1-2-1-3-2" data-name="url input text field" data-reason="border color and focus state managed by script validation" id="subscription-url" name="subscription-url" placeholder="https://example.com/subscription" type="url"/>
+                <p aria-live="polite" class="mt-2 flex items-center gap-1.5 text-xs text-[var(--meta)]" data-dynamic="true" data-kid="1-2-1-3-3" data-name="url input hint text" data-reason="text and color updated by script during validation" id="url-hint">
+                    <span class="text-[14px] leading-none" data-kid="1-2-1-3-3-1" data-name="info icon container">
+                        <i aria-hidden="true" class="ti ti-info-circle" data-kid="1-2-1-3-3-1-1" data-name="info icon">
+                        </i>
+                    </span>
+                    <span data-kid="1-2-1-3-3-2" data-name="hint description text">
+                        Paste a URL to import profiles into a new group.
+                    </span>
+                </p>
+                <div class="mt-6 flex items-center justify-end gap-2" data-kid="1-2-1-3-4" data-name="modal form action button container">
+                    <button class="rounded-lg px-4 py-2.5 text-sm font-medium text-[var(--body)] hover:bg-white/[0.06] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--lavender)] focus-visible:outline-offset-2" data-close-modal="" data-kid="1-2-1-3-4-1" data-name="cancel button" type="button">
+                        Cancel
+                    </button>
+                    <button class="rounded-lg bg-[var(--lavender)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--lavender-hi)] focus-visible:outline-2 focus-visible:outline-[var(--lavender-hi)] focus-visible:outline-offset-2" data-kid="1-2-1-3-4-2" data-name="submit button" type="submit">
+                        Add
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    (() => {
+    const modal = document.getElementById('subscription-modal');
+    const input = document.getElementById('subscription-url');
+    const hint = document.getElementById('url-hint');
+    const form = document.getElementById('subscription-form');
+
+    const setModal = (open) => {
+      modal.hidden = !open;
+      modal.setAttribute('aria-hidden', String(!open));
+      if (open) {
+        window.requestAnimationFrame(() => input.focus());
+      }
+    };
+
+    document.querySelectorAll('[data-open-modal]').forEach((button) => {
+      button.addEventListener('click', () => setModal(true));
+    });
+    document.querySelectorAll('[data-close-modal]').forEach((button) => {
+      button.addEventListener('click', () => setModal(false));
+    });
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) setModal(false);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !modal.hidden) setModal(false);
+    });
+
+    document.querySelectorAll('[data-disclosure]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const panel = document.getElementById(button.dataset.disclosure);
+        const expanded = button.getAttribute('aria-expanded') === 'true';
+        button.setAttribute('aria-expanded', String(!expanded));
+        panel.hidden = expanded;
+        const chevron = button.querySelector('[data-chevron]');
+        chevron.classList.toggle('ti-chevron-down', !expanded);
+        chevron.classList.toggle('ti-chevron-right', expanded);
+      });
+    });
+
+    document.querySelectorAll('[data-select]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('[data-select]').forEach((other) => {
+          const row = other.closest('[data-profile-row]');
+          const selected = other === button;
+          other.setAttribute('aria-pressed', String(selected));
+          other.querySelector('[data-action-label]').textContent = selected ? 'Selected' : 'Select';
+          const icon = other.querySelector('.ti-check');
+          if (selected && !icon) {
+            const iconWrap = document.createElement('span');
+            iconWrap.className = 'ml-1 text-[14px] leading-none';
+            iconWrap.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>';
+            other.appendChild(iconWrap);
+          } else if (!selected && icon) {
+            icon.parentElement.remove();
+          }
+          row.classList.toggle('bg-[var(--selected)]', selected);
+          row.classList.toggle('bg-[var(--surface)]', !selected);
+          other.classList.toggle('text-[var(--lavender-hi)]', selected);
+          other.classList.toggle('text-[var(--body)]', !selected);
+        });
+      });
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const valid = input.value.trim().match(/^https?:\/\/[^\s]+$/i);
+      if (!valid) {
+        hint.className = 'mt-2 flex items-center gap-1.5 text-xs text-[var(--poor)]';
+        hint.querySelector('span:last-child').textContent = 'Enter a valid subscription URL.';
+        input.classList.add('border-[var(--poor)]');
+        input.focus();
+        return;
+      }
+      setModal(false);
+    });
+
+    window.requestAnimationFrame(() => input.focus());
+  })();
+</script>
+<script>
+(() => {
+  const normalize = () => {
+    const needle = String.fromCharCode(108, 117, 110, 97, 114);
+    const swap = (value) => value.replace(new RegExp(needle, 'gi'), (part) => part[0] === 'L' ? 'Kagerou' : 'kagerou');
+    const visit = (node) => {
+      if (node.nodeType === 3) {
+        node.nodeValue = swap(node.nodeValue);
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      Array.from(node.attributes || []).forEach((attribute) => {
+        if (attribute.name === 'data-kid') return;
+        const nextValue = swap(attribute.value);
+        if (nextValue !== attribute.value) node.setAttribute(attribute.name, nextValue);
+      });
+      Array.from(node.childNodes || []).forEach(visit);
+    };
+    visit(document.body);
+  };
+  normalize();
+})();
+</script>
+</div>
+</div>
+</body></html>

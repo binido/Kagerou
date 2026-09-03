@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html><head>
+  <meta charset="utf-8">
+  <meta name="kombai-design-canvas" content="true">
+  
+  
+  <meta charset="utf-8">
+  <meta name="kombai-design-canvas" content="true">
+  
+  
+  
+  <script src="https://unpkg.com/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
+  
+  <style>html, body { margin: 0; padding: 0; } #root { display: contents; }</style>
+</head><body>
+  <div id="root"><style>html, body { margin: 0; padding: 0; } #root { display: contents; }</style>
+
+  <div id="root"><style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600;700&display=swap');
+  @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css');
+
+  #kagerou-app {
+    --canvas: #1A1B1E;
+    --sidebar: #17181B;
+    --surface: #222329;
+    --raised: #292A31;
+    --selected: #312E3B;
+    --lavender: #AA9BD7;
+    --highlight: #C3B7E6;
+    --text-primary: #F2F0F6;
+    --text-body: #C8C5D0;
+    --text-muted: #918D99;
+    --good: #70B68E;
+    --amber: #D1AA64;
+    --bad: #CF747B;
+    --line: #34353C;
+    --line-soft: #2A2B31;
+    --hover: #232429;
+    --ink: #1A1B1E;
+    --toggle-off: #41414A;
+    --upload-line: #8B9AAE;
+  }
+
+  #lunar-app .lunar-inter { font-family: 'Inter', sans-serif; }
+  #lunar-app .lunar-tight { font-family: 'Inter Tight', sans-serif; }
+  #lunar-app .lunar-mono { font-family: 'IBM Plex Mono', monospace; }
+  #lunar-app .sidebar-label,
+  #lunar-app .sidebar-wordmark { transition: opacity 160ms ease, visibility 160ms ease; }
+  #lunar-app #sidebar { transition: width 180ms ease; }
+  #lunar-app.is-collapsed #sidebar { width: 68px; }
+  #lunar-app.is-collapsed .sidebar-wordmark,
+  #lunar-app.is-collapsed .sidebar-label { opacity: 0; visibility: hidden; width: 0; overflow: hidden; }
+  #lunar-app.is-collapsed .brand-row,
+  #lunar-app.is-collapsed .nav-item,
+  #lunar-app.is-collapsed .collapse-button { justify-content: center; padding-left: 0; padding-right: 0; }
+  #lunar-app.is-collapsed .collapse-icon { transform: rotate(180deg); }
+  #lunar-app .dial-shell { transition: background-color 180ms ease, border-color 180ms ease, transform 120ms ease; }
+  #lunar-app .dial-shell:hover { background-color: var(--selected); }
+  #lunar-app .dial-shell:active { transform: translateY(1px); }
+  #lunar-app #connect-dial[data-state='disconnected'] { border-color: var(--line); }
+  #lunar-app #connect-dial[data-state='disconnected'] .dial-inner { background-color: var(--surface); }
+  #lunar-app #connect-dial[data-state='disconnected'] .dial-status { color: var(--text-body); }
+  #lunar-app .toggle-track { transition: background-color 160ms ease; }
+  #lunar-app .toggle-thumb { transition: transform 160ms ease, background-color 160ms ease; }
+  #lunar-app .lunar-switch.is-on .toggle-track { background-color: var(--lavender); }
+  #lunar-app .lunar-switch.is-on .toggle-thumb { transform: translateX(16px); background-color: var(--ink); }
+  #lunar-app .lunar-switch:not(.is-on) .toggle-thumb { transform: translateX(0); background-color: var(--text-muted); }
+  #lunar-app .nav-item:focus-visible,
+  #lunar-app .collapse-button:focus-visible,
+  #lunar-app .lunar-switch:focus-visible,
+  #lunar-app #disconnect-action:focus-visible,
+  #lunar-app #connect-dial:focus-visible {
+    outline: 2px solid var(--lavender);
+    outline-offset: 3px;
+  }
+  #lunar-app .nav-item:hover { background-color: var(--hover); }
+  #lunar-app .nav-item[data-active='true'] { background-color: var(--selected); }
+  #lunar-app .nav-item[data-active='true'] .nav-icon { color: var(--lavender); }
+  #lunar-app .nav-item:active,
+  #lunar-app .collapse-button:active,
+  #lunar-app .lunar-switch:active { background-color: var(--line-soft); }
+  #lunar-app .lunar-switch:hover .toggle-track { background-color: var(--highlight); }
+  #lunar-app .lunar-switch:not(.is-on):hover .toggle-track { background-color: #41414A; }
+  #lunar-app #disconnect-action:hover { color: var(--highlight); text-decoration-color: var(--highlight); }
+  #lunar-app #lunar-mark-cutout { background-color: var(--sidebar); }
+
+  @media (max-width: 1179px) {
+    #lunar-app #sidebar { width: 68px; }
+    #lunar-app .sidebar-wordmark,
+    #lunar-app .sidebar-label { opacity: 0; visibility: hidden; width: 0; overflow: hidden; }
+    #lunar-app .brand-row,
+    #lunar-app .nav-item,
+    #lunar-app .collapse-button { justify-content: center; padding-left: 0; padding-right: 0; }
+    #lunar-app .main-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    #lunar-app .connection-stage,
+    #lunar-app .telemetry-panel { grid-column: span 12 / span 12; }
+    #lunar-app .telemetry-panel { min-height: 0; display: grid; grid-template-columns: 1fr 1.35fr 0.7fr; }
+    #lunar-app .telemetry-top { border-bottom: 0; border-right: 1px solid var(--line); }
+    #lunar-app .telemetry-chart { border-right: 1px solid var(--line); }
+    #lunar-app .telemetry-session { border-top: 0; }
+  }
+</style>
+<div class="lunar-inter min-h-screen min-w-[960px] w-full overflow-x-clip bg-[var(--canvas)] text-[var(--text-primary)]" data-kid="1" data-name="lunar app container" id="lunar-app">
+    <div class="flex min-h-screen" data-kid="1-1" data-name="layout wrapper">
+        <aside aria-label="Primary navigation" class="flex w-[216px] shrink-0 flex-col border-r border-[var(--line-soft)] bg-[var(--sidebar)] px-3 py-4" data-kid="1-1-1" data-name="sidebar navigation panel" id="sidebar">
+            <div class="brand-row mb-8 flex h-10 items-center gap-3 rounded-lg px-3" data-kid="1-1-1-1" data-name="brand header row">
+                <div aria-label="Kagerou gibbous mark" class="relative h-7 w-7 shrink-0" data-kid="1-1-1-1-1" data-name="kagerou gibbous mark icon" role="img">
+                    <span class="absolute inset-0 rounded-full bg-[var(--lavender)]" data-kid="1-1-1-1-1-1" data-name="mark fill">
+                    </span>
+                    <span class="absolute -right-3 top-1 h-5 w-5 rounded-full" data-kid="1-1-1-1-1-2" data-name="mark cutout" id="lunar-mark-cutout">
+                    </span>
+                </div>
+                <span class="sidebar-wordmark lunar-tight whitespace-nowrap text-[13px] font-semibold uppercase tracking-[0.2em] text-[var(--text-primary)]" data-kid="1-1-1-1-2" data-name="brand wordmark">
+                    Kagerou
+                </span>
+            </div>
+            <nav aria-label="App sections" class="flex flex-col gap-1" data-kid="1-1-1-2" data-name="navigation link group">
+                <button aria-current="page" class="nav-item group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] font-semibold text-[var(--highlight)] focus-visible:outline-none" data-active="true" data-kid="1-1-1-2-1" data-name="dashboard navigation link" title="Dashboard" type="button">
+                    <i aria-hidden="true" class="nav-icon ti ti-layout-dashboard shrink-0 text-[18px] text-[var(--text-muted)]" data-kid="1-1-1-2-1-1" data-name="dashboard icon">
+                    </i>
+                    <span class="sidebar-label whitespace-nowrap" data-kid="1-1-1-2-1-2" data-name="dashboard label">
+                        Dashboard
+                    </span>
+                </button>
+                <button class="nav-item group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] text-[var(--text-body)] focus-visible:outline-none" data-kid="1-1-1-2-2" data-name="profiles navigation link" title="Profiles" type="button">
+                    <i aria-hidden="true" class="nav-icon ti ti-server shrink-0 text-[18px] text-[var(--text-muted)]" data-kid="1-1-1-2-2-1" data-name="profiles icon">
+                    </i>
+                    <span class="sidebar-label whitespace-nowrap" data-kid="1-1-1-2-2-2" data-name="profiles label">
+                        Profiles
+                    </span>
+                </button>
+                <button class="nav-item group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] text-[var(--text-body)] focus-visible:outline-none" data-kid="1-1-1-2-3" data-name="subscriptions navigation link" title="Subscriptions" type="button">
+                    <i aria-hidden="true" class="nav-icon ti ti-rss shrink-0 text-[18px] text-[var(--text-muted)]" data-kid="1-1-1-2-3-1" data-name="subscriptions icon">
+                    </i>
+                    <span class="sidebar-label whitespace-nowrap" data-kid="1-1-1-2-3-2" data-name="subscriptions label">
+                        Subscriptions
+                    </span>
+                </button>
+                <button class="nav-item group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] text-[var(--text-body)] focus-visible:outline-none" data-kid="1-1-1-2-4" data-name="routing rules navigation link" title="Routing rules" type="button">
+                    <i aria-hidden="true" class="nav-icon ti ti-route shrink-0 text-[18px] text-[var(--text-muted)]" data-kid="1-1-1-2-4-1" data-name="routing rules icon">
+                    </i>
+                    <span class="sidebar-label whitespace-nowrap" data-kid="1-1-1-2-4-2" data-name="routing rules label">
+                        Routing rules
+                    </span>
+                </button>
+                <button class="nav-item group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] text-[var(--text-body)] focus-visible:outline-none" data-kid="1-1-1-2-5" data-name="logs navigation link" title="Logs" type="button">
+                    <i aria-hidden="true" class="nav-icon ti ti-notes shrink-0 text-[18px] text-[var(--text-muted)]" data-kid="1-1-1-2-5-1" data-name="logs icon">
+                    </i>
+                    <span class="sidebar-label whitespace-nowrap" data-kid="1-1-1-2-5-2" data-name="logs label">
+                        Logs
+                    </span>
+                </button>
+                <button class="nav-item group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] text-[var(--text-body)] focus-visible:outline-none" data-kid="1-1-1-2-6" data-name="settings navigation link" title="Settings" type="button">
+                    <i aria-hidden="true" class="nav-icon ti ti-settings shrink-0 text-[18px] text-[var(--text-muted)]" data-kid="1-1-1-2-6-1" data-name="settings icon">
+                    </i>
+                    <span class="sidebar-label whitespace-nowrap" data-kid="1-1-1-2-6-2" data-name="settings label">
+                        Settings
+                    </span>
+                </button>
+            </nav>
+            <button aria-expanded="true" class="collapse-button mt-auto flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] text-[var(--text-muted)] focus-visible:outline-none hover:bg-[var(--hover)]" data-kid="1-1-1-3" data-name="sidebar collapse toggle button" id="collapse-sidebar" title="Collapse sidebar" type="button">
+                <i aria-hidden="true" class="collapse-icon ti ti-layout-sidebar-left-collapse shrink-0 text-[18px]" data-kid="1-1-1-3-1" data-name="collapse icon">
+                </i>
+                <span class="sidebar-label whitespace-nowrap" data-kid="1-1-1-3-2" data-name="collapse button label">
+                    Collapse sidebar
+                </span>
+            </button>
+        </aside>
+        <main aria-labelledby="page-title" class="min-w-0 flex-1 px-12 py-9" data-kid="1-1-2" data-name="main content area">
+            <header class="mb-6 flex items-end justify-between" data-kid="1-1-2-1" data-name="page header section">
+                <div data-kid="1-1-2-1-1" data-name="page title container">
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--text-muted)]" data-kid="1-1-2-1-1-1" data-name="page breadcrumb label">
+                        Connection
+                    </p>
+                    <h1 class="lunar-tight mt-2 text-[30px] font-semibold leading-none tracking-[-0.02em] text-[var(--text-primary)]" data-kid="1-1-2-1-1-2" data-name="main page title" id="page-title">
+                        Dashboard
+                    </h1>
+                </div>
+            </header>
+            <div class="main-grid grid grid-cols-12 items-stretch gap-5" data-kid="1-1-2-2" data-name="main content grid">
+                <section aria-labelledby="connection-stage-title" class="connection-stage relative col-span-8 flex min-h-[584px] flex-col overflow-hidden rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface)] p-8" data-kid="1-1-2-2-1" data-name="connection stage section">
+                    <div aria-hidden="true" class="pointer-events-none absolute right-7 top-7 flex items-center gap-2" data-kid="1-1-2-2-1-1" data-name="connection status indicator container">
+                        <span class="h-px w-7 bg-[var(--line)]" data-kid="1-1-2-2-1-1-1" data-name="horizontal line">
+                        </span>
+                        <span class="h-1.5 w-1.5 rounded-full bg-[var(--lavender)]" data-kid="1-1-2-2-1-1-2" data-name="status dot">
+                        </span>
+                    </div>
+                    <div data-kid="1-1-2-2-1-2" data-name="connection details container">
+                        <p class="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]" data-kid="1-1-2-2-1-2-1" data-name="active profile label">
+                            Active profile
+                        </p>
+                        <h2 class="lunar-tight mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em] text-[var(--text-primary)]" data-kid="1-1-2-2-1-2-2" data-name="active profile name" id="connection-stage-title">
+                            Aurora / Seattle 03
+                        </h2>
+                        <p class="mt-2 flex items-center gap-2 text-[14px] text-[var(--text-body)]" data-kid="1-1-2-2-1-2-3" data-name="location details container">
+                            <i aria-hidden="true" class="ti ti-map-pin text-[16px] text-[var(--text-muted)]" data-kid="1-1-2-2-1-2-3-1" data-name="location icon">
+                            </i>
+                            <span data-kid="1-1-2-2-1-2-3-2" data-name="location text">
+                                Seattle, United States
+                            </span>
+                        </p>
+                    </div>
+                    <div class="flex flex-1 flex-col items-center justify-center" data-kid="1-1-2-2-1-3" data-name="connection controls container">
+                        <button aria-label="Connection control: Connected" aria-pressed="true" class="dial-shell flex h-[190px] w-[190px] shrink-0 items-center justify-center rounded-full border-[3px] border-[var(--lavender)] bg-[var(--canvas)] p-2 shadow-[0_20px_64px_rgba(9,8,13,.20)] focus-visible:outline-none" data-dynamic="true" data-kid="1-1-2-2-1-3-1" data-name="connection toggle dial" data-reason="status text and label state updated by script" data-state="connected" id="connect-dial" type="button">
+                            <span class="dial-inner flex h-full w-full flex-col items-center justify-center rounded-full border border-[var(--line)] bg-[var(--raised)]" data-kid="1-1-2-2-1-3-1-1" data-name="dial inner circle">
+                                <i aria-hidden="true" class="ti ti-power text-[25px] leading-none text-[var(--highlight)]" data-kid="1-1-2-2-1-3-1-1-1" data-name="power icon">
+                                </i>
+                                <span class="dial-status lunar-tight mt-3 text-[18px] font-semibold text-[var(--text-primary)]" data-dynamic="true" data-kid="1-1-2-2-1-3-1-1-2" data-name="dial status label" data-reason="text updated to Connected/Disconnected by script">
+                                    Connected
+                                </span>
+                            </span>
+                        </button>
+                        <button class="mt-6 rounded-lg px-3 py-1 text-[12px] text-[var(--lavender)] underline decoration-[var(--lavender)]/50 underline-offset-4 hover:text-[var(--highlight)] focus-visible:outline-none" data-action="disconnect" data-dynamic="true" data-kid="1-1-2-2-1-3-2" data-name="disconnect action button" data-reason="button text toggled by script" id="disconnect-action" type="button">
+                            Disconnect
+                        </button>
+                        <div class="mt-10 flex rounded-lg border border-[var(--line)] bg-[var(--canvas)] p-1" data-kid="1-1-2-2-1-3-3" data-name="mode toggle container">
+                            <button aria-checked="true" aria-label="TUN mode" class="lunar-switch is-on flex h-10 items-center gap-3 rounded-md px-3 text-left text-[13px] text-[var(--text-body)] focus-visible:outline-none" data-dynamic="true" data-kid="1-1-2-2-1-3-3-1" data-name="tun mode switch" data-reason="aria-checked and CSS class updated by script" data-toggle="tun" role="switch" type="button">
+                                <span data-kid="1-1-2-2-1-3-3-1-1" data-name="tun mode label">
+                                    TUN mode
+                                </span>
+                                <span aria-hidden="true" class="toggle-track flex h-5 w-9 items-center rounded-full bg-[var(--lavender)] p-0.5" data-kid="1-1-2-2-1-3-3-1-2" data-name="tun toggle track">
+                                    <span class="toggle-thumb block h-4 w-4 rounded-full bg-[var(--ink)]" data-kid="1-1-2-2-1-3-3-1-2-1" data-name="tun toggle thumb">
+                                    </span>
+                                </span>
+                            </button>
+                            <span aria-hidden="true" class="my-2 w-px bg-[var(--line)]" data-kid="1-1-2-2-1-3-3-2" data-name="divider">
+                            </span>
+                            <button aria-checked="false" aria-label="System proxy" class="lunar-switch flex h-10 items-center gap-3 rounded-md px-3 text-left text-[13px] text-[var(--text-body)] focus-visible:outline-none" data-dynamic="true" data-kid="1-1-2-2-1-3-3-3" data-name="system proxy switch" data-reason="aria-checked and CSS class updated by script" data-toggle="proxy" role="switch" type="button">
+                                <span data-kid="1-1-2-2-1-3-3-3-1" data-name="system proxy label">
+                                    System proxy
+                                </span>
+                                <span aria-hidden="true" class="toggle-track flex h-5 w-9 items-center rounded-full bg-[var(--toggle-off)] p-0.5" data-kid="1-1-2-2-1-3-3-3-2" data-name="proxy toggle track">
+                                    <span class="toggle-thumb block h-4 w-4 rounded-full bg-[var(--text-muted)]" data-kid="1-1-2-2-1-3-3-3-2-1" data-name="proxy toggle thumb">
+                                    </span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+                <aside aria-labelledby="telemetry-title" class="telemetry-panel col-span-4 flex min-h-[584px] flex-col overflow-hidden rounded-[10px] border border-[var(--line-soft)] bg-[var(--surface)]" data-kid="1-1-2-2-2" data-name="telemetry panel">
+                    <div class="telemetry-top border-b border-[var(--line)] px-6 py-6" data-kid="1-1-2-2-2-1" data-name="telemetry header">
+                        <div class="flex items-center justify-between" data-kid="1-1-2-2-2-1-1" data-name="telemetry title row">
+                            <h2 class="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]" data-kid="1-1-2-2-2-1-1-1" data-name="telemetry section title" id="telemetry-title">
+                                Live telemetry
+                            </h2>
+                            <span class="lunar-mono text-[10px] text-[var(--text-muted)]" data-kid="1-1-2-2-2-1-1-2" data-name="telemetry interval label">
+                                60 SEC
+                            </span>
+                        </div>
+                        <div class="mt-7 grid grid-cols-2 gap-4" data-kid="1-1-2-2-2-1-2" data-name="speed stats container">
+                            <div data-kid="1-1-2-2-2-1-2-1" data-name="download speed container">
+                                <p class="text-[12px] text-[var(--text-muted)]" data-kid="1-1-2-2-2-1-2-1-1" data-name="download label">
+                                    Download
+                                </p>
+                                <p class="lunar-tight mt-1 whitespace-nowrap text-[29px] font-semibold leading-none tabular-nums tracking-[-0.02em] text-[var(--text-primary)]" data-kid="1-1-2-2-2-1-2-1-2" data-name="download speed value">
+                                    82.4
+                                    <span class="text-[12px] font-medium tracking-normal text-[var(--text-body)]" data-kid="1-1-2-2-2-1-2-1-2-1" data-name="download unit">
+                                        Mbps
+                                    </span>
+                                </p>
+                            </div>
+                            <div data-kid="1-1-2-2-2-1-2-2" data-name="upload speed container">
+                                <p class="text-[12px] text-[var(--text-muted)]" data-kid="1-1-2-2-2-1-2-2-1" data-name="upload label">
+                                    Upload
+                                </p>
+                                <p class="lunar-tight mt-1 whitespace-nowrap text-[29px] font-semibold leading-none tabular-nums tracking-[-0.02em] text-[var(--text-primary)]" data-kid="1-1-2-2-2-1-2-2-2" data-name="upload speed value">
+                                    18.7
+                                    <span class="text-[12px] font-medium tracking-normal text-[var(--text-body)]" data-kid="1-1-2-2-2-1-2-2-2-1" data-name="upload unit">
+                                        Mbps
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="telemetry-chart flex-1 px-6 py-6" data-kid="1-1-2-2-2-2" data-name="telemetry chart container">
+                        <div class="flex items-center justify-between" data-kid="1-1-2-2-2-2-1" data-name="chart header">
+                            <p class="text-[12px] text-[var(--text-body)]" data-kid="1-1-2-2-2-2-1-1" data-name="chart description">
+                                Last 60 seconds
+                            </p>
+                            <span class="lunar-mono text-[10px] text-[var(--text-muted)]" data-kid="1-1-2-2-2-2-1-2" data-name="chart unit label">
+                                Mbps
+                            </span>
+                        </div>
+                        <svg aria-label="Download and upload speeds over the last 60 seconds" class="mt-5 h-[202px] w-full" data-kid="1-1-2-2-2-2-2" data-name="telemetry speed chart" role="img" viewbox="0 0 260 200">
+                            <path d="M0 44H260 M0 80H260 M0 115H260 M0 150H260" fill="none" opacity="0.72" stroke="var(--line)" stroke-dasharray="2 6" stroke-width="1">
+                            </path>
+                            <path d="M0 164H260" fill="none" stroke="var(--line)" stroke-width="1">
+                            </path>
+                            <path d="M0 158 C13 153 22 149 31 142 S47 129 57 139 S72 156 84 141 S98 116 109 128 S125 145 137 117 S151 104 161 112 S177 124 189 93 S204 103 215 80 S231 91 242 62 S252 57 260 47" fill="none" stroke="var(--lavender)" stroke-linecap="round" stroke-width="2">
+                            </path>
+                            <path d="M0 163 C14 158 24 159 35 154 S52 158 64 151 S83 151 94 144 S112 148 123 138 S141 142 151 132 S168 136 180 123 S195 131 207 116 S223 122 234 108 S250 111 260 99" fill="none" stroke="var(--upload-line)" stroke-linecap="round" stroke-width="2">
+                            </path>
+                            <g fill="var(--text-muted)" font-family="IBM Plex Mono, monospace" font-size="9">
+                                <text x="0" y="184">
+                                    60s
+                                </text>
+                                <text x="119" y="184">
+                                    30s
+                                </text>
+                                <text x="239" y="184">
+                                    now
+                                </text>
+                            </g>
+                            <g opacity="0.8" stroke="var(--text-muted)" stroke-width="1">
+                                <path d="M0 164v5 M52 164v5 M104 164v5 M156 164v5 M208 164v5 M260 164v5">
+                                </path>
+                            </g>
+                            <g class="lunar-mono" font-size="10" font-weight="500">
+                                <rect fill="var(--surface)" height="19" opacity="0.96" rx="3" width="72" x="185" y="17">
+                                </rect>
+                                <text fill="var(--lavender)" x="191" y="30">
+                                    Download
+                                </text>
+                                <rect fill="var(--surface)" height="19" opacity="0.96" rx="3" width="72" x="185" y="139">
+                                </rect>
+                                <text fill="var(--upload-line)" x="191" y="152">
+                                    Upload
+                                </text>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="telemetry-session flex items-end justify-between border-t border-[var(--line)] px-6 py-6" data-kid="1-1-2-2-2-3" data-name="telemetry session container">
+                        <div data-kid="1-1-2-2-2-3-1" data-name="session traffic stats container">
+                            <p class="text-[12px] text-[var(--text-muted)]" data-kid="1-1-2-2-2-3-1-1" data-name="session traffic label">
+                                Session traffic
+                            </p>
+                            <p class="lunar-tight mt-2 text-[27px] font-semibold leading-none tabular-nums tracking-[-0.02em] text-[var(--text-primary)]" data-kid="1-1-2-2-2-3-1-2" data-name="session traffic value">
+                                1.84
+                                <span class="text-[12px] font-medium tracking-normal text-[var(--text-body)]" data-kid="1-1-2-2-2-3-1-2-1" data-name="session traffic unit">
+                                    GB
+                                </span>
+                            </p>
+                        </div>
+                        <i aria-hidden="true" class="ti ti-activity text-[19px] text-[var(--lavender)]" data-kid="1-1-2-2-2-3-2" data-name="activity icon">
+                        </i>
+                    </div>
+                </aside>
+            </div>
+        </main>
+    </div>
+</div>
+<script>
+    (() => {
+    const app = document.getElementById('lunar-app');
+    const collapseButton = document.getElementById('collapse-sidebar');
+    const dial = document.getElementById('connect-dial');
+    const disconnectAction = document.getElementById('disconnect-action');
+    const status = dial.querySelector('.dial-status');
+
+    collapseButton.addEventListener('click', () => {
+      const collapsed = app.classList.toggle('is-collapsed');
+      collapseButton.setAttribute('aria-expanded', String(!collapsed));
+      collapseButton.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    });
+
+    document.querySelectorAll('[data-toggle]').forEach((toggle) => {
+      toggle.addEventListener('click', () => {
+        const nextState = toggle.getAttribute('aria-checked') !== 'true';
+        toggle.setAttribute('aria-checked', String(nextState));
+        toggle.classList.toggle('is-on', nextState);
+      });
+    });
+
+    const setConnection = (connected) => {
+      dial.dataset.state = connected ? 'connected' : 'disconnected';
+      dial.setAttribute('aria-pressed', String(connected));
+      dial.setAttribute('aria-label', `Connection control: ${connected ? 'Connected' : 'Disconnected'}`);
+      status.textContent = connected ? 'Connected' : 'Disconnected';
+      disconnectAction.textContent = connected ? 'Disconnect' : 'Connect';
+      disconnectAction.dataset.action = connected ? 'disconnect' : 'connect';
+    };
+
+    dial.addEventListener('click', () => setConnection(dial.dataset.state !== 'connected'));
+    disconnectAction.addEventListener('click', () => setConnection(dial.dataset.state !== 'connected'));
+  })();
+</script>
+<script>
+(() => {
+  const normalize = () => {
+    const needle = String.fromCharCode(108, 117, 110, 97, 114);
+    const swap = (value) => value.replace(new RegExp(needle, 'gi'), (part) => part[0] === 'L' ? 'Kagerou' : 'kagerou');
+    const visit = (node) => {
+      if (node.nodeType === 3) {
+        node.nodeValue = swap(node.nodeValue);
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      Array.from(node.attributes || []).forEach((attribute) => {
+        if (attribute.name === 'data-kid') return;
+        const nextValue = swap(attribute.value);
+        if (nextValue !== attribute.value) node.setAttribute(attribute.name, nextValue);
+      });
+      Array.from(node.childNodes || []).forEach(visit);
+    };
+    visit(document.body);
+  };
+  normalize();
+})();
+</script>
+</div>
+</div>
+</body></html>

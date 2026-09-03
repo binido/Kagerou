@@ -1,0 +1,251 @@
+import type {
+  LogLevel,
+  LogEntry,
+  Outbound,
+  Profile,
+  ProfileGroup,
+  RoutingPreset,
+  RoutingRule,
+  SettingsState,
+  Source,
+  TelemetryPoint,
+} from '@/types/kagerou'
+
+const result = (value: string, tone: Profile['tcp']['tone']): Profile['tcp'] => ({
+  value,
+  tone,
+})
+
+export const initialProfiles: Profile[] = [
+  {
+    id: 'p-seattle',
+    name: 'Seattle 03',
+    region: 'us-west-2',
+    protocol: 'VLESS',
+    origin: 'local',
+    selected: true,
+    tcp: result('42 ms', 'good'),
+    url: result('200 OK', 'good'),
+    key: 'vless://local-seattle-03',
+  },
+  {
+    id: 'p-vancouver',
+    name: 'Vancouver Edge',
+    region: 'ca-west-1',
+    protocol: 'Trojan',
+    origin: 'imported',
+    sourceId: 'personal',
+    selected: false,
+    tcp: result('68 ms', 'warn'),
+    url: result('200 OK', 'good'),
+    key: 'trojan://personal-vancouver',
+  },
+  {
+    id: 'p-new-york',
+    name: 'New York 02',
+    region: 'us-east-1',
+    protocol: 'Hysteria2',
+    origin: 'imported',
+    sourceId: 'personal',
+    selected: false,
+    tcp: result('Testing…', 'warn'),
+    url: result('Not tested', 'muted'),
+    key: 'hysteria2://personal-new-york',
+  },
+  {
+    id: 'p-chicago',
+    name: 'Chicago Relay',
+    region: 'us-central-1',
+    protocol: 'Shadowsocks',
+    origin: 'imported',
+    sourceId: 'personal',
+    selected: false,
+    tcp: result('No response', 'bad'),
+    url: result('Timeout', 'bad'),
+    key: 'ss://personal-chicago',
+  },
+  {
+    id: 'p-montreal',
+    name: 'Montreal 04',
+    region: 'ca-east-1',
+    protocol: 'VLESS',
+    origin: 'imported',
+    sourceId: 'personal',
+    selected: false,
+    tcp: result('74 ms', 'warn'),
+    url: result('200 OK', 'good'),
+    key: 'vless://personal-montreal',
+  },
+  {
+    id: 'p-frankfurt',
+    name: 'Frankfurt Core',
+    region: 'eu-central-1',
+    protocol: 'VMess',
+    origin: 'imported',
+    sourceId: 'work',
+    selected: false,
+    tcp: result('54 ms', 'good'),
+    url: result('200 OK', 'good'),
+    key: 'vmess://work-frankfurt',
+  },
+  {
+    id: 'p-amsterdam',
+    name: 'Amsterdam Edge',
+    region: 'eu-west-1',
+    protocol: 'VLESS',
+    origin: 'imported',
+    sourceId: 'work',
+    selected: false,
+    tcp: result('76 ms', 'warn'),
+    url: result('200 OK', 'good'),
+    key: 'vless://work-amsterdam',
+  },
+  {
+    id: 'p-london',
+    name: 'London 01',
+    region: 'uk-south-1',
+    protocol: 'Trojan',
+    origin: 'imported',
+    sourceId: 'work',
+    selected: false,
+    tcp: result('81 ms', 'good'),
+    url: result('200 OK', 'good'),
+    key: 'trojan://work-london',
+  },
+]
+
+export const initialProfileGroups: ProfileGroup[] = [
+  {
+    id: 'my-profiles',
+    label: 'My profiles',
+    profileIds: ['p-seattle', 'p-vancouver', 'p-new-york'],
+    open: true,
+  },
+  {
+    id: 'imported-profiles',
+    label: 'Imported from Sources',
+    profileIds: ['p-chicago', 'p-montreal', 'p-frankfurt', 'p-amsterdam', 'p-london'],
+    open: false,
+    managed: true,
+  },
+]
+
+export const initialSources: Source[] = [
+  {
+    id: 'personal',
+    name: 'Personal / North America',
+    type: 'url',
+    value: 'https://vpn.example.com/personal',
+    profileCount: 4,
+    status: 'up-to-date',
+    lastRefresh: 'Updated 12 min ago',
+    originLabel: 'Remote URL',
+  },
+  {
+    id: 'emergency-key',
+    name: 'Emergency access key',
+    type: 'key',
+    value: 'vless://emergency-access-key',
+    profileCount: 1,
+    status: 'ready',
+    lastRefresh: 'Added just now',
+    originLabel: 'Local key',
+  },
+  {
+    id: 'work',
+    name: 'Work / Europe',
+    type: 'url',
+    value: 'https://vpn.example.com/work',
+    profileCount: 3,
+    status: 'refresh-due',
+    lastRefresh: 'Updated 2 days ago',
+    originLabel: 'Remote URL',
+  },
+]
+
+export const initialRoutingPresets: RoutingPreset[] = [
+  {
+    id: 'bypass-lan',
+    label: 'Bypass LAN',
+    description: 'Send local network traffic directly.',
+    enabled: true,
+  },
+  {
+    id: 'block-ads',
+    label: 'Block ads',
+    description: 'Block known advertising domains.',
+    enabled: true,
+  },
+]
+
+export const initialRoutingRules: RoutingRule[] = [
+  { id: 'lan', match: '192.168.0.0/16', outbound: 'Direct', selected: false },
+  { id: 'localhost', match: 'localhost', outbound: 'Direct', selected: true },
+  { id: 'example', match: 'example.com', outbound: 'Proxy', selected: false },
+  { id: 'ads', match: 'ads.example.net', outbound: 'Block', selected: false },
+]
+
+const logFixtures: Array<[LogLevel, string]> = [
+  ['INFO', 'core service started; build 1.8.4 (linux/amd64)'],
+  ['INFO', 'loaded 3 profiles from local store'],
+  ['INFO', 'active profile set to Tokyo · Edge 01'],
+  ['INFO', 'TUN interface created: kagerou0 / 10.8.0.2'],
+  ['INFO', 'system proxy enabled for HTTP and SOCKS5'],
+  ['INFO', 'route table synced: 18 rules / 6 direct'],
+  ['INFO', 'dns resolver ready at 1.1.1.1'],
+  ['INFO', 'outbound/proxy dialing tokyo-01.kagerou.network:443'],
+  ['WARN', 'certificate chain will expire in 21 days'],
+  ['INFO', 'handshake completed in 184 ms'],
+  ['INFO', 'uplink accepting traffic on 127.0.0.1:10808'],
+  ['INFO', 'request GET example.com via proxy'],
+  ['WARN', 'dns cache is 82% full; pruning 24 entries'],
+  ['ERROR', 'upstream reset by peer: cdn.example.net:443'],
+  ['INFO', 'retrying request via proxy (attempt 2/3)'],
+  ['INFO', 'request recovered on attempt 2'],
+  ['INFO', 'health check passed: tokyo-01 42 ms'],
+  ['WARN', 'packet loss detected on uplink: 2.1%'],
+  ['INFO', 'route match: media.example.com → proxy'],
+  ['INFO', 'route match: 192.168.1.24 → direct'],
+  ['ERROR', 'failed to resolve metrics.kagerou.network: timeout'],
+  ['INFO', 'reconnect scheduled in 5 seconds'],
+  ['INFO', 'outbound/proxy reconnected; session resumed'],
+  ['INFO', 'system proxy state unchanged: enabled'],
+  ['INFO', 'downloaded ruleset: kagerou-main-2026-09-02'],
+  ['WARN', 'stale subscription metadata; refresh due in 12h'],
+  ['INFO', 'log stream ready'],
+  ['INFO', 'keepalive acknowledged'],
+  ['INFO', 'connection remains active'],
+  ['INFO', 'session counters updated: ↓ 184.2 MB · ↑ 12.8 MB'],
+]
+
+export const initialLogs: LogEntry[] = logFixtures.map(([level, message], index) => ({
+  id: `log-${index + 1}`,
+  timestamp: `2026-09-02 19:17:${String(3 + index).padStart(2, '0')}.${String(index * 137).padStart(3, '0')}`,
+  level,
+  message,
+}))
+
+export const initialTelemetry: TelemetryPoint[] = [
+  { label: '60s', download: 18, upload: 5 },
+  { label: '55s', download: 22, upload: 7 },
+  { label: '50s', download: 34, upload: 9 },
+  { label: '45s', download: 27, upload: 11 },
+  { label: '40s', download: 41, upload: 13 },
+  { label: '35s', download: 34, upload: 16 },
+  { label: '30s', download: 49, upload: 18 },
+  { label: '25s', download: 56, upload: 21 },
+  { label: '20s', download: 46, upload: 20 },
+  { label: '15s', download: 66, upload: 24 },
+  { label: '10s', download: 59, upload: 26 },
+  { label: '5s', download: 74, upload: 30 },
+  { label: 'now', download: 82, upload: 34 },
+]
+
+export const initialSettings: SettingsState = {
+  theme: 'dark',
+  language: 'English',
+  startup: true,
+  tunInterface: 'utun / tun0',
+}
+
+export const routeOutboundOptions: Outbound[] = ['Direct', 'Proxy', 'Block']
