@@ -28,3 +28,6 @@ pnpm-debug.log*
 
 # Local-only project notes
 CLAUDE.md
+
+# Fetched by scripts/fetch-singbox.mjs, never committed
+src-tauri/binaries/
