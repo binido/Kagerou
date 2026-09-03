@@ -1,0 +1,47 @@
+{
+  "page": {
+    "eyebrow": "Network",
+    "title": "Routing rules",
+    "description": "Decide which traffic goes direct, through your proxy, or is blocked.",
+    "connectionActive": "Connection active",
+    "presets": "Presets",
+    "commonShortcuts": "Common traffic shortcuts",
+    "appliedBeforeCustom": "Applied before custom rules",
+    "customRules": "Custom rules",
+    "trafficMatches": "Traffic matches",
+    "firstMatchWins": "First match wins",
+    "rulesCount": "{{count}} rules",
+    "evaluatedTopBottom": "Rules are evaluated from top to bottom."
+  },
+  "presets": {
+    "bypassLan": {
+      "label": "Bypass LAN",
+      "description": "Send local network traffic directly."
+    },
+    "blockAds": {
+      "label": "Block ads",
+      "description": "Block known advertising domains."
+    },
+    "toggle": "Toggle {{name}}"
+  },
+  "table": {
+    "match": "Match",
+    "direction": "Direction",
+    "outbound": "Outbound",
+    "edit": "Edit",
+    "direct": "Direct",
+    "proxy": "Proxy",
+    "block": "Block",
+    "editRule": "Edit {{match}}"
+  },
+  "dialog": {
+    "title": "Edit routing rule",
+    "description": "Rules are evaluated from top to bottom. The first match wins.",
+    "match": "Match",
+    "matchPlaceholder": "example.com or 192.168.0.0/16",
+    "outbound": "Outbound",
+    "error": "Enter a domain, IP range, or hostname.",
+    "cancel": "Cancel",
+    "save": "Save rule"
+  }
+}

@@ -1,13 +1,16 @@
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
-import type { TelemetryPoint } from '@/types/kagerou'
+import { useTranslation } from 'react-i18next'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
-const chartConfig = {
-  download: { label: 'Download', color: 'var(--lavender)' },
-  upload: { label: 'Upload', color: 'var(--upload-line)' },
-} satisfies ChartConfig
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import type { TelemetryPoint } from '@/types/kagerou'
 
 export function TelemetryChart({ data }: { data: TelemetryPoint[] }) {
+  const { t } = useTranslation('dashboard')
+  const chartConfig = {
+    download: { label: t('telemetry.download'), color: 'var(--lavender)' },
+    upload: { label: t('telemetry.upload'), color: 'var(--upload-line)' },
+  } satisfies ChartConfig
+
   return (
     <ChartContainer config={chartConfig} className="h-full w-full min-w-0">
       <LineChart accessibilityLayer data={data} margin={{ top: 8, right: 4, left: -28, bottom: 0 }}>

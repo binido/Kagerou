@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Folder, Lock, MonitorCog, Radar } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,8 +24,12 @@ interface ProfileGroupCardProps {
 }
 
 export function ProfileGroupCard({ group, profiles, movableGroups, runningTests, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileGroupCardProps) {
+  const { t } = useTranslation('profiles')
+  const { t: tc } = useTranslation('common')
   const isSubscription = group.kind === 'subscription'
   const isDefault = group.kind === 'default'
+  const groupLabel = isDefault ? t('group.defaultName') : group.label
+  const profileCount = tc(profiles.length === 1 ? 'counts.vpnOne' : 'counts.vpnMany', { count: profiles.length })
 
   return (
     <Card className="overflow-visible rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
@@ -32,17 +37,17 @@ export function ProfileGroupCard({ group, profiles, movableGroups, runningTests,
         <Button aria-controls={`${group.id}-panel`} aria-expanded={group.open} className="min-w-0 flex-1 justify-start gap-3 !bg-transparent py-2 text-left text-primary hover:!bg-transparent focus-visible:!bg-transparent hover:text-lavender-hi" onClick={onToggle} type="button" variant="ghost">
           {group.open ? <ChevronDown aria-hidden="true" className="size-[18px] shrink-0 text-muted-copy" strokeWidth={1.7} /> : <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-muted-copy" strokeWidth={1.7} />}
           <span className="min-w-0">
-            <span className="block truncate text-[17px] font-semibold tracking-[-0.015em]">{group.label}</span>
-            <span className="mt-1 block text-[12px] font-normal text-muted-copy">{profiles.length} {profiles.length === 1 ? 'VPN' : 'VPNs'}{isDefault ? ' · single keys start here' : ''}</span>
+            <span className="block truncate text-[17px] font-semibold tracking-[-0.015em]">{groupLabel}</span>
+            <span className="mt-1 block text-[12px] font-normal text-muted-copy">{profileCount}{isDefault ? t('group.singleKeysStartHere') : ''}</span>
           </span>
         </Button>
         <div className="flex shrink-0 items-center gap-1.5">
           {isSubscription ? (
-            <Badge className="gap-1.5 rounded-md border border-good/20 bg-transparent px-2.5 py-2 font-mono text-[10px] font-normal text-good" variant="outline"><Lock aria-hidden="true" className="size-3" />Managed on Sources</Badge>
+            <Badge className="gap-1.5 rounded-md border border-good/20 bg-transparent px-2.5 py-2 font-mono text-[10px] font-normal text-good" variant="outline"><Lock aria-hidden="true" className="size-3" />{t('group.managedOnSources')}</Badge>
           ) : isDefault ? (
-            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy"><MonitorCog aria-hidden="true" className="size-3.5" />Default group</span>
+            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy"><MonitorCog aria-hidden="true" className="size-3.5" />{t('group.defaultGroup')}</span>
           ) : (
-            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy"><Folder aria-hidden="true" className="size-3.5" />Custom group</span>
+            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy"><Folder aria-hidden="true" className="size-3.5" />{t('group.customGroup')}</span>
           )}
           <ProfileGroupActionsMenu group={group} onRename={() => onRenameGroup(group)} />
         </div>
@@ -51,9 +56,9 @@ export function ProfileGroupCard({ group, profiles, movableGroups, runningTests,
         <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
           <ProfileTable movableGroups={movableGroups} onDelete={onDelete} onMoveToGroup={onMoveToGroup} onRename={onRename} onSelect={onSelect} onTest={onTest} profiles={profiles} runningTests={runningTests} />
           {isSubscription ? (
-            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Radar aria-hidden="true" className="size-3.5 text-lavender" />Subscription VPNs stay with this source. Rename or refresh the source to update them.</div>
+            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Radar aria-hidden="true" className="size-3.5 text-lavender" />{t('group.subscriptionNote')}</div>
           ) : isDefault ? (
-            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Folder aria-hidden="true" className="size-3.5 text-lavender" />Single-key VPNs can be moved from Default into any custom group.</div>
+            <div className="flex items-center gap-1.5 border-t border-hairline px-5 py-3.5 text-[11px] text-muted-copy"><Folder aria-hidden="true" className="size-3.5 text-lavender" />{t('group.defaultNote')}</div>
           ) : null}
         </div>
       ) : null}

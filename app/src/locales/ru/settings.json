@@ -1,0 +1,56 @@
+{
+  "page": {
+    "title": "Настройки",
+    "instant": "Изменения применяются сразу"
+  },
+  "sections": {
+    "appearance": "Внешний вид",
+    "startup": "Запуск",
+    "subscriptions": "Подписки",
+    "groups": "Группы",
+    "network": "Сеть"
+  },
+  "fields": {
+    "theme": "Тема",
+    "language": "Язык",
+    "startAutomatically": "Запускать автоматически",
+    "autoUpdateSubscriptions": "Автообновление подписок",
+    "updateInterval": "Интервал обновления",
+    "customInterval": "Свой интервал (минуты)",
+    "sortVpns": "Сортировать VPN по",
+    "tunInterface": "Интерфейс TUN"
+  },
+  "descriptions": {
+    "autoUpdateSubscriptions": "Автоматически поддерживать группы URL-подписок актуальными.",
+    "customInterval": "Выберите, как часто Kagerou проверяет удалённые подписки.",
+    "customIntervalA11y": "Количество минут между автоматическими обновлениями подписок."
+  },
+  "options": {
+    "interval5": "5 минут",
+    "interval10": "10 минут",
+    "interval15": "15 минут",
+    "interval30": "30 минут",
+    "interval60": "60 минут",
+    "custom": "Свой интервал",
+    "sortPing": "Пинг",
+    "sortName": "Имя",
+    "sortProtocol": "Протокол",
+    "tunBoth": "utun / tun0",
+    "utun": "utun",
+    "tun0": "tun0"
+  },
+  "theme": {
+    "dark": "Тёмная",
+    "light": "Светлая",
+    "ariaLabel": "Тема"
+  },
+  "language": {
+    "options": {
+      "en": "English",
+      "ru": "Русский"
+    }
+  },
+  "validation": {
+    "positiveInteger": "Введите целое число больше 0."
+  }
+}

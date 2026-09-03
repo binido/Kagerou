@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import type { Source } from '@/types/kagerou'
 
@@ -8,18 +9,19 @@ interface RemoveSourceDialogProps {
 }
 
 export function RemoveSourceDialog({ source, onOpenChange, onConfirm }: RemoveSourceDialogProps) {
+  const { t } = useTranslation('sources')
   const subscription = source?.type === 'url'
 
   return (
     <AlertDialog onOpenChange={onOpenChange} open={Boolean(source)}>
       <AlertDialogContent className="border-hairline bg-raised text-primary sm:max-w-[440px]">
         <AlertDialogHeader>
-          <p className="type-eyebrow !text-bad">Remove source</p>
-          <AlertDialogTitle className="type-display mt-2 text-[23px] text-primary">Remove this source?</AlertDialogTitle>
-          <AlertDialogDescription className="text-[13px] leading-5 text-body">{subscription ? 'The subscription will stop refreshing. Its VPNs stay available in a new local group that you can reorganize.' : 'The key source will be removed. Its local VPN stays in Default and remains available.'}</AlertDialogDescription>
+          <p className="type-eyebrow !text-bad">{t('removeDialog.eyebrow')}</p>
+          <AlertDialogTitle className="type-display mt-2 text-[23px] text-primary">{t('removeDialog.title')}</AlertDialogTitle>
+          <AlertDialogDescription className="text-[13px] leading-5 text-body">{subscription ? t('removeDialog.subscriptionDescription') : t('removeDialog.keyDescription')}</AlertDialogDescription>
         </AlertDialogHeader>
         <p className="rounded-lg bg-canvas px-3 py-2.5 font-mono text-[11px] text-muted-copy">{source?.name}</p>
-        <AlertDialogFooter><AlertDialogCancel>Keep source</AlertDialogCancel><AlertDialogAction className="bg-bad text-[#21171a] hover:bg-bad/85" onClick={onConfirm}>Remove source</AlertDialogAction></AlertDialogFooter>
+        <AlertDialogFooter><AlertDialogCancel>{t('removeDialog.keep')}</AlertDialogCancel><AlertDialogAction className="bg-bad text-[#21171a] hover:bg-bad/85" onClick={onConfirm}>{t('removeDialog.remove')}</AlertDialogAction></AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   )

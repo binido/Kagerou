@@ -27,9 +27,3 @@ export const sortProfiles = (profiles: Profile[], mode: GroupSortMode) => profil
     return pingValue(left.profile) - pingValue(right.profile) || left.profile.name.localeCompare(right.profile.name, undefined, { sensitivity: 'base' }) || left.index - right.index
   })
   .map(({ profile }) => profile)
-
-export const groupSortLabels: Record<GroupSortMode, string> = {
-  ping: 'Ping',
-  name: 'Name',
-  protocol: 'Protocol',
-}

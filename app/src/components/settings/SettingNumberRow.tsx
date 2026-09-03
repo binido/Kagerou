@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +15,7 @@ interface SettingNumberRowProps {
 const isPositiveInteger = (value: string) => /^\d+$/.test(value) && Number(value) > 0
 
 export function SettingNumberRow({ id, label, description, value, onChange }: SettingNumberRowProps) {
+  const { t } = useTranslation('settings')
   const [rawValue, setRawValue] = useState(String(value))
   const [error, setError] = useState('')
 
@@ -24,7 +26,7 @@ export function SettingNumberRow({ id, label, description, value, onChange }: Se
       onChange(Number(nextValue))
       return
     }
-    setError('Enter a whole number greater than 0.')
+    setError(t('validation.positiveInteger'))
   }
 
   return (
@@ -34,8 +36,8 @@ export function SettingNumberRow({ id, label, description, value, onChange }: Se
         {description ? <p className="mt-1 text-[11px] leading-4 text-muted-copy">{description}</p> : null}
       </div>
       <div className="w-[148px] shrink-0">
-        <Input aria-describedby={`${id}-description${error ? ` ${id}-error` : ''}`} aria-invalid={Boolean(error)} className="number-input-no-spinners h-9 border-0 bg-surface text-left text-[13px] text-body" id={id} inputMode="numeric" min={1} onBlur={() => { if (!isPositiveInteger(rawValue)) setError('Enter a whole number greater than 0.') }} onChange={(event) => handleChange(event.target.value)} step={1} type="number" value={rawValue} />
-        <p className="sr-only" id={`${id}-description`}>Minutes between automatic subscription updates.</p>
+        <Input aria-describedby={`${id}-description${error ? ` ${id}-error` : ''}`} aria-invalid={Boolean(error)} className="number-input-no-spinners h-9 border-0 bg-surface text-left text-[13px] text-body" id={id} inputMode="numeric" min={1} onBlur={() => { if (!isPositiveInteger(rawValue)) setError(t('validation.positiveInteger')) }} onChange={(event) => handleChange(event.target.value)} step={1} type="number" value={rawValue} />
+        <p className="sr-only" id={`${id}-description`}>{t('descriptions.customIntervalA11y')}</p>
         {error ? <p className="mt-1 text-right text-[10px] leading-4 text-bad" id={`${id}-error`} role="alert">{error}</p> : null}
       </div>
     </div>

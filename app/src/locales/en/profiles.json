@@ -1,0 +1,120 @@
+{
+  "page": {
+    "eyebrow": "Kagerou  /  VPN groups",
+    "title": "Groups",
+    "description": "Organize single keys into local groups while subscriptions stay together."
+  },
+  "actions": {
+    "addGroup": "Add group",
+    "addSingleKey": "Add single key",
+    "runTest": "Run test"
+  },
+  "test": {
+    "allVpns": "All VPNs",
+    "tcp": "TCP connection",
+    "tcpShort": "TCP",
+    "url": "URL check",
+    "urlShort": "URL",
+    "about": "About diagnostics",
+    "aboutText": "Diagnostics use mock service data in this prototype."
+  },
+  "fallback": {
+    "vpn": "VPN",
+    "group": "group"
+  },
+  "feedback": {
+    "testRunning": "{{method}} test running for {{name}}…",
+    "testRunningAll": "{{method}} test running for all VPNs…",
+    "testFinished": "{{method}} test finished for {{name}}: {{value}}.",
+    "added": "{{name}} added to Default.",
+    "vpnNameEmpty": "VPN name cannot be empty.",
+    "renameLocalOnly": "Only local VPNs can be renamed.",
+    "renamed": "VPN renamed to {{name}}.",
+    "groupRenamed": "Group renamed to {{name}}.",
+    "groupCreated": "{{name}} group created.",
+    "moved": "VPN moved to {{group}}.",
+    "moveSubscription": "Subscription VPNs cannot be moved to another group.",
+    "selected": "{{name}} is ready for the next connection.",
+    "deleted": "{{name}} deleted from local VPNs."
+  },
+  "group": {
+    "defaultName": "Default",
+    "defaultGroup": "Default group",
+    "customGroup": "Custom group",
+    "managedOnSources": "Managed on Sources",
+    "singleKeysStartHere": " · single keys start here",
+    "subscriptionNote": "Subscription VPNs stay with this source. Rename or refresh the source to update them.",
+    "defaultNote": "Single-key VPNs can be moved from Default into any custom group."
+  },
+  "table": {
+    "order": "Order",
+    "vpn": "VPN",
+    "protocol": "Protocol",
+    "ping": "Ping",
+    "url": "URL",
+    "use": "Use",
+    "selected": "Selected",
+    "actions": "Actions",
+    "local": "Local",
+    "imported": "Imported",
+    "localVpn": "Local VPN",
+    "managedBySubscription": "Managed by subscription",
+    "available": "{{count}} VPNs available."
+  },
+  "menu": {
+    "more": "More actions for {{name}}",
+    "rename": "Rename VPN",
+    "renameGroup": "Rename group",
+    "move": "Move to group",
+    "delete": "Delete VPN",
+    "test": "Test",
+    "managed": "Managed by subscription",
+    "defaultRenameDisabled": "Default group cannot be renamed",
+    "locked": "Locked to this subscription"
+  },
+  "dialogs": {
+    "group": {
+      "eyebrow": "Groups",
+      "renameTitle": "Rename group",
+      "newTitle": "New group",
+      "renameDescription": "Change the label shown above this group.",
+      "newDescription": "Create a local group for single keys you want to keep together.",
+      "nameLabel": "Group name",
+      "placeholder": "e.g. Travel keys",
+      "helper": "Names are shared across Default, local groups, and subscription groups.",
+      "empty": "Group name cannot be empty.",
+      "duplicate": "A group with this name already exists.",
+      "cancel": "Cancel",
+      "save": "Save group name",
+      "create": "Create group"
+    },
+    "add": {
+      "title": "Add single key",
+      "description": "Create a local VPN in Default. You can move it to a custom group later.",
+      "nameLabel": "VPN name",
+      "keyLabel": "VPN key",
+      "namePlaceholder": "e.g. Home · Seattle",
+      "keyPlaceholder": "vless://…",
+      "helper": "Single keys always start in Default and can be moved between local groups.",
+      "nameRequired": "Enter a VPN name.",
+      "keyInvalid": "Paste a supported VPN key such as vless://…",
+      "cancel": "Cancel",
+      "submit": "Add key"
+    },
+    "rename": {
+      "title": "Rename VPN",
+      "description": "Update the local VPN name without changing its connection key.",
+      "nameLabel": "VPN name",
+      "cancel": "Cancel",
+      "submit": "Save name"
+    },
+    "delete": {
+      "title": "Delete VPN?",
+      "description": "This removes the local VPN from its group.",
+      "warningPrefix": "You are about to delete",
+      "warningSuffix": ". Subscription VPNs remain managed by their source.",
+      "cancel": "Cancel",
+      "submit": "Delete VPN"
+    }
+  }
+}

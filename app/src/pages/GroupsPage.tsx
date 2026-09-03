@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, ChevronDown, FolderPlus, Loader2, Plus, Radar } from 'lucide-react'
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -11,12 +12,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
+import { localizeResultValue } from '@/lib/result-copy'
 import { mockApi } from '@/lib/mock-api'
-import { useKagerouStore } from '@/store/kagerou-store'
 import { sortProfiles } from '@/lib/profile-sorting'
+import { useKagerouStore } from '@/store/kagerou-store'
 import type { Profile, ProfileGroup, TestMethod } from '@/types/kagerou'
 
 export function GroupsPage() {
+  const { t } = useTranslation('profiles')
+  const { t: tc } = useTranslation('common')
   const profiles = useKagerouStore((state) => state.profiles)
   const groups = useKagerouStore((state) => state.profileGroups)
   const selectProfile = useKagerouStore((state) => state.selectProfile)
@@ -45,6 +49,7 @@ export function GroupsPage() {
 
   const profilesById = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles])
   const visibleGroupProfiles = (group: ProfileGroup) => group.profileIds.map((id) => profilesById.get(id)).filter((profile): profile is Profile => Boolean(profile))
+  const groupLabel = (group?: ProfileGroup) => group?.kind === 'default' ? t('group.defaultName') : group?.label ?? t('fallback.group')
 
   const setMessage = (message: string, tone: 'muted' | 'good' | 'bad' = 'muted') => {
     setFeedback(message)
@@ -53,9 +58,10 @@ export function GroupsPage() {
 
   const runTest = async (profileId: string, method: TestMethod) => {
     const keyName = `${profileId}:${method}`
-    setRunningTests((state) => ({ ...state, [keyName]: true }))
+    const methodLabel = method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
     const profile = profilesById.get(profileId)
-    setMessage(`${method === 'tcp' ? 'TCP' : 'URL'} test running for ${profile?.name ?? 'VPN'}…`)
+    setRunningTests((state) => ({ ...state, [keyName]: true }))
+    setMessage(t('feedback.testRunning', { method: methodLabel, name: profile?.name ?? t('fallback.vpn') }))
     const result = await mockApi.runProfileTest(profileId, method)
     setTestResult(profileId, method, result)
     setRunningTests((state) => {
@@ -63,12 +69,13 @@ export function GroupsPage() {
       delete next[keyName]
       return next
     })
-    setMessage(`${method === 'tcp' ? 'TCP' : 'URL'} test finished for ${profile?.name ?? 'VPN'}: ${result.value}.`, result.tone === 'bad' ? 'bad' : 'good')
+    setMessage(t('feedback.testFinished', { method: methodLabel, name: profile?.name ?? t('fallback.vpn'), value: localizeResultValue(result.value, tc) }), result.tone === 'bad' ? 'bad' : 'good')
   }
 
   const runAll = (method: TestMethod) => {
+    const methodLabel = method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
     void Promise.all(profiles.map((profile) => runTest(profile.id, method)))
-    setMessage(`${method === 'tcp' ? 'TCP' : 'URL'} test running for all VPNs…`)
+    setMessage(t('feedback.testRunningAll', { method: methodLabel }))
   }
 
   const submitAdd = (event: FormEvent<HTMLFormElement>) => {
@@ -76,11 +83,11 @@ export function GroupsPage() {
     const trimmedName = name.trim()
     const trimmedKey = key.trim()
     if (!trimmedName) {
-      setAddError('Enter a VPN name.')
+      setAddError(t('dialogs.add.nameRequired'))
       return
     }
     if (!/^(vless|vmess|trojan|ss|hysteria2):\/\/[^\s]+$/i.test(trimmedKey)) {
-      setAddError('Paste a supported VPN key such as vless://…')
+      setAddError(t('dialogs.add.keyInvalid'))
       return
     }
     addLocalProfile({ key: trimmedKey, name: trimmedName })
@@ -88,7 +95,7 @@ export function GroupsPage() {
     setKey('')
     setAddError('')
     setAddOpen(false)
-    setMessage(`${trimmedName} added to Default.`, 'good')
+    setMessage(t('feedback.added', { name: trimmedName }), 'good')
   }
 
   const submitRename = (event: FormEvent<HTMLFormElement>) => {
@@ -96,26 +103,26 @@ export function GroupsPage() {
     const trimmed = renameValue.trim()
     if (!renameTarget) return
     if (!trimmed) {
-      setMessage('VPN name cannot be empty.', 'bad')
+      setMessage(t('feedback.vpnNameEmpty'), 'bad')
       return
     }
     const renamed = renameProfile(renameTarget.id, trimmed)
     if (!renamed) {
-      setMessage('Only local VPNs can be renamed.', 'bad')
+      setMessage(t('feedback.renameLocalOnly'), 'bad')
       return
     }
-    setMessage(`VPN renamed to ${trimmed}.`, 'good')
+    setMessage(t('feedback.renamed', { name: trimmed }), 'good')
     setRenameTarget(null)
   }
 
   const handleGroupSubmit = (label: string) => {
     if (groupDialogTarget) {
       const updated = renameProfileGroup(groupDialogTarget.id, label)
-      if (updated) setMessage(`Group renamed to ${label}.`, 'good')
+      if (updated) setMessage(t('feedback.groupRenamed', { name: label }), 'good')
       return updated
     }
     const id = addProfileGroup(label)
-    if (id) setMessage(`${label} group created.`, 'good')
+    if (id) setMessage(t('feedback.groupCreated', { name: label }), 'good')
     return Boolean(id)
   }
 
@@ -129,23 +136,23 @@ export function GroupsPage() {
         <PageHeader
           actions={(
             <div className="flex flex-wrap justify-end gap-2">
-              <Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" onClick={() => { setGroupDialogTarget(null); setGroupDialogOpen(true) }} type="button" variant="outline"><FolderPlus aria-hidden="true" className="size-4" />Add group</Button>
-              <Button className="h-10 gap-2 bg-lavender px-3.5 text-[12px] font-semibold text-ink hover:bg-lavender-hi" onClick={() => setAddOpen(true)} type="button"><Plus aria-hidden="true" className="size-4" />Add single key</Button>
+              <Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" onClick={() => { setGroupDialogTarget(null); setGroupDialogOpen(true) }} type="button" variant="outline"><FolderPlus aria-hidden="true" className="size-4" />{t('actions.addGroup')}</Button>
+              <Button className="h-10 gap-2 bg-lavender px-3.5 text-[12px] font-semibold text-ink hover:bg-lavender-hi" onClick={() => setAddOpen(true)} type="button"><Plus aria-hidden="true" className="size-4" />{t('actions.addSingleKey')}</Button>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" type="button" variant="outline"><Radar aria-hidden="true" className="size-4" />Run test<ChevronDown aria-hidden="true" className="size-3 text-muted-copy" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 border-hairline bg-popover text-[11px]">
-                  <DropdownMenuLabel className="font-mono text-[9px] uppercase tracking-[0.08em] text-muted-copy">All VPNs</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={() => runAll('tcp')}><Loader2 aria-hidden="true" className="size-3.5" />TCP connection</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => runAll('url')}><Radar aria-hidden="true" className="size-3.5" />URL check</DropdownMenuItem>
+                <DropdownMenuTrigger asChild><Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" type="button" variant="outline"><Radar aria-hidden="true" className="size-4" />{t('actions.runTest')}<ChevronDown aria-hidden="true" className="size-3 text-muted-copy" /></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 border-hairline bg-popover text-[11px]">
+                  <DropdownMenuLabel className="font-mono text-[9px] uppercase tracking-[0.08em] text-muted-copy">{t('test.allVpns')}</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => runAll('tcp')}><Loader2 aria-hidden="true" className="size-3.5" />{t('test.tcp')}</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => runAll('url')}><Radar aria-hidden="true" className="size-3.5" />{t('test.url')}</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => { setMessage('Diagnostics use mock service data in this prototype.') }}>About diagnostics</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => { setMessage(t('test.aboutText')) }}>{t('test.about')}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           )}
-          description="Organize single keys into local groups while subscriptions stay together."
-          eyebrow="Kagerou  /  VPN groups"
-          title="Groups"
+          description={t('page.description')}
+          eyebrow={t('page.eyebrow')}
+          title={t('page.title')}
         />
 
         <div className="mt-7 flex flex-col gap-4">
@@ -158,11 +165,11 @@ export function GroupsPage() {
               onMoveToGroup={(profileId, targetGroupId) => {
                 const target = groups.find((candidate) => candidate.id === targetGroupId)
                 const moved = moveProfileToGroup(profileId, targetGroupId)
-                setMessage(moved ? `VPN moved to ${target?.label ?? 'group'}.` : 'Subscription VPNs cannot be moved to another group.', moved ? 'good' : 'bad')
+                setMessage(moved ? t('feedback.moved', { group: groupLabel(target) }) : t('feedback.moveSubscription'), moved ? 'good' : 'bad')
               }}
               onRename={(profile) => { setRenameTarget(profile); setRenameValue(profile.name) }}
               onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}
-              onSelect={(id) => { selectProfile(id); const selected = profilesById.get(id); if (selected) setMessage(`${selected.name} is ready for the next connection.`, 'good') }}
+              onSelect={(id) => { selectProfile(id); const selected = profilesById.get(id); if (selected) setMessage(t('feedback.selected', { name: selected.name }), 'good') }}
               onTest={runTest}
               onToggle={() => setProfileGroupOpen(group.id, !group.open)}
               profiles={sortedGroupProfiles(group)}
@@ -171,7 +178,7 @@ export function GroupsPage() {
           ))}
         </div>
         <p aria-live="polite" className={`mt-4 min-h-[17px] text-[11px] ${feedbackTone === 'good' ? 'text-good' : feedbackTone === 'bad' ? 'text-bad' : 'text-muted-copy'}`}>{feedback}</p>
-        <p className="sr-only">{profiles.length} VPNs available.</p>
+        <p className="sr-only">{t('table.available', { count: profiles.length })}</p>
       </div>
 
       <ProfileGroupDialog key={`${groupDialogTarget?.id ?? 'new'}-${groupDialogOpen}`} group={groupDialogTarget} onOpenChange={(open) => { setGroupDialogOpen(open); if (!open) setGroupDialogTarget(null) }} onSubmit={handleGroupSubmit} open={groupDialogOpen} />
@@ -179,23 +186,23 @@ export function GroupsPage() {
       <Dialog onOpenChange={(open) => { setAddOpen(open); if (!open) setAddError('') }} open={addOpen}>
         <DialogContent className="border-[#3b3a45] bg-raised text-primary sm:max-w-[480px]">
           <DialogHeader>
-            <DialogTitle className="type-display text-2xl text-primary">Add single key</DialogTitle>
-            <DialogDescription className="text-[12px] leading-5 text-muted-copy">Create a local VPN in Default. You can move it to a custom group later.</DialogDescription>
+            <DialogTitle className="type-display text-2xl text-primary">{t('dialogs.add.title')}</DialogTitle>
+            <DialogDescription className="text-[12px] leading-5 text-muted-copy">{t('dialogs.add.description')}</DialogDescription>
           </DialogHeader>
           <form className="space-y-5" onSubmit={submitAdd}>
             <Field>
-              <FieldLabel className="text-[12px] text-primary" htmlFor="new-profile-name">VPN name</FieldLabel>
-              <Input autoComplete="off" className="h-[42px] border-white/10 bg-surface text-[13px]" id="new-profile-name" onChange={(event) => setName(event.target.value)} placeholder="e.g. Home · Seattle" value={name} />
+              <FieldLabel className="text-[12px] text-primary" htmlFor="new-profile-name">{t('dialogs.add.nameLabel')}</FieldLabel>
+              <Input autoComplete="off" className="h-[42px] border-white/10 bg-surface text-[13px]" id="new-profile-name" onChange={(event) => setName(event.target.value)} placeholder={t('dialogs.add.namePlaceholder')} value={name} />
             </Field>
             <Field>
-              <FieldLabel className="text-[12px] text-primary" htmlFor="new-profile-key">VPN key</FieldLabel>
-              <Textarea className="min-h-[86px] resize-y border-white/10 bg-surface font-mono text-[11px]" id="new-profile-key" onChange={(event) => setKey(event.target.value)} placeholder="vless://…" value={key} />
-              <FieldDescription className="text-[11px] text-muted-copy">Single keys always start in Default and can be moved between local groups.</FieldDescription>
+              <FieldLabel className="text-[12px] text-primary" htmlFor="new-profile-key">{t('dialogs.add.keyLabel')}</FieldLabel>
+              <Textarea className="min-h-[86px] resize-y border-white/10 bg-surface font-mono text-[11px]" id="new-profile-key" onChange={(event) => setKey(event.target.value)} placeholder={t('dialogs.add.keyPlaceholder')} value={key} />
+              <FieldDescription className="text-[11px] text-muted-copy">{t('dialogs.add.helper')}</FieldDescription>
             </Field>
             {addError ? <FieldError className="text-[11px]">{addError}</FieldError> : null}
             <DialogFooter>
-              <Button onClick={() => setAddOpen(false)} type="button" variant="ghost">Cancel</Button>
-              <Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit">Add key</Button>
+              <Button onClick={() => setAddOpen(false)} type="button" variant="ghost">{t('dialogs.add.cancel')}</Button>
+              <Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit">{t('dialogs.add.submit')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -203,19 +210,19 @@ export function GroupsPage() {
 
       <Dialog onOpenChange={(open) => { if (!open) setRenameTarget(null) }} open={Boolean(renameTarget)}>
         <DialogContent className="border-[#3b3a45] bg-raised text-primary sm:max-w-[420px]">
-          <DialogHeader><DialogTitle className="type-display text-2xl text-primary">Rename VPN</DialogTitle><DialogDescription className="text-[12px] text-muted-copy">Update the local VPN name without changing its connection key.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle className="type-display text-2xl text-primary">{t('dialogs.rename.title')}</DialogTitle><DialogDescription className="text-[12px] text-muted-copy">{t('dialogs.rename.description')}</DialogDescription></DialogHeader>
           <form className="space-y-5" onSubmit={submitRename}>
-            <Field><FieldLabel className="text-[12px] text-primary" htmlFor="rename-profile">VPN name</FieldLabel><Input autoFocus className="h-[42px] border-white/10 bg-surface text-[13px]" id="rename-profile" onChange={(event) => setRenameValue(event.target.value)} value={renameValue} /></Field>
-            <DialogFooter><Button onClick={() => setRenameTarget(null)} type="button" variant="ghost">Cancel</Button><Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit"><Check aria-hidden="true" className="size-3.5" />Save name</Button></DialogFooter>
+            <Field><FieldLabel className="text-[12px] text-primary" htmlFor="rename-profile">{t('dialogs.rename.nameLabel')}</FieldLabel><Input autoFocus className="h-[42px] border-white/10 bg-surface text-[13px]" id="rename-profile" onChange={(event) => setRenameValue(event.target.value)} value={renameValue} /></Field>
+            <DialogFooter><Button onClick={() => setRenameTarget(null)} type="button" variant="ghost">{t('dialogs.rename.cancel')}</Button><Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit"><Check aria-hidden="true" className="size-3.5" />{t('dialogs.rename.submit')}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       <AlertDialog onOpenChange={(open) => { if (!open) setDeleteTarget(null) }} open={Boolean(deleteTarget)}>
         <AlertDialogContent className="border-[#3b3a45] bg-raised text-primary sm:max-w-[440px]">
-          <AlertDialogHeader><AlertDialogTitle className="type-display text-2xl text-primary">Delete VPN?</AlertDialogTitle><AlertDialogDescription className="text-[12px] leading-5 text-muted-copy">This removes the local VPN from its group.</AlertDialogDescription></AlertDialogHeader>
-          <div className="border-l-2 border-bad bg-bad/10 px-3 py-2.5 text-[12px] leading-5 text-body">You are about to delete <strong className="text-primary">{deleteTarget?.name}</strong>. Subscription VPNs remain managed by their source.</div>
-          <AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancel</AlertDialogCancel><AlertDialogAction className="bg-bad text-primary hover:bg-bad/85" onClick={() => { if (!deleteTarget) return; const nameToDelete = deleteTarget.name; deleteProfile(deleteTarget.id); setDeleteTarget(null); setMessage(`${nameToDelete} deleted from local VPNs.`, 'good') }}>Delete VPN</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle className="type-display text-2xl text-primary">{t('dialogs.delete.title')}</AlertDialogTitle><AlertDialogDescription className="text-[12px] leading-5 text-muted-copy">{t('dialogs.delete.description')}</AlertDialogDescription></AlertDialogHeader>
+          <div className="border-l-2 border-bad bg-bad/10 px-3 py-2.5 text-[12px] leading-5 text-body">{t('dialogs.delete.warningPrefix')} <strong className="text-primary">{deleteTarget?.name}</strong>{t('dialogs.delete.warningSuffix')}</div>
+          <AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteTarget(null)}>{t('dialogs.delete.cancel')}</AlertDialogCancel><AlertDialogAction className="bg-bad text-primary hover:bg-bad/85" onClick={() => { if (!deleteTarget) return; const nameToDelete = deleteTarget.name; deleteProfile(deleteTarget.id); setDeleteTarget(null); setMessage(t('feedback.deleted', { name: nameToDelete }), 'good') }}>{t('dialogs.delete.submit')}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

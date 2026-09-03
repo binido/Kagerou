@@ -126,7 +126,8 @@
       "comments": [],
       "created": "2026-09-03T06:04:57.637199+00:00",
       "modified": "2026-09-03T07:46:46.929260+00:00",
-      "id": "var_844ef6033d4a"
+      "id": "var_844ef6033d4a",
+      "viewportScrollY": 1
     },
     "var_ce7fa3c94443": {
       "type": "variant",

@@ -1,0 +1,26 @@
+{
+  "page": {
+    "title": "Logs",
+    "description": "Connection events and service output",
+    "connected": "Connected"
+  },
+  "toolbar": {
+    "search": "Search logs",
+    "placeholder": "Filter by keyword",
+    "clear": "Clear search",
+    "entriesOne": "{{count}} entry",
+    "entriesMany": "{{count}} entries",
+    "matchingOne": "{{count}} matching entry",
+    "matchingMany": "{{count}} matching entries"
+  },
+  "viewer": {
+    "ariaLabel": "Log output",
+    "scrollableAriaLabel": "Scrollable log output",
+    "noMatch": "No logs match this search.",
+    "tryDifferent": "Try a different keyword or clear the search."
+  },
+  "footer": {
+    "live": "Connected · live output",
+    "scrollHint": "Scroll to inspect earlier events"
+  }
+}

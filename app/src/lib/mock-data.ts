@@ -275,7 +275,7 @@ export const initialTelemetry: TelemetryPoint[] = [
 
 export const initialSettings: SettingsState = {
   theme: 'dark',
-  language: 'English',
+  language: 'en',
   startup: true,
   tunInterface: 'utun / tun0',
   autoUpdateSubscriptions: false,

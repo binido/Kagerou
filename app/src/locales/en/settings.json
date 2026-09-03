@@ -1,0 +1,56 @@
+{
+  "page": {
+    "title": "Settings",
+    "instant": "Changes apply instantly"
+  },
+  "sections": {
+    "appearance": "Appearance",
+    "startup": "Startup",
+    "subscriptions": "Subscriptions",
+    "groups": "Groups",
+    "network": "Network"
+  },
+  "fields": {
+    "theme": "Theme",
+    "language": "Language",
+    "startAutomatically": "Start automatically",
+    "autoUpdateSubscriptions": "Auto-update subscriptions",
+    "updateInterval": "Update interval",
+    "customInterval": "Custom interval (minutes)",
+    "sortVpns": "Sort VPNs by",
+    "tunInterface": "TUN interface"
+  },
+  "descriptions": {
+    "autoUpdateSubscriptions": "Keep URL subscription groups fresh automatically.",
+    "customInterval": "Choose how often Kagerou checks remote subscriptions.",
+    "customIntervalA11y": "Minutes between automatic subscription updates."
+  },
+  "options": {
+    "interval5": "5 minutes",
+    "interval10": "10 minutes",
+    "interval15": "15 minutes",
+    "interval30": "30 minutes",
+    "interval60": "60 minutes",
+    "custom": "Custom",
+    "sortPing": "Ping",
+    "sortName": "Name",
+    "sortProtocol": "Protocol",
+    "tunBoth": "utun / tun0",
+    "utun": "utun",
+    "tun0": "tun0"
+  },
+  "theme": {
+    "dark": "Dark",
+    "light": "Light",
+    "ariaLabel": "Theme"
+  },
+  "language": {
+    "options": {
+      "en": "English",
+      "ru": "Русский"
+    }
+  },
+  "validation": {
+    "positiveInteger": "Enter a whole number greater than 0."
+  }
+}

@@ -101,16 +101,12 @@ export const mockApi = {
     return { profiles: [] }
   },
 
-  validateSource(type: SourceType, value: string) {
+  validateSource(type: SourceType, value: string): 'invalidUrl' | 'invalidKey' | null {
     if (type === 'url') {
-      return /^https?:\/\/[^\s]+$/i.test(value)
-        ? null
-        : 'Enter a valid http(s) source URL.'
+      return /^https?:\/\/[^\s]+$/i.test(value) ? null : 'invalidUrl'
     }
 
-    return /^(vless|vmess|trojan|ss|hysteria2):\/\/[^\s]+$/i.test(value)
-      ? null
-      : 'Enter a valid VPN key such as vless://…'
+    return /^(vless|vmess|trojan|ss|hysteria2):\/\/[^\s]+$/i.test(value) ? null : 'invalidKey'
   },
 
   protocolFromKey,

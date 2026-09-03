@@ -1,0 +1,31 @@
+{
+  "page": {
+    "eyebrow": "Соединение",
+    "title": "Панель"
+  },
+  "connection": {
+    "activeVpn": "Активный VPN",
+    "fallbackProfile": "Aurora / Seattle 03",
+    "fallbackLocation": "Сиэтл, США",
+    "profile": "Aurora / {{name}}",
+    "location": "{{city}}, США",
+    "control": "Управление соединением: {{state}}",
+    "connected": "Подключено",
+    "disconnected": "Отключено",
+    "connect": "Подключить",
+    "disconnect": "Отключить"
+  },
+  "modes": {
+    "tun": "Режим TUN",
+    "systemProxy": "Системный прокси"
+  },
+  "telemetry": {
+    "title": "Поток телеметрии",
+    "window": "60 СЕК",
+    "download": "Загрузка",
+    "upload": "Отдача",
+    "lastSeconds": "Последние 60 секунд",
+    "unit": "Мбит/с",
+    "sessionTraffic": "Трафик сессии"
+  }
+}

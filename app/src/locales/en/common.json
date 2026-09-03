@@ -1,0 +1,77 @@
+{
+  "brand": {
+    "name": "Kagerou",
+    "tagline": "Instrument panel"
+  },
+  "sidebar": {
+    "primaryNavigation": "Primary navigation",
+    "dashboard": "Dashboard",
+    "groups": "Groups",
+    "sources": "Sources",
+    "routingRules": "Routing rules",
+    "logs": "Logs",
+    "settings": "Settings",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing",
+    "removeSource": "Remove source",
+    "more": "More actions for {{name}}",
+    "use": "Use",
+    "selected": "Selected",
+    "add": "Add",
+    "close": "Close"
+  },
+  "status": {
+    "connected": "Connected",
+    "connectionActive": "Connection active",
+    "connectedState": "Connected",
+    "disconnectedState": "Disconnected",
+    "on": "On",
+    "off": "Off",
+    "upToDate": "Up to date",
+    "ready": "Ready",
+    "refreshDue": "Refresh due",
+    "updating": "Updating…",
+    "checking": "Checking…",
+    "running": "Running…",
+    "notTested": "Not tested",
+    "unavailable": "Unavailable",
+    "timeout": "Timeout",
+    "noResponse": "No response",
+    "ok": "200 OK"
+  },
+  "counts": {
+    "vpnOne": "{{count}} VPN",
+    "vpnMany": "{{count}} VPNs",
+    "sourceOne": "{{count}} source",
+    "sourceMany": "{{count}} sources",
+    "entryOne": "{{count}} entry",
+    "entryMany": "{{count}} entries",
+    "matchingEntryOne": "{{count}} matching entry",
+    "matchingEntryMany": "{{count}} matching entries"
+  },
+  "source": {
+    "subscriptionUrl": "Subscription URL",
+    "singleKey": "Single key",
+    "sourceUrl": "Source URL",
+    "vpnKey": "VPN key",
+    "remoteUrl": "Remote URL",
+    "localKey": "Local key"
+  },
+  "origin": {
+    "local": "Local",
+    "imported": "Imported",
+    "localVpn": "Local VPN",
+    "managedBySubscription": "Managed by subscription"
+  },
+  "validation": {
+    "positiveInteger": "Enter a whole number greater than 0."
+  }
+}

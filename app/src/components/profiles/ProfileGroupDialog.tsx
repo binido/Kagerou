@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ interface ProfileGroupDialogProps {
 }
 
 export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: ProfileGroupDialogProps) {
+  const { t } = useTranslation('profiles')
   const [label, setLabel] = useState(group?.label ?? '')
   const [error, setError] = useState('')
   const isRename = Boolean(group)
@@ -23,11 +25,11 @@ export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: Prof
     event.preventDefault()
     const trimmed = label.trim().replace(/\s+/g, ' ')
     if (!trimmed) {
-      setError('Group name cannot be empty.')
+      setError(t('dialogs.group.empty'))
       return
     }
     if (!onSubmit(trimmed)) {
-      setError('A group with this name already exists.')
+      setError(t('dialogs.group.duplicate'))
       return
     }
     setError('')
@@ -38,22 +40,22 @@ export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: Prof
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[440px]">
         <DialogHeader>
-          <p className="type-eyebrow">Groups</p>
-          <DialogTitle className="type-display mt-2 text-2xl text-primary">{isRename ? 'Rename group' : 'New group'}</DialogTitle>
+          <p className="type-eyebrow">{t('dialogs.group.eyebrow')}</p>
+          <DialogTitle className="type-display mt-2 text-2xl text-primary">{isRename ? t('dialogs.group.renameTitle') : t('dialogs.group.newTitle')}</DialogTitle>
           <DialogDescription className="text-[12px] leading-5 text-muted-copy">
-            {isRename ? 'Change the label shown above this group.' : 'Create a local group for single keys you want to keep together.'}
+            {isRename ? t('dialogs.group.renameDescription') : t('dialogs.group.newDescription')}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-5" onSubmit={handleSubmit}>
           <Field>
-            <FieldLabel className="text-[12px] text-primary" htmlFor="profile-group-name">Group name</FieldLabel>
-            <Input aria-describedby="profile-group-helper" autoFocus className="h-[42px] border-white/10 bg-surface text-[13px]" id="profile-group-name" onChange={(event) => { setLabel(event.target.value); setError('') }} placeholder="e.g. Travel keys" value={label} />
-            <FieldDescription className="text-[11px] leading-4 text-muted-copy" id="profile-group-helper">Names are shared across Default, local groups, and subscription groups.</FieldDescription>
+            <FieldLabel className="text-[12px] text-primary" htmlFor="profile-group-name">{t('dialogs.group.nameLabel')}</FieldLabel>
+            <Input aria-describedby="profile-group-helper" autoFocus className="h-[42px] border-white/10 bg-surface text-[13px]" id="profile-group-name" onChange={(event) => { setLabel(event.target.value); setError('') }} placeholder={t('dialogs.group.placeholder')} value={label} />
+            <FieldDescription className="text-[11px] leading-4 text-muted-copy" id="profile-group-helper">{t('dialogs.group.helper')}</FieldDescription>
           </Field>
           {error ? <FieldError className="text-[11px]">{error}</FieldError> : null}
           <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">Cancel</Button>
-            <Button className="gap-1.5 bg-lavender text-ink hover:bg-lavender-hi" type="submit"><Check aria-hidden="true" className="size-3.5" />{isRename ? 'Save group name' : 'Create group'}</Button>
+            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">{t('dialogs.group.cancel')}</Button>
+            <Button className="gap-1.5 bg-lavender text-ink hover:bg-lavender-hi" type="submit"><Check aria-hidden="true" className="size-3.5" />{isRename ? t('dialogs.group.save') : t('dialogs.group.create')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

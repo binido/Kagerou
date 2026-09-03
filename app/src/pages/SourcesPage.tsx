@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Info } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -13,6 +14,7 @@ import { useKagerouStore } from '@/store/kagerou-store'
 import type { AddSourceInput, Source, SourceType } from '@/types/kagerou'
 
 export function SourcesPage() {
+  const { t } = useTranslation('sources')
   const sources = useKagerouStore((state) => state.sources)
   const profiles = useKagerouStore((state) => state.profiles)
   const addSource = useKagerouStore((state) => state.addSource)
@@ -46,36 +48,38 @@ export function SourcesPage() {
     if (editingSource) {
       const nextName = input.name ?? editingSource.name
       if (!updateSource(editingSource.id, { name: nextName, value: input.value })) {
-        throw new Error('The source name cannot be empty.')
+        throw new Error(t('feedback.nameError'))
       }
       if (editingSource.type === 'url') {
         const imported = await mockApi.importSubscription(input.value)
         replaceSubscriptionProfiles(editingSource.id, imported.profiles)
       }
-      toast.success('Source changes saved')
+      toast.success(t('feedback.saved'))
       return
     }
 
-    const sourceName = input.name ?? (input.type === 'url' ? deriveSubscriptionName(input.value, sources.length + 1) : undefined)
+    const sourceName = input.name ?? (input.type === 'url'
+      ? deriveSubscriptionName(input.value, sources.length + 1, t('defaults.subscription'))
+      : t('defaults.keyName', { scheme: input.value.split('://')[0]?.toUpperCase() || 'VPN', number: String(sources.length + 1).padStart(2, '0') }))
     const imported = input.type === 'url' ? await mockApi.importSubscription(input.value) : undefined
     const sourceId = addSource({ ...input, name: sourceName }, imported?.profiles)
-    if (!sourceId) throw new Error('The source could not be added.')
-    toast.success(input.type === 'url' ? 'Subscription added · VPNs grouped' : 'Single key added to Default')
+    if (!sourceId) throw new Error(t('feedback.importError'))
+    toast.success(input.type === 'url' ? t('feedback.subscriptionAdded') : t('feedback.keyAdded'))
   }
 
   const refresh = async (source: Source) => {
     if (refreshingIds[source.id]) return
     setRefreshingIds((state) => ({ ...state, [source.id]: true }))
     updateSource(source.id, { status: 'updating' })
-    const toastId = toast.loading(`Refreshing ${source.name}…`)
+    const toastId = toast.loading(t('feedback.refreshing', { name: source.name }))
     try {
       const imported = await mockApi.refreshSource(source)
       if (source.type === 'url') replaceSubscriptionProfiles(source.id, imported.profiles)
       updateSource(source.id, { status: source.type === 'key' ? 'ready' : 'up-to-date', lastRefresh: source.type === 'key' ? 'Checked just now' : 'Updated just now' })
-      toast.success('Source refreshed · VPNs are ready', { id: toastId })
+      toast.success(t('feedback.refreshed'), { id: toastId })
     } catch (refreshError) {
       updateSource(source.id, { status: 'refresh-due' })
-      toast.error(refreshError instanceof Error ? refreshError.message : 'Source refresh failed.', { id: toastId })
+      toast.error(refreshError instanceof Error ? refreshError.message : t('feedback.refreshFailed'), { id: toastId })
     } finally {
       setRefreshingIds((state) => { const next = { ...state }; delete next[source.id]; return next })
     }
@@ -86,7 +90,7 @@ export function SourcesPage() {
     const name = removingSource.name
     removeSource(removingSource.id)
     setRemovingSource(null)
-    toast.success(`${name} removed · VPNs are now local`)
+    toast.success(t('feedback.removed', { name }))
   }
 
   const profileCount = profiles.length
@@ -94,12 +98,12 @@ export function SourcesPage() {
   return (
     <div className="min-h-screen min-w-0 bg-canvas px-6 pb-12 pt-8 lg:px-12 lg:pt-10">
       <div className="mx-auto w-full max-w-[1040px]">
-        <PageHeader actions={<AddSourceMenu onChoose={openAdd} />} description="Manage subscriptions and single keys that provide VPNs to Kagerou." eyebrow="Kagerou  /  VPN sources" title="Sources" />
+        <PageHeader actions={<AddSourceMenu onChoose={openAdd} />} description={t('page.description')} eyebrow={t('page.eyebrow')} title={t('page.title')} />
         <div className="mt-8 flex items-center justify-between border-b border-hairline pb-3 max-[720px]:items-start max-[720px]:gap-4">
-          <p className="type-data text-body">{sources.length} sources <span className="px-1.5 text-quiet">·</span> {profileCount} VPNs</p>
-          <p className="flex items-center gap-2 text-[11px] text-muted-copy max-[720px]:text-right"><Info aria-hidden="true" className="size-3.5 shrink-0" />Groups and order live on Groups</p>
+          <p className="type-data text-body">{t('page.summary', { sources: sources.length, vpns: profileCount })}</p>
+          <p className="flex items-center gap-2 text-[11px] text-muted-copy max-[720px]:text-right"><Info aria-hidden="true" className="size-3.5 shrink-0" />{t('page.info')}</p>
         </div>
-        <section aria-label="VPN sources" className="mt-4 space-y-3">
+        <section aria-label={t('page.ariaLabel')} className="mt-4 space-y-3">
           {sources.map((source) => <SourceCard key={source.id} onEdit={() => openEdit(source)} onRefresh={() => void refresh(source)} onRemove={() => setRemovingSource(source)} profileCount={profileCountBySourceId[source.id] ?? 0} refreshing={Boolean(refreshingIds[source.id])} source={source} />)}
         </section>
       </div>

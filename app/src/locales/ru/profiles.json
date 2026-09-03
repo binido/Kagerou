@@ -1,0 +1,120 @@
+{
+  "page": {
+    "eyebrow": "Kagerou  /  VPN-группы",
+    "title": "Группы",
+    "description": "Организуйте одиночные ключи по локальным группам, сохраняя подписки вместе."
+  },
+  "actions": {
+    "addGroup": "Добавить группу",
+    "addSingleKey": "Добавить ключ",
+    "runTest": "Запустить проверку"
+  },
+  "test": {
+    "allVpns": "Все VPN",
+    "tcp": "TCP-соединение",
+    "tcpShort": "TCP",
+    "url": "Проверка URL",
+    "urlShort": "URL",
+    "about": "О диагностике",
+    "aboutText": "В этом прототипе диагностика использует данные тестового сервиса."
+  },
+  "fallback": {
+    "vpn": "VPN",
+    "group": "группа"
+  },
+  "feedback": {
+    "testRunning": "Запущена {{method}} для {{name}}…",
+    "testRunningAll": "Запущена {{method}} для всех VPN…",
+    "testFinished": "{{method}} завершена для {{name}}: {{value}}.",
+    "added": "{{name}} добавлен в группу «Default».",
+    "vpnNameEmpty": "Имя VPN не может быть пустым.",
+    "renameLocalOnly": "Переименовывать можно только локальные VPN.",
+    "renamed": "VPN переименован в «{{name}}».",
+    "groupRenamed": "Группа переименована в «{{name}}».",
+    "groupCreated": "Группа «{{name}}» создана.",
+    "moved": "VPN перемещён в группу «{{group}}».",
+    "moveSubscription": "VPN подписки нельзя переместить в другую группу.",
+    "selected": "{{name}} готов к следующему подключению.",
+    "deleted": "{{name}} удалён из локальных VPN."
+  },
+  "group": {
+    "defaultName": "Default",
+    "defaultGroup": "Группа Default",
+    "customGroup": "Своя группа",
+    "managedOnSources": "Управляется в источниках",
+    "singleKeysStartHere": " · одиночные ключи находятся здесь",
+    "subscriptionNote": "VPN подписки остаются у этого источника. Переименуйте или обновите источник, чтобы изменить их.",
+    "defaultNote": "Одиночные VPN можно перемещать из Default в любую свою группу."
+  },
+  "table": {
+    "order": "Порядок",
+    "vpn": "VPN",
+    "protocol": "Протокол",
+    "ping": "Пинг",
+    "url": "URL",
+    "use": "Использовать",
+    "selected": "Выбрано",
+    "actions": "Действия",
+    "local": "Локальный",
+    "imported": "Импортирован",
+    "localVpn": "Локальный VPN",
+    "managedBySubscription": "Управляется подпиской",
+    "available": "Доступно VPN: {{count}}."
+  },
+  "menu": {
+    "more": "Дополнительные действия: {{name}}",
+    "rename": "Переименовать VPN",
+    "renameGroup": "Переименовать группу",
+    "move": "Переместить в группу",
+    "delete": "Удалить VPN",
+    "test": "Проверить",
+    "managed": "Управляется подпиской",
+    "defaultRenameDisabled": "Группу Default нельзя переименовать",
+    "locked": "Привязан к этой подписке"
+  },
+  "dialogs": {
+    "group": {
+      "eyebrow": "Группы",
+      "renameTitle": "Переименовать группу",
+      "newTitle": "Новая группа",
+      "renameDescription": "Измените название, отображаемое над этой группой.",
+      "newDescription": "Создайте локальную группу для одиночных ключей, которые нужно держать вместе.",
+      "nameLabel": "Название группы",
+      "placeholder": "например, Ключи для поездок",
+      "helper": "Названия общие для Default, локальных групп и групп подписок.",
+      "empty": "Название группы не может быть пустым.",
+      "duplicate": "Группа с таким названием уже существует.",
+      "cancel": "Отмена",
+      "save": "Сохранить название",
+      "create": "Создать группу"
+    },
+    "add": {
+      "title": "Добавить одиночный ключ",
+      "description": "Создайте локальный VPN в Default. Позже его можно переместить в свою группу.",
+      "nameLabel": "Имя VPN",
+      "keyLabel": "Ключ VPN",
+      "namePlaceholder": "например, Дом · Сиэтл",
+      "keyPlaceholder": "vless://…",
+      "helper": "Одиночные ключи всегда начинают в Default и могут перемещаться между локальными группами.",
+      "nameRequired": "Введите имя VPN.",
+      "keyInvalid": "Вставьте поддерживаемый ключ VPN, например vless://…",
+      "cancel": "Отмена",
+      "submit": "Добавить ключ"
+    },
+    "rename": {
+      "title": "Переименовать VPN",
+      "description": "Измените имя локального VPN, не меняя ключ подключения.",
+      "nameLabel": "Имя VPN",
+      "cancel": "Отмена",
+      "submit": "Сохранить имя"
+    },
+    "delete": {
+      "title": "Удалить VPN?",
+      "description": "Локальный VPN будет удалён из своей группы.",
+      "warningPrefix": "Вы собираетесь удалить",
+      "warningSuffix": ". VPN подписки останутся под управлением источника.",
+      "cancel": "Отмена",
+      "submit": "Удалить VPN"
+    }
+  }
+}

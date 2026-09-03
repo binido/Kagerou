@@ -1,0 +1,31 @@
+{
+  "page": {
+    "eyebrow": "Connection",
+    "title": "Dashboard"
+  },
+  "connection": {
+    "activeVpn": "Active VPN",
+    "fallbackProfile": "Aurora / Seattle 03",
+    "fallbackLocation": "Seattle, United States",
+    "profile": "Aurora / {{name}}",
+    "location": "{{city}}, United States",
+    "control": "Connection control: {{state}}",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connect": "Connect",
+    "disconnect": "Disconnect"
+  },
+  "modes": {
+    "tun": "TUN mode",
+    "systemProxy": "System proxy"
+  },
+  "telemetry": {
+    "title": "Live telemetry",
+    "window": "60 SEC",
+    "download": "Download",
+    "upload": "Upload",
+    "lastSeconds": "Last 60 seconds",
+    "unit": "Mbps",
+    "sessionTraffic": "Session traffic"
+  }
+}
