@@ -82,9 +82,37 @@ fn posix_shell_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', r"'\''"))
 }
 
-/// Builds the actual `Command` to spawn for a given plan.
-pub fn to_command(plan: &LaunchPlan) -> Command {
+/// A POSIX `sh` program that runs sing-box and then outlives it only as
+/// long as `run_file` exists.
+///
+/// The elevated process is not ours to signal: `osascript`/`pkexec` hand
+/// privileges to a process that is reparented away from us, so an
+/// unprivileged `kill` from the app can never reach it (this is exactly how
+/// a root sing-box used to survive the app and keep the machine offline).
+/// Instead the privileged side watches a file the app owns: deleting it —
+/// on disconnect, on shutdown, or on the next startup after a crash — is
+/// the stop signal, and needs no second password prompt.
+fn posix_watchdog(program: &Path, args: &[String], run_file: &Path) -> String {
+    let command = std::iter::once(program.to_string_lossy().into_owned())
+        .chain(args.iter().cloned())
+        .map(|part| posix_shell_quote(&part))
+        .collect::<Vec<_>>()
+        .join(" ");
+    format!(
+        "{command} & child=$!; \
+         while [ -e {run_file} ] && kill -0 $child 2>/dev/null; do sleep 1; done; \
+         kill $child 2>/dev/null; wait $child 2>/dev/null",
+        run_file = posix_shell_quote(&run_file.to_string_lossy()),
+    )
+}
+
+/// Builds the actual `Command` to spawn for a given plan. `run_file` is the
+/// liveness sentinel described on [`posix_watchdog`]: the caller creates it
+/// before spawning and deletes it to ask the process to stop.
+pub fn to_command(plan: &LaunchPlan, run_file: &Path) -> Command {
     match plan {
+        // Already privileged, so this one really is our own child and a
+        // plain kill reaches it — no sentinel needed.
         LaunchPlan::Direct { program, args } => {
             let mut command = Command::new(program);
             command.args(args);
@@ -96,33 +124,36 @@ pub fn to_command(plan: &LaunchPlan) -> Command {
                 .map(|a| powershell_single_quote(a))
                 .collect::<Vec<_>>()
                 .join(",");
-            let ps_command = format!(
-                "Start-Process -FilePath {} -ArgumentList {} -Verb RunAs -WindowStyle Hidden",
+            // The watchdog has to run elevated too: an unprivileged parent
+            // cannot Stop-Process a child it launched with -Verb RunAs.
+            let inner = format!(
+                "$p = Start-Process -FilePath {} -ArgumentList {} -WindowStyle Hidden -PassThru; \
+                 while ((Test-Path {}) -and !$p.HasExited) {{ Start-Sleep -Seconds 1 }}; \
+                 if (!$p.HasExited) {{ Stop-Process -Id $p.Id -Force }}",
                 powershell_single_quote(&program.to_string_lossy()),
-                arg_list
+                arg_list,
+                powershell_single_quote(&run_file.to_string_lossy()),
+            );
+            let ps_command = format!(
+                "Start-Process -FilePath 'powershell' -ArgumentList '-NoProfile','-WindowStyle','Hidden','-Command',{} -Verb RunAs -WindowStyle Hidden",
+                powershell_single_quote(&inner),
             );
             let mut command = Command::new("powershell");
             command.args(["-NoProfile", "-NonInteractive", "-Command", &ps_command]);
             command
         }
         LaunchPlan::MacOsAdminPrompt { program, args } => {
-            let shell_command = std::iter::once(program.to_string_lossy().into_owned())
-                .chain(args.iter().cloned())
-                .map(|part| posix_shell_quote(&part))
-                .collect::<Vec<_>>()
-                .join(" ");
             let mut command = Command::new("osascript");
             command.arg("-e");
             command.arg(format!(
                 "do shell script \"{}\" with administrator privileges",
-                applescript_double_quote_escape(&shell_command)
+                applescript_double_quote_escape(&posix_watchdog(program, args, run_file))
             ));
             command
         }
         LaunchPlan::LinuxPolkit { program, args } => {
             let mut command = Command::new("pkexec");
-            command.arg(program);
-            command.args(args);
+            command.args(["/bin/sh", "-c", &posix_watchdog(program, args, run_file)]);
             command
         }
     }
@@ -134,6 +165,10 @@ mod tests {
 
     fn program() -> PathBuf {
         PathBuf::from("/opt/kagerou/sing-box")
+    }
+
+    fn run_file() -> &'static Path {
+        Path::new("/tmp/kagerou/singbox-1.run")
     }
 
     #[test]
@@ -171,7 +206,7 @@ mod tests {
             program: program(),
             args: vec!["run".into(), "-c".into(), "config.json".into()],
         };
-        let command = to_command(&plan);
+        let command = to_command(&plan, run_file());
         assert_eq!(command.get_program(), program().as_os_str());
         let args: Vec<_> = command.get_args().collect();
         assert_eq!(args, vec!["run", "-c", "config.json"]);
@@ -183,12 +218,18 @@ mod tests {
             program: program(),
             args: vec!["run".into(), "-c".into(), "config.json".into()],
         };
-        let command = to_command(&plan);
+        let command = to_command(&plan, run_file());
         assert_eq!(command.get_program(), "pkexec");
-        let args: Vec<_> = command.get_args().collect();
-        assert_eq!(
-            args,
-            vec!["/opt/kagerou/sing-box", "run", "-c", "config.json"]
+        let args: Vec<_> = command
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(args[0], "/bin/sh");
+        assert_eq!(args[1], "-c");
+        assert!(
+            args[2].starts_with("'/opt/kagerou/sing-box' 'run' '-c' 'config.json' &"),
+            "the program still runs, just under a watchdog: {}",
+            args[2]
         );
     }
 
@@ -198,7 +239,7 @@ mod tests {
             program: PathBuf::from(r"C:\Program Files\Kagerou\sing-box.exe"),
             args: vec!["run".into(), "-c".into(), "config.json".into()],
         };
-        let command = to_command(&plan);
+        let command = to_command(&plan, run_file());
         assert_eq!(command.get_program(), "powershell");
         let args: Vec<_> = command
             .get_args()
@@ -214,7 +255,9 @@ mod tests {
             "must reference the real binary path: {ps_command}"
         );
         assert!(
-            ps_command.contains("'run','-c','config.json'"),
+            // Doubled quotes: the watchdog is itself a PowerShell string that
+            // gets re-parsed by the elevated shell.
+            ps_command.contains("''run'',''-c'',''config.json''"),
             "args must be passed through: {ps_command}"
         );
     }
@@ -225,14 +268,14 @@ mod tests {
             program: PathBuf::from(r"C:\Users\O'Brien\sing-box.exe"),
             args: vec![],
         };
-        let command = to_command(&plan);
+        let command = to_command(&plan, run_file());
         let args: Vec<_> = command
             .get_args()
             .map(|a| a.to_string_lossy().into_owned())
             .collect();
         let ps_command = args.last().unwrap();
         assert!(
-            ps_command.contains("O''Brien"),
+            ps_command.contains("O''''Brien"),
             "an embedded ' must be doubled per PowerShell quoting rules: {ps_command}"
         );
     }
@@ -243,7 +286,7 @@ mod tests {
             program: program(),
             args: vec!["run".into(), "-c".into(), "config.json".into()],
         };
-        let command = to_command(&plan);
+        let command = to_command(&plan, run_file());
         assert_eq!(command.get_program(), "osascript");
         let args: Vec<_> = command
             .get_args()
@@ -261,7 +304,7 @@ mod tests {
             program,
             args: vec![],
         };
-        let command = to_command(&plan);
+        let command = to_command(&plan, run_file());
         let args: Vec<_> = command
             .get_args()
             .map(|a| a.to_string_lossy().into_owned())
@@ -295,7 +338,7 @@ mod tests {
             program: PathBuf::from("/opt/kagerou/sing-box"),
             args: vec!["-c".into(), "/path with spaces/config.json".into()],
         };
-        let command = to_command(&plan);
+        let command = to_command(&plan, run_file());
         let args: Vec<_> = command
             .get_args()
             .map(|a| a.to_string_lossy().into_owned())
@@ -305,5 +348,89 @@ mod tests {
             "the argument must stay a single shell token: {}",
             args[1]
         );
+    }
+
+    /// The whole point of the sentinel: an unprivileged app cannot signal a
+    /// root process, so the privileged side has to stop itself when the file
+    /// the app owns disappears.
+    #[test]
+    fn an_elevated_launch_stops_itself_when_the_run_file_is_deleted() {
+        for plan in [
+            LaunchPlan::MacOsAdminPrompt {
+                program: program(),
+                args: vec!["run".into()],
+            },
+            LaunchPlan::LinuxPolkit {
+                program: program(),
+                args: vec!["run".into()],
+            },
+        ] {
+            let command = to_command(&plan, run_file());
+            let script = command
+                .get_args()
+                .map(|a| a.to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+                .join(" ");
+            assert!(
+                script.contains("/tmp/kagerou/singbox-1.run"),
+                "{plan:?} must watch the run file: {script}"
+            );
+            assert!(
+                script.contains("kill $child"),
+                "{plan:?} must kill sing-box once the file is gone: {script}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_windows_watchdog_is_itself_elevated_so_it_can_stop_the_process() {
+        let plan = LaunchPlan::WindowsRunAs {
+            program: PathBuf::from(r"C:\Kagerou\sing-box.exe"),
+            args: vec!["run".into()],
+        };
+        let command = to_command(&plan, Path::new(r"C:\Users\b\singbox-1.run"));
+        let script = command
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect::<Vec<_>>()
+            .join(" ");
+        // -Verb RunAs is on the powershell that runs the watchdog, not on
+        // sing-box itself: an unprivileged parent cannot Stop-Process an
+        // elevated child.
+        let runas = script.find("-Verb RunAs").expect("must trigger UAC");
+        let stop = script.find("Stop-Process").expect("must stop the process");
+        assert!(
+            stop < runas,
+            "Stop-Process belongs inside the elevated command: {script}"
+        );
+        assert!(
+            script.contains("Test-Path"),
+            "must watch the run file: {script}"
+        );
+    }
+
+    /// macOS runs the watchdog through AppleScript, so anything the shell
+    /// snippet adds still has to survive the AppleScript string escape.
+    #[test]
+    fn the_macos_watchdog_stays_inside_one_applescript_string() {
+        let plan = LaunchPlan::MacOsAdminPrompt {
+            program: PathBuf::from("/Applications/Kagerou.app/sing-box"),
+            args: vec!["run".into(), "-c".into(), "/tmp/a b/config.json".into()],
+        };
+        let command = to_command(&plan, run_file());
+        let script = command
+            .get_args()
+            .last()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        assert!(script.starts_with("do shell script \""));
+        assert!(script.ends_with("\" with administrator privileges"));
+        assert_eq!(
+            script.matches('"').count(),
+            2,
+            "an unescaped quote would end the AppleScript string early: {script}"
+        );
+        assert!(script.contains("'/tmp/a b/config.json'"), "{script}");
     }
 }
