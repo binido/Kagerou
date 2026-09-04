@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use tokio::sync::watch;
@@ -27,6 +27,13 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(db: Db, sing_box_binary: PathBuf, config_path: PathBuf) -> Self {
+        // Alongside the generated config: an app-owned directory that
+        // survives for the life of the install, which is what the run-file
+        // sentinel needs (see singbox::process::clear_run_files).
+        let run_dir = config_path
+            .parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| PathBuf::from("."));
         let paths = RuntimePaths {
             sing_box_binary: sing_box_binary.clone(),
             config_path,
@@ -37,6 +44,7 @@ impl AppState {
             db,
             supervisor: Mutex::new(Supervisor::new(SidecarLauncher {
                 binary_path: sing_box_binary,
+                run_dir,
             })),
             clash: Mutex::new(None),
             traffic_stop: Mutex::new(None),
