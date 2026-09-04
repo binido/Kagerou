@@ -433,4 +433,44 @@ mod tests {
         );
         assert!(script.contains("'/tmp/a b/config.json'"), "{script}");
     }
+
+    /// The watchdog is the whole fix, and it is program-agnostic, so it can
+    /// be exercised for real without elevation: run it over `sleep`, delete
+    /// the run file, and the shell must reap its child and exit. `wait`
+    /// comes after `kill` in the snippet, so the shell exiting means the
+    /// process really is gone, not merely signalled.
+    #[test]
+    fn deleting_the_run_file_actually_stops_the_watched_process() {
+        let dir = tempfile::tempdir().unwrap();
+        let run_file = dir.path().join("singbox-test.run");
+        std::fs::write(&run_file, b"").unwrap();
+
+        let script = posix_watchdog(Path::new("/bin/sleep"), &["314159".to_string()], &run_file);
+        let mut shell = Command::new("/bin/sh")
+            .arg("-c")
+            .arg(&script)
+            .spawn()
+            .unwrap();
+
+        // Still running while the file is there.
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        assert!(
+            shell.try_wait().unwrap().is_none(),
+            "the watchdog must keep the process alive while the run file exists"
+        );
+
+        std::fs::remove_file(&run_file).unwrap();
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            if shell.try_wait().unwrap().is_some() {
+                break;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "deleting the run file must stop the process"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+    }
 }
