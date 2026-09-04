@@ -112,7 +112,7 @@ export function Sidebar() {
                 className={cn(
                   'flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] text-muted-copy transition-colors duration-150 hover:bg-row-hover hover:text-primary focus-visible:focus-ring',
                   collapsed && 'justify-center px-0',
-                  'max-[960px]:justify-center max-[960px]:px-0',
+                  'max-[960px]:hidden',
                 )}
                 onClick={toggleSidebar}
                 type="button"
