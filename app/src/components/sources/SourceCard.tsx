@@ -72,11 +72,11 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
           <Button aria-label={t(refreshing ? 'menu.refreshingAria' : 'menu.refreshAria', { name: source.name })} className="h-9 gap-2 border-hairline px-3 text-[11px] text-body hover:bg-raised hover:text-primary" disabled={refreshing} onClick={onRefresh} type="button" variant="outline"><RefreshCw aria-hidden="true" className={cn('size-[15px]', refreshing && 'animate-spin')} /> <span>{refreshing ? t('menu.refreshing') : t('menu.refresh')}</span></Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button aria-label={t('menu.more', { name: source.name })} className="size-9 border-hairline text-body hover:bg-raised hover:text-primary" size="icon" type="button" variant="outline"><MoreHorizontal aria-hidden="true" className="size-[17px]" strokeWidth={1.7} /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 border-hairline bg-raised text-[12px]">
-              <DropdownMenuItem onSelect={onEdit}><Pencil aria-hidden="true" className="size-3.5 text-muted-copy" />{t('menu.edit')}</DropdownMenuItem>
-              <DropdownMenuItem onSelect={onRefresh}><RefreshCw aria-hidden="true" className="size-3.5 text-muted-copy" />{t('menu.refreshNow')}</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-48 border-hairline bg-raised text-[12px]">
+              <DropdownMenuItem className="whitespace-nowrap" onSelect={onEdit}><Pencil aria-hidden="true" className="size-3.5 text-muted-copy" />{t('menu.edit')}</DropdownMenuItem>
+              <DropdownMenuItem className="whitespace-nowrap" onSelect={onRefresh}><RefreshCw aria-hidden="true" className="size-3.5 text-muted-copy" />{t('menu.refreshNow')}</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-bad focus:bg-bad/10 focus:text-bad" onSelect={onRemove}><Trash2 aria-hidden="true" className="size-3.5" />{t('menu.remove')}</DropdownMenuItem>
+              <DropdownMenuItem className="whitespace-nowrap text-bad focus:bg-bad/10 focus:text-bad" onSelect={onRemove}><Trash2 aria-hidden="true" className="size-3.5" />{t('menu.remove')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
