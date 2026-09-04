@@ -5,10 +5,9 @@
   },
   "connection": {
     "activeVpn": "Active VPN",
-    "fallbackProfile": "Aurora / Seattle 03",
-    "fallbackLocation": "Seattle, United States",
-    "profile": "Aurora / {{name}}",
-    "location": "{{city}}, United States",
+    "fallbackProfile": "No profile selected",
+    "profile": "{{group}} / {{name}}",
+    "fallbackLocation": "Location unknown",
     "ping": "Ping",
     "control": "Connection control: {{state}}",
     "connected": "Connected",
