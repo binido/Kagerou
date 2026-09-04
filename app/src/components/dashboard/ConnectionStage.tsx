@@ -21,7 +21,7 @@ export function ConnectionStage({ profileName, location, connected, ping, latest
   const { t } = useTranslation('dashboard')
 
   return (
-    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
+    <Card className="mx-auto flex min-h-0 w-full max-w-[1024px] flex-1 flex-col overflow-hidden rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
       <div className="grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-6 border-b border-hairline px-8 py-7 max-[980px]:gap-4 max-[980px]:px-6 max-[980px]:py-6 max-[760px]:grid-cols-1 max-[760px]:gap-4 max-[760px]:px-5 max-[760px]:py-5">
         <div className="min-w-0">
           <p className="type-eyebrow">{t('connection.activeVpn')}</p>
