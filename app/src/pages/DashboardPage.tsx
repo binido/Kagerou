@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
 import { ConnectionStage } from '@/components/dashboard/ConnectionStage'
-import { TelemetryPanel } from '@/components/dashboard/TelemetryPanel'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { getReachabilityAwarePing } from '@/lib/profile-sorting'
 import { regionToCountry } from '@/lib/formatters'
@@ -11,15 +10,12 @@ export function DashboardPage() {
   const { t, i18n } = useTranslation('dashboard')
   const { t: tp } = useTranslation('profiles')
   const connected = useKagerouStore((state) => state.connected)
-  const tunMode = useKagerouStore((state) => state.tunMode)
-  const systemProxy = useKagerouStore((state) => state.systemProxy)
   const profiles = useKagerouStore((state) => state.profiles)
   const profileGroups = useKagerouStore((state) => state.profileGroups)
   const activeProfileId = useKagerouStore((state) => state.activeProfileId)
   const telemetry = useKagerouStore((state) => state.telemetry)
   const sessionTraffic = useKagerouStore((state) => state.sessionTraffic)
   const toggleConnection = useKagerouStore((state) => state.toggleConnection)
-  const toggleMode = useKagerouStore((state) => state.toggleMode)
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0]
   const group = activeProfile ? profileGroups.find((g) => g.id === activeProfile.groupId) : undefined
   const groupLabel = group?.kind === 'default' ? tp('group.defaultName') : group?.label
@@ -30,28 +26,24 @@ export function DashboardPage() {
     : t('connection.fallbackProfile')
   const ping = activeProfile ? getReachabilityAwarePing(activeProfile) : { value: 'Not tested', tone: 'muted' as const }
   const location = regionToCountry(activeProfile?.region ?? '', i18n.resolvedLanguage ?? 'en') ?? t('connection.fallbackLocation')
+  const latestTelemetry = telemetry.at(-1)
 
   return (
-    <div className="min-h-screen min-w-0 bg-canvas px-6 py-7 lg:px-12 lg:py-9">
-      <div className="mx-auto w-full max-w-[1120px]">
+    <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-canvas px-4 py-5 sm:px-6 sm:py-6 xl:px-8 xl:py-8">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1120px] flex-col">
         <PageHeader eyebrow={t('page.eyebrow')} title={t('page.title')} />
-        <div className="mt-6 grid grid-cols-12 items-stretch gap-5 max-[1179px]:grid-cols-1">
-          <section className="col-span-8 min-w-0 max-[1179px]:col-span-1" aria-labelledby="connection-stage-title">
-            <ConnectionStage
-              connected={connected}
-              location={location}
-              profileName={profileName}
-              ping={ping}
-              systemProxy={systemProxy}
-              tunMode={tunMode}
-              onToggleConnection={toggleConnection}
-              onToggleMode={toggleMode}
-            />
-          </section>
-          <aside className="col-span-4 min-w-0 max-[1179px]:col-span-1" aria-label={t('telemetry.title')}>
-            <TelemetryPanel data={telemetry} sessionTraffic={sessionTraffic} />
-          </aside>
-        </div>
+        <section className="mt-6 flex min-h-0 flex-1" aria-labelledby="connection-stage-title">
+          <ConnectionStage
+            connected={connected}
+            latestDownload={latestTelemetry?.download ?? 0}
+            latestUpload={latestTelemetry?.upload ?? 0}
+            location={location}
+            onToggleConnection={toggleConnection}
+            ping={ping}
+            profileName={profileName}
+            sessionTraffic={sessionTraffic}
+          />
+        </section>
       </div>
     </div>
   )

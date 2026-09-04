@@ -13,19 +13,13 @@
     "connected": "Подключено",
     "disconnected": "Отключено",
     "connect": "Подключить",
-    "disconnect": "Отключить"
-  },
-  "modes": {
-    "tun": "Режим TUN",
-    "systemProxy": "Системный прокси"
-  },
-  "telemetry": {
-    "title": "Поток телеметрии",
-    "window": "60 СЕК",
-    "download": "Загрузка",
-    "upload": "Отдача",
-    "lastSeconds": "Последние 60 секунд",
-    "unit": "Мбит/с",
-    "sessionTraffic": "Трафик сессии"
+    "disconnect": "Отключить",
+    "traffic": {
+      "ariaLabel": "Текущий трафик",
+      "download": "Скорость загрузки",
+      "upload": "Скорость отдачи",
+      "session": "Трафик сессии",
+      "unit": "Мбит/с"
+    }
   }
 }
