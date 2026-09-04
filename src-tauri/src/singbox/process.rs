@@ -10,6 +10,10 @@ use crate::privilege::{self, TargetOs};
 
 const MAX_BUFFERED_LOG_LINES: usize = 500;
 
+/// How long [`ChildHandle::kill`] waits for the process to be gone before
+/// giving up. Short, because the app's shutdown hook blocks on it.
+const KILL_CONFIRMATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+
 #[derive(Debug, Error)]
 pub enum ProcessError {
     #[error("sing-box is already running")]
@@ -43,8 +47,28 @@ pub struct ChildHandle {
 }
 
 impl ChildHandle {
+    /// Stops the process and waits until it is actually gone.
+    ///
+    /// The waiting is the point: the kill itself is carried out by the
+    /// watcher thread, so returning as soon as the request was queued is
+    /// what let sing-box outlive the app — at shutdown that thread dies
+    /// with the process and the kill is never delivered.
     pub fn kill(&mut self) -> Result<(), ProcessError> {
-        (self.kill)()
+        (self.kill)()?;
+        let deadline = std::time::Instant::now() + KILL_CONFIRMATION_TIMEOUT;
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            match self.events.recv_timeout(remaining) {
+                Ok(ProcessEvent::Exited { .. }) => return Ok(()),
+                // Drain anything the process said on its way out.
+                Ok(ProcessEvent::Log(_)) => continue,
+                Err(_) => {
+                    return Err(ProcessError::KillFailed(
+                        "sing-box did not exit in time".to_string(),
+                    ))
+                }
+            }
+        }
     }
 }
 
@@ -84,52 +108,98 @@ fn sidecar_in(exe_dir: &Path, name: &str) -> PathBuf {
 /// killed out from under the wait thread).
 pub struct SidecarLauncher {
     pub binary_path: PathBuf,
+    /// Where to keep the run-file sentinel for an elevated launch. Its own
+    /// directory rather than a fixed path so a leftover from a previous run
+    /// can be spotted and cleared at startup — see [`clear_run_files`].
+    pub run_dir: PathBuf,
+}
+
+/// Marks a live elevated sing-box. Named per launch so a watchdog left over
+/// from a crashed session never mistakes a new run's sentinel for its own.
+const RUN_FILE_PREFIX: &str = "singbox-";
+const RUN_FILE_SUFFIX: &str = ".run";
+
+/// Deletes every run-file sentinel in `run_dir`, which asks any elevated
+/// sing-box left over from a previous session to exit. Call it at startup:
+/// a crash or a force-quit can always strand one, and it holds the TUN
+/// device (and with it the machine's whole network) until it goes.
+pub fn clear_run_files(run_dir: &Path) {
+    let Ok(entries) = std::fs::read_dir(run_dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if name.starts_with(RUN_FILE_PREFIX) && name.ends_with(RUN_FILE_SUFFIX) {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
 }
 
 impl SidecarLauncher {
-    /// Without TUN the binary runs as-is; with it, the launch goes through
-    /// `privilege::plan_launch`, which wraps it in the platform's
-    /// privilege-escalation command (UAC / osascript / pkexec).
-    fn command_for(&self, config_path: &Path, tun: bool) -> Command {
-        if !tun {
-            let mut command = Command::new(&self.binary_path);
-            command.args(["run", "-c"]).arg(config_path);
-            return command;
-        }
+    fn new_run_file(&self) -> Result<PathBuf, ProcessError> {
+        let path = self.run_dir.join(format!(
+            "{RUN_FILE_PREFIX}{}{RUN_FILE_SUFFIX}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&self.run_dir)
+            .and_then(|()| std::fs::write(&path, b""))
+            .map_err(|e| ProcessError::SpawnFailed(e.to_string()))?;
+        Ok(path)
+    }
+
+    /// Without TUN the binary runs as-is and stays our own child. With it,
+    /// the launch goes through `privilege::plan_launch`, which wraps it in
+    /// the platform's privilege-escalation command (UAC / osascript /
+    /// pkexec) — and `run_file` is how we ask that unreachable process to
+    /// stop, since we can no longer signal it.
+    fn command_for(&self, config_path: &Path, run_file: Option<&Path>) -> Command {
         let args = vec![
             "run".to_string(),
             "-c".to_string(),
             config_path.to_string_lossy().into_owned(),
         ];
+        let plain = || {
+            let mut command = Command::new(&self.binary_path);
+            command.args(&args);
+            command
+        };
+        let Some(run_file) = run_file else {
+            return plain();
+        };
         #[cfg(target_os = "linux")]
         let has_cap = privilege::current_process_has_cap_net_admin();
         #[cfg(not(target_os = "linux"))]
         let has_cap = false;
         match TargetOs::current() {
-            Some(os) => privilege::to_command(&privilege::plan_launch(
-                os,
-                &self.binary_path,
-                &args,
-                has_cap,
-            )),
+            Some(os) => privilege::to_command(
+                &privilege::plan_launch(os, &self.binary_path, &args, has_cap),
+                run_file,
+            ),
             // ponytail: unknown OS — no escalation strategy to pick, so run
             // it plainly and let sing-box report the permission failure.
-            None => {
-                let mut command = Command::new(&self.binary_path);
-                command.args(args);
-                command
-            }
+            None => plain(),
         }
     }
 }
 
 impl Launcher for SidecarLauncher {
     fn launch(&self, config_path: &Path, tun: bool) -> Result<ChildHandle, ProcessError> {
+        let run_file = if tun {
+            Some(self.new_run_file()?)
+        } else {
+            None
+        };
         let mut child = self
-            .command_for(config_path, tun)
+            .command_for(config_path, run_file.as_deref())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
+            .inspect_err(|_| {
+                if let Some(run_file) = &run_file {
+                    let _ = std::fs::remove_file(run_file);
+                }
+            })
             .map_err(|e| ProcessError::SpawnFailed(e.to_string()))?;
 
         let (tx, rx) = std::sync::mpsc::channel();
@@ -166,6 +236,13 @@ impl Launcher for SidecarLauncher {
         Ok(ChildHandle {
             events: rx,
             kill: Box::new(move || {
+                // For an elevated launch this is the stop signal that
+                // actually lands: killing our own child only reaches the
+                // osascript/pkexec wrapper, while the root sing-box under
+                // it is watching this file.
+                if let Some(run_file) = &run_file {
+                    let _ = std::fs::remove_file(run_file);
+                }
                 kill_tx
                     .send(())
                     .map_err(|e| ProcessError::KillFailed(e.to_string()))
@@ -282,6 +359,12 @@ mod tests {
         fail_next: Arc<StdMutex<bool>>,
         kill_count: Arc<AtomicUsize>,
         last_sender: Arc<StdMutex<Option<Sender<ProcessEvent>>>>,
+        /// How long the fake child takes to die, mimicking a real one that
+        /// only exits once the watcher thread gets round to killing it.
+        exit_delay: Arc<StdMutex<Option<std::time::Duration>>>,
+        /// A child that ignores the kill entirely, so the timeout path is
+        /// reachable.
+        never_exits: Arc<StdMutex<bool>>,
     }
 
     impl FakeControl {
@@ -291,6 +374,14 @@ mod tests {
 
         fn kill_count(&self) -> usize {
             self.kill_count.load(Ordering::SeqCst)
+        }
+
+        fn set_exit_delay(&self, delay: std::time::Duration) {
+            *self.exit_delay.lock().unwrap() = Some(delay);
+        }
+
+        fn set_never_exits(&self) {
+            *self.never_exits.lock().unwrap() = true;
         }
 
         fn send_event(&self, event: ProcessEvent) {
@@ -312,12 +403,27 @@ mod tests {
                 return Err(ProcessError::SpawnFailed("fake failure".into()));
             }
             let (tx, rx) = std::sync::mpsc::channel();
-            *self.0.last_sender.lock().unwrap() = Some(tx);
+            *self.0.last_sender.lock().unwrap() = Some(tx.clone());
             let kill_count = Arc::clone(&self.0.kill_count);
+            let exit_delay = Arc::clone(&self.0.exit_delay);
+            let never_exits = Arc::clone(&self.0.never_exits);
             Ok(ChildHandle {
                 events: rx,
                 kill: Box::new(move || {
                     kill_count.fetch_add(1, Ordering::SeqCst);
+                    if *never_exits.lock().unwrap() {
+                        return Ok(());
+                    }
+                    let delay = *exit_delay.lock().unwrap();
+                    let tx = tx.clone();
+                    // Like the real watcher thread: the process goes away
+                    // some time after the request, not during it.
+                    std::thread::spawn(move || {
+                        if let Some(delay) = delay {
+                            std::thread::sleep(delay);
+                        }
+                        let _ = tx.send(ProcessEvent::Exited { code: None });
+                    });
                     Ok(())
                 }),
             })
@@ -443,21 +549,29 @@ mod tests {
         assert_eq!(resolved, Path::new(expected));
     }
 
+    fn sidecar_launcher(binary: &str, run_dir: &Path) -> SidecarLauncher {
+        SidecarLauncher {
+            binary_path: PathBuf::from(binary),
+            run_dir: run_dir.to_path_buf(),
+        }
+    }
+
     /// On Linux with CAP_NET_ADMIN already set the plan is `Direct`, so
     /// the "not the bare binary" half of this only holds elsewhere.
     #[test]
     #[cfg(not(target_os = "linux"))]
     fn tun_mode_wraps_the_binary_in_an_elevation_command() {
-        let launcher = SidecarLauncher {
-            binary_path: PathBuf::from("/opt/kagerou/sing-box"),
-        };
+        let dir = tempfile::tempdir().unwrap();
+        let launcher = sidecar_launcher("/opt/kagerou/sing-box", dir.path());
         let config = Path::new("/tmp/config.json");
         assert_eq!(
-            launcher.command_for(config, false).get_program(),
+            launcher.command_for(config, None).get_program(),
             launcher.binary_path.as_os_str()
         );
         assert_ne!(
-            launcher.command_for(config, true).get_program(),
+            launcher
+                .command_for(config, Some(Path::new("/tmp/x.run")))
+                .get_program(),
             launcher.binary_path.as_os_str(),
             "TUN needs root, so the binary must be wrapped in an elevation command"
         );
@@ -466,12 +580,103 @@ mod tests {
     #[test]
     fn the_real_launcher_reports_a_spawn_failure_for_a_nonexistent_binary_without_touching_a_real_process(
     ) {
-        let launcher = SidecarLauncher {
-            binary_path: PathBuf::from("/definitely/not/a/real/sing-box/binary"),
-        };
+        let dir = tempfile::tempdir().unwrap();
+        let launcher = sidecar_launcher("/definitely/not/a/real/sing-box/binary", dir.path());
         match launcher.launch(Path::new("/tmp/config.json"), false) {
             Err(ProcessError::SpawnFailed(_)) => {}
             other => panic!("expected SpawnFailed, got {}", other.is_ok()),
         }
+    }
+
+    /// Each launch gets its own sentinel, so a watchdog stranded by a
+    /// crashed session can never mistake a later run's file for its own and
+    /// keep the old process alive.
+    #[test]
+    fn every_launch_gets_its_own_run_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let launcher = sidecar_launcher("/opt/kagerou/sing-box", dir.path());
+        let first = launcher.new_run_file().unwrap();
+        let second = launcher.new_run_file().unwrap();
+        assert_ne!(first, second);
+        assert!(first.exists() && second.exists());
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 2);
+    }
+
+    /// Deliberately not exercised by letting a real TUN launch fail:
+    /// spawning the elevation command would raise an actual password prompt
+    /// on the developer's machine. This covers the half reachable without
+    /// one — the launch gives up before spawning anything.
+    #[test]
+    fn a_tun_launch_that_cannot_create_its_run_file_fails_before_spawning() {
+        let dir = tempfile::tempdir().unwrap();
+        let blocked = dir.path().join("not-a-dir");
+        std::fs::write(&blocked, b"").unwrap();
+        let launcher = sidecar_launcher("/opt/kagerou/sing-box", &blocked);
+        assert!(matches!(
+            launcher.launch(Path::new("/tmp/config.json"), true),
+            Err(ProcessError::SpawnFailed(_))
+        ));
+    }
+
+    #[test]
+    fn a_non_tun_launch_creates_no_run_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let launcher = sidecar_launcher("/definitely/not/a/real/sing-box/binary", dir.path());
+        let _ = launcher.launch(Path::new("/tmp/config.json"), false);
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn clear_run_files_removes_sentinels_and_leaves_everything_else_alone() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("singbox-abc.run"), b"").unwrap();
+        std::fs::write(dir.path().join("singbox-def.run"), b"").unwrap();
+        std::fs::write(dir.path().join("kagerou.sqlite3"), b"db").unwrap();
+        std::fs::write(dir.path().join("sing-box-config.json"), b"{}").unwrap();
+
+        clear_run_files(dir.path());
+
+        let mut left: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        left.sort();
+        assert_eq!(left, vec!["kagerou.sqlite3", "sing-box-config.json"]);
+    }
+
+    #[test]
+    fn clearing_a_directory_that_does_not_exist_is_not_an_error() {
+        clear_run_files(Path::new("/definitely/not/a/real/directory"));
+    }
+
+    /// The regression this whole change exists for: `stop` used to return
+    /// as soon as the kill was queued, so the app could finish exiting
+    /// before its watcher thread ever delivered it — leaving sing-box
+    /// orphaned and still holding the tunnel.
+    #[test]
+    fn stop_waits_until_the_process_is_actually_gone() {
+        let (mut sup, control) = supervisor();
+        control.set_exit_delay(std::time::Duration::from_millis(300));
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
+
+        let before = std::time::Instant::now();
+        sup.stop().unwrap();
+        assert!(
+            before.elapsed() >= std::time::Duration::from_millis(250),
+            "stop returned before the process had exited"
+        );
+    }
+
+    #[test]
+    fn stop_gives_up_rather_than_hanging_on_a_process_that_will_not_die() {
+        let (mut sup, control) = supervisor();
+        control.set_never_exits();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
+        assert!(matches!(sup.stop(), Err(ProcessError::KillFailed(_))));
+        assert_eq!(
+            *sup.status(),
+            Status::Stopped,
+            "the supervisor still has to let go of a child it cannot kill"
+        );
     }
 }

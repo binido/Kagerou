@@ -18,6 +18,12 @@ pub fn run() {
             let app_data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_data_dir)?;
 
+            // A crash or a force-quit can strand an elevated sing-box from a
+            // previous session, and it holds the TUN device — and with it
+            // the machine's whole network — until it goes. Dropping its run
+            // file is how we ask it to exit; see singbox::process.
+            singbox::clear_run_files(&app_data_dir);
+
             let db = storage::Db::open(app_data_dir.join("kagerou.sqlite3"))?;
             let config_path = app_data_dir.join("sing-box-config.json");
             let sing_box_binary = singbox::sidecar_path("sing-box")?;
@@ -52,6 +58,16 @@ pub fn run() {
             commands::set_theme,
             commands::update_settings,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running kagerou");
+        .build(tauri::generate_context!())
+        .expect("error while building kagerou")
+        .run(|app, event| {
+            // Without this, sing-box outlives the window: unprivileged it
+            // just lingers, and under TUN it runs as root and keeps the
+            // tunnel up with no way left to reach it from the UI.
+            if let tauri::RunEvent::Exit = event {
+                if let Some(state) = app.try_state::<AppState>() {
+                    let _ = state.supervisor.lock().unwrap().stop();
+                }
+            }
+        });
 }
