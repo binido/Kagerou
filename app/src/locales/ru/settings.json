@@ -4,6 +4,7 @@
     "instant": "Изменения применяются сразу"
   },
   "sections": {
+    "connection": "Соединение",
     "appearance": "Внешний вид",
     "startup": "Запуск",
     "subscriptions": "Подписки",
@@ -13,6 +14,8 @@
   "fields": {
     "theme": "Тема",
     "language": "Язык",
+    "tunMode": "Режим TUN",
+    "systemProxy": "Системный прокси",
     "startAutomatically": "Запускать автоматически",
     "autoUpdateSubscriptions": "Автообновление подписок",
     "updateInterval": "Интервал обновления",

@@ -14,7 +14,10 @@ import type { GroupSortMode, SubscriptionUpdateInterval, TunInterface } from '@/
 export function SettingsPage() {
   const { t } = useTranslation('settings')
   const settings = useKagerouStore((state) => state.settings)
+  const tunMode = useKagerouStore((state) => state.tunMode)
+  const systemProxy = useKagerouStore((state) => state.systemProxy)
   const setTheme = useKagerouStore((state) => state.setTheme)
+  const toggleMode = useKagerouStore((state) => state.toggleMode)
   const updateSettings = useKagerouStore((state) => state.updateSettings)
   const subscriptionIntervalOptions = [
     { value: '5', label: t('options.interval5') },
@@ -36,6 +39,10 @@ export function SettingsPage() {
         <div className="flex w-[680px] max-w-full flex-1 flex-col">
           <PageHeader actions={<p className="mb-0.5 text-[12px] leading-4 text-muted-copy">{t('page.instant')}</p>} title={t('page.title')} />
           <div className="mt-12 flex flex-1 flex-col">
+            <SettingsSection title={t('sections.connection')}>
+              <SettingSwitchRow checked={tunMode} label={t('fields.tunMode')} onChange={() => toggleMode('tun')} />
+              <SettingSwitchRow checked={systemProxy} label={t('fields.systemProxy')} onChange={() => toggleMode('proxy')} />
+            </SettingsSection>
             <SettingsSection title={t('sections.appearance')}>
               <div className="flex min-h-14 items-center justify-between gap-8 border-b border-hairline max-[639px]:flex-col max-[639px]:items-stretch max-[639px]:gap-3 max-[639px]:py-3"><span className="text-[14px] leading-5 text-body">{t('fields.theme')}</span><ThemePicker onChange={setTheme} value={settings.theme} /></div>
               <LanguageSwitcher />

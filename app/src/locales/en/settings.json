@@ -4,6 +4,7 @@
     "instant": "Changes apply instantly"
   },
   "sections": {
+    "connection": "Connection",
     "appearance": "Appearance",
     "startup": "Startup",
     "subscriptions": "Subscriptions",
@@ -13,6 +14,8 @@
   "fields": {
     "theme": "Theme",
     "language": "Language",
+    "tunMode": "TUN mode",
+    "systemProxy": "System proxy",
     "startAutomatically": "Start automatically",
     "autoUpdateSubscriptions": "Auto-update subscriptions",
     "updateInterval": "Update interval",
