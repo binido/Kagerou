@@ -8,16 +8,25 @@ import { useKagerouStore } from '@/store/kagerou-store'
 
 export function DashboardPage() {
   const { t } = useTranslation('dashboard')
+  const { t: tp } = useTranslation('profiles')
   const connected = useKagerouStore((state) => state.connected)
   const tunMode = useKagerouStore((state) => state.tunMode)
   const systemProxy = useKagerouStore((state) => state.systemProxy)
   const profiles = useKagerouStore((state) => state.profiles)
+  const profileGroups = useKagerouStore((state) => state.profileGroups)
   const activeProfileId = useKagerouStore((state) => state.activeProfileId)
   const telemetry = useKagerouStore((state) => state.telemetry)
   const sessionTraffic = useKagerouStore((state) => state.sessionTraffic)
   const toggleConnection = useKagerouStore((state) => state.toggleConnection)
   const toggleMode = useKagerouStore((state) => state.toggleMode)
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0]
+  const group = activeProfile ? profileGroups.find((g) => g.id === activeProfile.groupId) : undefined
+  const groupLabel = group?.kind === 'default' ? tp('group.defaultName') : group?.label
+  const profileName = activeProfile
+    ? groupLabel
+      ? t('connection.profile', { group: groupLabel, name: activeProfile.name })
+      : activeProfile.name
+    : t('connection.fallbackProfile')
   const ping = activeProfile ? getReachabilityAwarePing(activeProfile) : { value: 'Not tested', tone: 'muted' as const }
 
   return (
@@ -29,7 +38,7 @@ export function DashboardPage() {
             <ConnectionStage
               connected={connected}
               location={activeProfile ? t('connection.location', { city: activeProfile.name.split(' ')[0] }) : t('connection.fallbackLocation')}
-              profileName={activeProfile ? t('connection.profile', { name: activeProfile.name }) : t('connection.fallbackProfile')}
+              profileName={profileName}
               ping={ping}
               systemProxy={systemProxy}
               tunMode={tunMode}
