@@ -40,6 +40,17 @@ function getProfileResultState(profile: Profile, runningTests: Record<string, bo
   }
 }
 
+function ProfileSelectButton({ profile, compact = false, onSelect }: { profile: Profile; compact?: boolean; onSelect: (id: string) => void }) {
+  const { t } = useTranslation('profiles')
+
+  return (
+    <Button aria-pressed={profile.selected} className={cn('w-[104px] shrink-0 justify-center gap-1.5 whitespace-nowrap rounded-md border-hairline !bg-raised text-primary hover:!border-lavender/45 hover:!bg-selected hover:text-primary aria-pressed:!border-transparent aria-pressed:!bg-primary aria-pressed:font-bold aria-pressed:!text-primary-foreground aria-pressed:hover:!bg-primary max-[400px]:w-24', compact ? 'h-8 px-2 text-[10px]' : 'h-[34px] px-2.5 text-[11px]')} onClick={() => onSelect(profile.id)} type="button" variant="outline">
+      {profile.selected ? <Check aria-hidden="true" className="size-3" strokeWidth={2.5} /> : null}
+      {profile.selected ? t('table.selected') : t('table.use')}
+    </Button>
+  )
+}
+
 function ProfileCompactRow({
   profile,
   index,
@@ -64,7 +75,7 @@ function ProfileCompactRow({
   const { t } = useTranslation('profiles')
 
   return (
-    <div className="flex min-w-0 gap-3 border-b border-hairline/55 px-4 py-3 last:border-b-0">
+    <div className="flex min-w-0 gap-3 border-b border-hairline/55 px-4 py-3 last:border-b-0" data-profile-id={profile.id}>
       <span aria-hidden="true" className="w-4 shrink-0 pt-1 font-mono text-[11px] tabular-nums text-muted-copy">{index + 1}</span>
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
@@ -85,10 +96,7 @@ function ProfileCompactRow({
             <ResultBadge tone={result.url.tone} value={result.url.value} />
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Button aria-pressed={profile.selected} className="h-8 min-w-0 justify-center gap-1.5 rounded-md border-hairline !bg-raised px-2 text-[10px] text-primary hover:!border-lavender/45 hover:!bg-selected hover:text-primary aria-pressed:!border-transparent aria-pressed:!bg-primary aria-pressed:font-bold aria-pressed:!text-primary-foreground aria-pressed:hover:!bg-primary" onClick={() => onSelect(profile.id)} type="button" variant="outline">
-              {profile.selected ? <Check aria-hidden="true" className="size-3" strokeWidth={2.5} /> : null}
-              {profile.selected ? t('table.selected') : t('table.use')}
-            </Button>
+            <ProfileSelectButton compact onSelect={onSelect} profile={profile} />
             <ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} />
           </span>
         </div>
@@ -130,7 +138,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
                   <TableCell className="px-3 py-4 align-middle"><span className="inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[10px] text-body">{profile.protocol}</span></TableCell>
                   <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.ping.tone} value={result.ping.value} /></TableCell>
                   <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.url.tone} value={result.url.value} /></TableCell>
-                  <TableCell className="w-[13%] px-3 py-4 align-middle"><Button aria-pressed={profile.selected} className="h-[34px] w-auto min-w-[84px] shrink-0 justify-center gap-1.5 whitespace-nowrap rounded-md border-hairline !bg-raised px-2.5 text-[11px] text-primary hover:!border-lavender/45 hover:!bg-selected hover:text-primary aria-pressed:!border-transparent aria-pressed:!bg-primary aria-pressed:font-bold aria-pressed:!text-primary-foreground aria-pressed:hover:!bg-primary" onClick={() => onSelect(profile.id)} type="button" variant="outline">{profile.selected ? <Check aria-hidden="true" className="size-3" strokeWidth={2.5} /> : null}{profile.selected ? t('table.selected') : t('table.use')}</Button></TableCell>
+                  <TableCell className="w-[13%] px-3 py-4 align-middle"><ProfileSelectButton onSelect={onSelect} profile={profile} /></TableCell>
                   <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} /></TableCell>
                 </TableRow>
               )
