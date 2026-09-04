@@ -65,7 +65,13 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       if (event.kind !== 'sample') return
       set((state) => {
         const point: TelemetryPoint = { label: 'now', download: event.down, upload: event.up }
-        return { telemetry: [...state.telemetry.slice(-(MAX_TELEMETRY_POINTS - 1)), point] }
+        // A null total means the backend's `/connections` fetch failed for
+        // this sample — keep the previous value rather than blanking it.
+        const sessionTraffic =
+          event.downloadTotal !== null && event.uploadTotal !== null
+            ? { download: event.downloadTotal, upload: event.uploadTotal }
+            : state.sessionTraffic
+        return { telemetry: [...state.telemetry.slice(-(MAX_TELEMETRY_POINTS - 1)), point], sessionTraffic }
       })
     })
 
@@ -90,6 +96,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     routingRules: [],
     logs: [],
     telemetry: [],
+    sessionTraffic: { download: 0, upload: 0 },
     settings: {
       theme: getInitialThemeId(),
       language: 'en',
