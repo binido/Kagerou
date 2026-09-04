@@ -1,6 +1,6 @@
 {
   "page": {
-    "eyebrow": "Network",
+    "eyebrow": "Kagerou  /  Network",
     "title": "Routing rules",
     "description": "Decide which traffic goes direct, through your proxy, or is blocked.",
     "connectionActive": "Connection active",

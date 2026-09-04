@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
@@ -137,8 +138,7 @@ export function GroupsPage() {
   const sortedGroupProfiles = (group: ProfileGroup) => sortProfiles(visibleGroupProfiles(group), groupSort)
 
   return (
-    <div className="min-h-screen min-w-0 bg-canvas px-6 pb-10 pt-8 lg:px-12 lg:pt-10">
-      <div className="mx-auto w-full max-w-[1040px]">
+    <PageContainer>
         <PageHeader
           actions={(
             <div className="flex flex-wrap justify-end gap-2">
@@ -186,7 +186,6 @@ export function GroupsPage() {
         </div>
         <p aria-live="polite" className={`mt-4 min-h-[17px] text-[11px] ${feedbackTone === 'good' ? 'text-good' : feedbackTone === 'bad' ? 'text-bad' : 'text-muted-copy'}`}>{feedback}</p>
         <p className="sr-only">{t('table.available', { count: profiles.length })}</p>
-      </div>
 
       <ProfileGroupDialog key={`${groupDialogTarget?.id ?? 'new'}-${groupDialogOpen}`} group={groupDialogTarget} onOpenChange={(open) => { setGroupDialogOpen(open); if (!open) setGroupDialogTarget(null) }} onSubmit={handleGroupSubmit} open={groupDialogOpen} />
 
@@ -232,6 +231,6 @@ export function GroupsPage() {
           <AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteTarget(null)}>{t('dialogs.delete.cancel')}</AlertDialogCancel><AlertDialogAction className="bg-bad text-primary hover:bg-bad/85" onClick={() => { if (!deleteTarget) return; const nameToDelete = deleteTarget.name; deleteProfile(deleteTarget.id); setDeleteTarget(null); setMessage(t('feedback.deleted', { name: nameToDelete }), 'good') }}>{t('dialogs.delete.submit')}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }

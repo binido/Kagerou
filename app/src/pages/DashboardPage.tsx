@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import { ConnectionStage } from '@/components/dashboard/ConnectionStage'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { getReachabilityAwarePing } from '@/lib/profile-sorting'
 import { regionToCountry } from '@/lib/formatters'
@@ -29,8 +30,7 @@ export function DashboardPage() {
   const latestTelemetry = telemetry.at(-1)
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-canvas px-4 py-5 sm:px-6 sm:py-6 xl:px-8 xl:py-8">
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1120px] flex-col">
+    <PageContainer className="flex h-dvh min-h-0 flex-col overflow-hidden" contentClassName="flex h-full min-h-0 flex-col">
         <PageHeader eyebrow={t('page.eyebrow')} title={t('page.title')} />
         <section className="mt-6 flex min-h-0 flex-1" aria-labelledby="connection-stage-title">
           <ConnectionStage
@@ -44,7 +44,6 @@ export function DashboardPage() {
             sessionTraffic={sessionTraffic}
           />
         </section>
-      </div>
-    </div>
+    </PageContainer>
   )
 }

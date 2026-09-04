@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { SettingsFooter } from '@/components/settings/SettingsFooter'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { SettingNumberRow } from '@/components/settings/SettingNumberRow'
@@ -34,10 +35,9 @@ export function SettingsPage() {
   ] as const
 
   return (
-    <div className="flex min-h-screen min-w-0 flex-col bg-canvas px-6 py-8 lg:px-[68px] lg:py-[52px]">
-      <div className="flex w-full max-w-[920px] flex-1 2xl:mx-auto">
-        <div className="flex w-[680px] max-w-full flex-1 flex-col">
-          <PageHeader actions={<p className="mb-0.5 text-[12px] leading-4 text-muted-copy">{t('page.instant')}</p>} title={t('page.title')} />
+    <PageContainer className="flex flex-col" contentClassName="flex flex-1 flex-col">
+      <div className="flex w-full max-w-[680px] flex-1 flex-col">
+          <PageHeader actions={<p className="mb-0.5 text-[12px] leading-4 text-muted-copy">{t('page.instant')}</p>} eyebrow={t('page.eyebrow')} title={t('page.title')} />
           <div className="mt-12 flex flex-1 flex-col">
             <SettingsSection title={t('sections.connection')}>
               <SettingSwitchRow checked={tunMode} label={t('fields.tunMode')} onChange={() => toggleMode('tun')} />
@@ -63,8 +63,7 @@ export function SettingsPage() {
               <SettingsFooter />
             </div>
           </div>
-        </div>
       </div>
-    </div>
+    </PageContainer>
   )
 }
