@@ -4,10 +4,11 @@ import { ConnectionStage } from '@/components/dashboard/ConnectionStage'
 import { TelemetryPanel } from '@/components/dashboard/TelemetryPanel'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { getReachabilityAwarePing } from '@/lib/profile-sorting'
+import { regionToCountry } from '@/lib/formatters'
 import { useKagerouStore } from '@/store/kagerou-store'
 
 export function DashboardPage() {
-  const { t } = useTranslation('dashboard')
+  const { t, i18n } = useTranslation('dashboard')
   const { t: tp } = useTranslation('profiles')
   const connected = useKagerouStore((state) => state.connected)
   const tunMode = useKagerouStore((state) => state.tunMode)
@@ -28,6 +29,7 @@ export function DashboardPage() {
       : activeProfile.name
     : t('connection.fallbackProfile')
   const ping = activeProfile ? getReachabilityAwarePing(activeProfile) : { value: 'Not tested', tone: 'muted' as const }
+  const location = regionToCountry(activeProfile?.region ?? '', i18n.resolvedLanguage ?? 'en') ?? t('connection.fallbackLocation')
 
   return (
     <div className="min-h-screen min-w-0 bg-canvas px-6 py-7 lg:px-12 lg:py-9">
@@ -37,7 +39,7 @@ export function DashboardPage() {
           <section className="col-span-8 min-w-0 max-[1179px]:col-span-1" aria-labelledby="connection-stage-title">
             <ConnectionStage
               connected={connected}
-              location={activeProfile ? t('connection.location', { city: activeProfile.name.split(' ')[0] }) : t('connection.fallbackLocation')}
+              location={location}
               profileName={profileName}
               ping={ping}
               systemProxy={systemProxy}

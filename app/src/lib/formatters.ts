@@ -25,3 +25,12 @@ export const deriveSubscriptionName = (value: string, fallbackNumber: number, fa
     return `${fallbackLabel} ${String(fallbackNumber).padStart(2, '0')}`
   }
 }
+
+/** An ISO 3166-1 alpha-2 region code (what the backend's region_from_name
+ * emits) → "🇦🇹 Austria"-style display string, localized via Intl.
+ * Anything else ("", "Local profile", garbage) → null. */
+export const regionToCountry = (region: string, language: string): string | null => {
+  if (!/^[A-Z]{2}$/.test(region)) return null
+  const flag = String.fromCodePoint(...[...region].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
+  return `${flag} ${new Intl.DisplayNames([language], { type: 'region' }).of(region)}`
+}

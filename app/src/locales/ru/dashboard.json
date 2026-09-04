@@ -6,9 +6,8 @@
   "connection": {
     "activeVpn": "Активный VPN",
     "fallbackProfile": "Профиль не выбран",
-    "fallbackLocation": "Сиэтл, США",
     "profile": "{{group}} / {{name}}",
-    "location": "{{city}}, США",
+    "fallbackLocation": "Локация неизвестна",
     "ping": "Пинг",
     "control": "Управление соединением: {{state}}",
     "connected": "Подключено",

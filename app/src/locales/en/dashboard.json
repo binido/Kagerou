@@ -6,9 +6,8 @@
   "connection": {
     "activeVpn": "Active VPN",
     "fallbackProfile": "No profile selected",
-    "fallbackLocation": "Seattle, United States",
     "profile": "{{group}} / {{name}}",
-    "location": "{{city}}, United States",
+    "fallbackLocation": "Location unknown",
     "ping": "Ping",
     "control": "Connection control: {{state}}",
     "connected": "Connected",
