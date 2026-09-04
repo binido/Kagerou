@@ -10,6 +10,10 @@ use crate::privilege::{self, TargetOs};
 
 const MAX_BUFFERED_LOG_LINES: usize = 500;
 
+/// How long [`ChildHandle::kill`] waits for the process to be gone before
+/// giving up. Short, because the app's shutdown hook blocks on it.
+const KILL_CONFIRMATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+
 #[derive(Debug, Error)]
 pub enum ProcessError {
     #[error("sing-box is already running")]
@@ -43,8 +47,28 @@ pub struct ChildHandle {
 }
 
 impl ChildHandle {
+    /// Stops the process and waits until it is actually gone.
+    ///
+    /// The waiting is the point: the kill itself is carried out by the
+    /// watcher thread, so returning as soon as the request was queued is
+    /// what let sing-box outlive the app — at shutdown that thread dies
+    /// with the process and the kill is never delivered.
     pub fn kill(&mut self) -> Result<(), ProcessError> {
-        (self.kill)()
+        (self.kill)()?;
+        let deadline = std::time::Instant::now() + KILL_CONFIRMATION_TIMEOUT;
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            match self.events.recv_timeout(remaining) {
+                Ok(ProcessEvent::Exited { .. }) => return Ok(()),
+                // Drain anything the process said on its way out.
+                Ok(ProcessEvent::Log(_)) => continue,
+                Err(_) => {
+                    return Err(ProcessError::KillFailed(
+                        "sing-box did not exit in time".to_string(),
+                    ))
+                }
+            }
+        }
     }
 }
 
@@ -335,6 +359,12 @@ mod tests {
         fail_next: Arc<StdMutex<bool>>,
         kill_count: Arc<AtomicUsize>,
         last_sender: Arc<StdMutex<Option<Sender<ProcessEvent>>>>,
+        /// How long the fake child takes to die, mimicking a real one that
+        /// only exits once the watcher thread gets round to killing it.
+        exit_delay: Arc<StdMutex<Option<std::time::Duration>>>,
+        /// A child that ignores the kill entirely, so the timeout path is
+        /// reachable.
+        never_exits: Arc<StdMutex<bool>>,
     }
 
     impl FakeControl {
@@ -344,6 +374,14 @@ mod tests {
 
         fn kill_count(&self) -> usize {
             self.kill_count.load(Ordering::SeqCst)
+        }
+
+        fn set_exit_delay(&self, delay: std::time::Duration) {
+            *self.exit_delay.lock().unwrap() = Some(delay);
+        }
+
+        fn set_never_exits(&self) {
+            *self.never_exits.lock().unwrap() = true;
         }
 
         fn send_event(&self, event: ProcessEvent) {
@@ -365,12 +403,27 @@ mod tests {
                 return Err(ProcessError::SpawnFailed("fake failure".into()));
             }
             let (tx, rx) = std::sync::mpsc::channel();
-            *self.0.last_sender.lock().unwrap() = Some(tx);
+            *self.0.last_sender.lock().unwrap() = Some(tx.clone());
             let kill_count = Arc::clone(&self.0.kill_count);
+            let exit_delay = Arc::clone(&self.0.exit_delay);
+            let never_exits = Arc::clone(&self.0.never_exits);
             Ok(ChildHandle {
                 events: rx,
                 kill: Box::new(move || {
                     kill_count.fetch_add(1, Ordering::SeqCst);
+                    if *never_exits.lock().unwrap() {
+                        return Ok(());
+                    }
+                    let delay = *exit_delay.lock().unwrap();
+                    let tx = tx.clone();
+                    // Like the real watcher thread: the process goes away
+                    // some time after the request, not during it.
+                    std::thread::spawn(move || {
+                        if let Some(delay) = delay {
+                            std::thread::sleep(delay);
+                        }
+                        let _ = tx.send(ProcessEvent::Exited { code: None });
+                    });
                     Ok(())
                 }),
             })
@@ -594,5 +647,36 @@ mod tests {
     #[test]
     fn clearing_a_directory_that_does_not_exist_is_not_an_error() {
         clear_run_files(Path::new("/definitely/not/a/real/directory"));
+    }
+
+    /// The regression this whole change exists for: `stop` used to return
+    /// as soon as the kill was queued, so the app could finish exiting
+    /// before its watcher thread ever delivered it — leaving sing-box
+    /// orphaned and still holding the tunnel.
+    #[test]
+    fn stop_waits_until_the_process_is_actually_gone() {
+        let (mut sup, control) = supervisor();
+        control.set_exit_delay(std::time::Duration::from_millis(300));
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
+
+        let before = std::time::Instant::now();
+        sup.stop().unwrap();
+        assert!(
+            before.elapsed() >= std::time::Duration::from_millis(250),
+            "stop returned before the process had exited"
+        );
+    }
+
+    #[test]
+    fn stop_gives_up_rather_than_hanging_on_a_process_that_will_not_die() {
+        let (mut sup, control) = supervisor();
+        control.set_never_exits();
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
+        assert!(matches!(sup.stop(), Err(ProcessError::KillFailed(_))));
+        assert_eq!(
+            *sup.status(),
+            Status::Stopped,
+            "the supervisor still has to let go of a child it cannot kill"
+        );
     }
 }
