@@ -330,11 +330,33 @@ describe('backend event handling', () => {
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
 
     await useKagerouStore.getState().hydrate()
-    for (let i = 0; i < 65; i++) handler({ kind: 'sample', up: i, down: i * 2 })
+    for (let i = 0; i < 65; i++) handler({ kind: 'sample', up: i, down: i * 2, uploadTotal: null, downloadTotal: null })
 
     const telemetry = useKagerouStore.getState().telemetry
     expect(telemetry.length).toBe(60)
     expect(telemetry.at(-1)).toEqual({ label: 'now', download: 128, upload: 64 })
+  })
+
+  it('a traffic sample event replaces sessionTraffic with the backend-reported totals', async () => {
+    let handler: (event: TrafficEvent) => void = () => {}
+    api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
+
+    await useKagerouStore.getState().hydrate()
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: 250_000_000, downloadTotal: 1_900_000_000 })
+    handler({ kind: 'sample', up: 3, down: 4, uploadTotal: 260_000_000, downloadTotal: 1_950_000_000 })
+
+    expect(useKagerouStore.getState().sessionTraffic).toEqual({ download: 1_950_000_000, upload: 260_000_000 })
+  })
+
+  it('a sample with null totals keeps the previous sessionTraffic instead of blanking it', async () => {
+    let handler: (event: TrafficEvent) => void = () => {}
+    api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
+    useKagerouStore.setState({ sessionTraffic: { download: 500, upload: 100 } })
+
+    await useKagerouStore.getState().hydrate()
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null })
+
+    expect(useKagerouStore.getState().sessionTraffic).toEqual({ download: 500, upload: 100 })
   })
 
   it('a non-sample traffic event (disconnected/reconnecting) does not touch telemetry', async () => {

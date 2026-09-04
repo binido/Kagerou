@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::app_state::AppState;
-use crate::clash_api::{self, ClashApiClient};
+use crate::clash_api::model::ConnectionsResponse;
+use crate::clash_api::{self, ClashApiClient, TrafficEvent};
 use crate::singbox;
 use crate::storage::models::{
     NewProfile, NewProfileGroup, NewRoutingRule, NewSource, Profile, ProfileGroup, Protocol,
@@ -89,6 +90,43 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
 // Connection lifecycle
 // ---------------------------------------------------------------------
 
+/// What the dashboard actually receives on `kagerou://traffic`: the raw
+/// `/traffic` sample plus, when the Clash API answered, the session-wide
+/// byte totals from `/connections`. Backend-sourced totals survive a
+/// frontend reload mid-session (sing-box keeps counting while the WebView
+/// is gone); a client-side accumulator would not. A failed `/connections`
+/// fetch yields `None` fields and the UI keeps its previous totals — one
+/// API hiccup must not blank the panel.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum DashboardTrafficEvent {
+    #[serde(rename_all = "camelCase")]
+    Sample {
+        up: u64,
+        down: u64,
+        upload_total: Option<u64>,
+        download_total: Option<u64>,
+    },
+    Disconnected,
+    Reconnecting,
+}
+
+fn to_dashboard_event(
+    event: &TrafficEvent,
+    totals: Option<&ConnectionsResponse>,
+) -> DashboardTrafficEvent {
+    match event {
+        TrafficEvent::Sample(sample) => DashboardTrafficEvent::Sample {
+            up: sample.up,
+            down: sample.down,
+            upload_total: totals.map(|t| t.upload_total),
+            download_total: totals.map(|t| t.download_total),
+        },
+        TrafficEvent::Disconnected => DashboardTrafficEvent::Disconnected,
+        TrafficEvent::Reconnecting => DashboardTrafficEvent::Reconnecting,
+    }
+}
+
 #[tauri::command]
 pub async fn connect(tun: bool, app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     let all_profiles = profiles::list_all(&state.db).map_err(to_err)?;
@@ -118,7 +156,7 @@ pub async fn connect(tun: bool, app: AppHandle, state: State<'_, AppState>) -> R
         .map_err(to_err)?;
 
     let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
-    *state.clash.lock().unwrap() = Some(clash);
+    *state.clash.lock().unwrap() = Some(clash.clone());
 
     let watcher = clash_api::watch_traffic(
         format!("ws://{}/traffic", state.paths.clash_api_listen),
@@ -129,7 +167,15 @@ pub async fn connect(tun: bool, app: AppHandle, state: State<'_, AppState>) -> R
     let traffic_app = app.clone();
     tauri::async_runtime::spawn(async move {
         while let Some(event) = events.recv().await {
-            let _ = traffic_app.emit("kagerou://traffic", &event);
+            let totals = if matches!(event, TrafficEvent::Sample(_)) {
+                clash.get_connections().await.ok()
+            } else {
+                None
+            };
+            let _ = traffic_app.emit(
+                "kagerou://traffic",
+                to_dashboard_event(&event, totals.as_ref()),
+            );
         }
     });
 
@@ -777,7 +823,9 @@ pub fn update_settings(patch: SettingsPatchInput, state: State<AppState>) -> Res
 
 #[cfg(test)]
 mod tests {
-    use super::region_from_name;
+    use super::{region_from_name, to_dashboard_event, DashboardTrafficEvent};
+    use crate::clash_api::model::{ConnectionsResponse, TrafficSample};
+    use crate::clash_api::TrafficEvent;
 
     #[test]
     fn flag_emoji_becomes_a_country_code() {
@@ -792,5 +840,73 @@ mod tests {
         assert_eq!(region_from_name("🚀 Boost"), "");
         // A lone regional indicator is not a flag.
         assert_eq!(region_from_name("🇦 Node"), "");
+    }
+
+    fn totals() -> ConnectionsResponse {
+        ConnectionsResponse {
+            download_total: 1_900_000_000,
+            upload_total: 250_000_000,
+            connections: vec![],
+        }
+    }
+
+    #[test]
+    fn a_sample_event_carries_the_session_totals_when_connections_answered() {
+        let event = TrafficEvent::Sample(TrafficSample { up: 100, down: 200 });
+        assert_eq!(
+            to_dashboard_event(&event, Some(&totals())),
+            DashboardTrafficEvent::Sample {
+                up: 100,
+                down: 200,
+                upload_total: Some(250_000_000),
+                download_total: Some(1_900_000_000),
+            }
+        );
+    }
+
+    #[test]
+    fn a_sample_event_omits_the_totals_when_connections_failed() {
+        let event = TrafficEvent::Sample(TrafficSample { up: 100, down: 200 });
+        assert_eq!(
+            to_dashboard_event(&event, None),
+            DashboardTrafficEvent::Sample {
+                up: 100,
+                down: 200,
+                upload_total: None,
+                download_total: None,
+            },
+            "the sample itself must still reach the dashboard"
+        );
+    }
+
+    #[test]
+    fn non_sample_events_pass_through_untouched() {
+        assert_eq!(
+            to_dashboard_event(&TrafficEvent::Disconnected, Some(&totals())),
+            DashboardTrafficEvent::Disconnected
+        );
+        assert_eq!(
+            to_dashboard_event(&TrafficEvent::Reconnecting, None),
+            DashboardTrafficEvent::Reconnecting
+        );
+    }
+
+    #[test]
+    fn the_wire_format_matches_what_the_frontend_expects() {
+        let event = to_dashboard_event(
+            &TrafficEvent::Sample(TrafficSample { up: 1, down: 2 }),
+            Some(&totals()),
+        );
+        let json = serde_json::to_value(&event).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "kind": "sample",
+                "up": 1,
+                "down": 2,
+                "uploadTotal": 250_000_000_u64,
+                "downloadTotal": 1_900_000_000_u64,
+            })
+        );
     }
 }

@@ -3,10 +3,13 @@ import { useTranslation } from 'react-i18next'
 
 import { Card } from '@/components/ui/card'
 import { TelemetryChart } from '@/components/dashboard/TelemetryChart'
-import type { TelemetryPoint } from '@/types/kagerou'
+import { formatBytes, formatSpeedMbps } from '@/lib/formatters'
+import type { SessionTraffic, TelemetryPoint } from '@/types/kagerou'
 
-export function TelemetryPanel({ data }: { data: TelemetryPoint[] }) {
+export function TelemetryPanel({ data, sessionTraffic }: { data: TelemetryPoint[]; sessionTraffic: SessionTraffic }) {
   const { t } = useTranslation('dashboard')
+  const latest = data.at(-1)
+  const sessionTotal = formatBytes(sessionTraffic.download + sessionTraffic.upload)
 
   return (
     <Card className="flex min-h-[584px] flex-col rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
@@ -19,13 +22,13 @@ export function TelemetryPanel({ data }: { data: TelemetryPoint[] }) {
           <div>
             <p className="text-[12px] text-muted-copy">{t('telemetry.download')}</p>
             <p className="type-display mt-1 whitespace-nowrap text-[29px] leading-none tracking-[-0.02em] text-primary">
-              82.4 <span className="font-sans text-[12px] font-medium tracking-normal text-body">{t('telemetry.unit')}</span>
+              {formatSpeedMbps(latest?.download ?? 0)} <span className="font-sans text-[12px] font-medium tracking-normal text-body">{t('telemetry.unit')}</span>
             </p>
           </div>
           <div>
             <p className="text-[12px] text-muted-copy">{t('telemetry.upload')}</p>
             <p className="type-display mt-1 whitespace-nowrap text-[29px] leading-none tracking-[-0.02em] text-primary">
-              18.7 <span className="font-sans text-[12px] font-medium tracking-normal text-body">{t('telemetry.unit')}</span>
+              {formatSpeedMbps(latest?.upload ?? 0)} <span className="font-sans text-[12px] font-medium tracking-normal text-body">{t('telemetry.unit')}</span>
             </p>
           </div>
         </div>
@@ -43,7 +46,7 @@ export function TelemetryPanel({ data }: { data: TelemetryPoint[] }) {
         <div>
           <p className="text-[12px] text-muted-copy">{t('telemetry.sessionTraffic')}</p>
           <p className="type-display mt-2 text-[27px] leading-none tracking-[-0.02em] text-primary">
-            1.84 <span className="font-sans text-[12px] font-medium tracking-normal text-body">GB</span>
+            {sessionTotal.value} <span className="font-sans text-[12px] font-medium tracking-normal text-body">{sessionTotal.unit}</span>
           </p>
         </div>
         <Activity aria-hidden="true" className="size-5 text-lavender" strokeWidth={1.7} />

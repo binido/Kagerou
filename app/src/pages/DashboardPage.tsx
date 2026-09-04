@@ -14,6 +14,7 @@ export function DashboardPage() {
   const profiles = useKagerouStore((state) => state.profiles)
   const activeProfileId = useKagerouStore((state) => state.activeProfileId)
   const telemetry = useKagerouStore((state) => state.telemetry)
+  const sessionTraffic = useKagerouStore((state) => state.sessionTraffic)
   const toggleConnection = useKagerouStore((state) => state.toggleConnection)
   const toggleMode = useKagerouStore((state) => state.toggleMode)
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0]
@@ -37,7 +38,7 @@ export function DashboardPage() {
             />
           </section>
           <aside className="col-span-4 min-w-0 max-[1179px]:col-span-1" aria-label={t('telemetry.title')}>
-            <TelemetryPanel data={telemetry} />
+            <TelemetryPanel data={telemetry} sessionTraffic={sessionTraffic} />
           </aside>
         </div>
       </div>

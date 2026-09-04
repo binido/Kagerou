@@ -24,8 +24,11 @@ export interface AppSnapshot {
   settings: SettingsState
 }
 
+/** Session-wide byte totals piggybacked on each traffic sample (sourced
+ * from the Clash API's `/connections`); `null` when that fetch failed and
+ * the UI should keep showing the previous values. */
 export type TrafficEvent =
-  | { kind: 'sample'; up: number; down: number }
+  | { kind: 'sample'; up: number; down: number; uploadTotal: number | null; downloadTotal: number | null }
   | { kind: 'disconnected' }
   | { kind: 'reconnecting' }
 

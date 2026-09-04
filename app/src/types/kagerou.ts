@@ -109,6 +109,12 @@ export interface TelemetryPoint {
   upload: number
 }
 
+/** Cumulative bytes moved since sing-box started this session. */
+export interface SessionTraffic {
+  download: number
+  upload: number
+}
+
 export interface SettingsState {
   theme: ThemeId
   language: Language
@@ -134,6 +140,7 @@ export interface KagerouStore {
   routingRules: RoutingRule[]
   logs: LogEntry[]
   telemetry: TelemetryPoint[]
+  sessionTraffic: SessionTraffic
   settings: SettingsState
   hydrate: () => Promise<void>
   toggleSidebar: () => void
