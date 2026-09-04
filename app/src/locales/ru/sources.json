@@ -10,8 +10,8 @@
   "card": {
     "vpnOne": "{{count}} VPN",
     "vpnMany": "{{count}} VPN",
-    "lastRefresh": "Последнее обновление",
-    "lastUpdate": "Последняя проверка",
+    "lastRefresh": "Обновление",
+    "lastUpdate": "Проверка",
     "vpnLabel": "VPN",
     "origin": "Источник",
     "group": "Группа",
