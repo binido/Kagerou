@@ -114,15 +114,20 @@ pub struct SidecarLauncher {
     pub run_dir: PathBuf,
 }
 
-/// Marks a live elevated sing-box. Named per launch so a watchdog left over
-/// from a crashed session never mistakes a new run's sentinel for its own.
+/// Marks a live sing-box. Named per launch so a watchdog left over from a
+/// crashed session never mistakes a new run's sentinel for its own.
 const RUN_FILE_PREFIX: &str = "singbox-";
 const RUN_FILE_SUFFIX: &str = ".run";
 
-/// Deletes every run-file sentinel in `run_dir`, which asks any elevated
-/// sing-box left over from a previous session to exit. Call it at startup:
-/// a crash or a force-quit can always strand one, and it holds the TUN
-/// device (and with it the machine's whole network) until it goes.
+/// Reaps whatever a previous session left running and clears its sentinels.
+/// Call it at startup: a crash, a force-quit or a SIGTERM can always strand
+/// a sing-box, and until it goes it holds the proxy ports — or, elevated,
+/// the TUN device and with it the machine's whole network.
+///
+/// The two kinds of leftover need opposite treatment. An elevated one is
+/// not ours to signal, so deleting the file is the request and its own
+/// watchdog does the killing. An unprivileged one has no watchdog, so its
+/// PID is recorded in the file and killed here.
 pub fn clear_run_files(run_dir: &Path) {
     let Ok(entries) = std::fs::read_dir(run_dir) else {
         return;
@@ -130,10 +135,58 @@ pub fn clear_run_files(run_dir: &Path) {
     for entry in entries.flatten() {
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        if name.starts_with(RUN_FILE_PREFIX) && name.ends_with(RUN_FILE_SUFFIX) {
-            let _ = std::fs::remove_file(entry.path());
+        if !(name.starts_with(RUN_FILE_PREFIX) && name.ends_with(RUN_FILE_SUFFIX)) {
+            continue;
         }
+        if let Some(pid) = std::fs::read_to_string(entry.path())
+            .ok()
+            .and_then(|body| body.trim().parse::<u32>().ok())
+        {
+            reap(pid);
+        }
+        let _ = std::fs::remove_file(entry.path());
     }
+}
+
+/// Kills a leftover sing-box, but only once the PID is confirmed to still
+/// belong to one. PIDs get recycled, and a stale file must never take an
+/// unrelated process down with it.
+fn reap(pid: u32) {
+    if is_sing_box(pid) {
+        kill_pid(pid);
+    }
+}
+
+#[cfg(unix)]
+fn is_sing_box(pid: u32) -> bool {
+    Command::new("ps")
+        .args(["-o", "comm=", "-p", &pid.to_string()])
+        .output()
+        .map(|out| String::from_utf8_lossy(&out.stdout).contains("sing-box"))
+        .unwrap_or(false)
+}
+
+#[cfg(unix)]
+fn kill_pid(pid: u32) {
+    let _ = Command::new("kill").arg(pid.to_string()).status();
+}
+
+// Same shape, built from the docs rather than from a live run: there is no
+// Windows host here to check it against.
+#[cfg(windows)]
+fn is_sing_box(pid: u32) -> bool {
+    Command::new("tasklist")
+        .args(["/FI", &format!("PID eq {pid}"), "/NH"])
+        .output()
+        .map(|out| String::from_utf8_lossy(&out.stdout).contains("sing-box"))
+        .unwrap_or(false)
+}
+
+#[cfg(windows)]
+fn kill_pid(pid: u32) {
+    let _ = Command::new("taskkill")
+        .args(["/PID", &pid.to_string(), "/F"])
+        .status();
 }
 
 impl SidecarLauncher {
@@ -185,22 +238,25 @@ impl SidecarLauncher {
 
 impl Launcher for SidecarLauncher {
     fn launch(&self, config_path: &Path, tun: bool) -> Result<ChildHandle, ProcessError> {
-        let run_file = if tun {
-            Some(self.new_run_file()?)
-        } else {
-            None
-        };
+        let run_file = self.new_run_file()?;
+        // Only an elevated launch gets the watchdog: unprivileged, the
+        // process is our own child and a plain kill reaches it.
         let mut child = self
-            .command_for(config_path, run_file.as_deref())
+            .command_for(config_path, tun.then_some(run_file.as_path()))
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
             .inspect_err(|_| {
-                if let Some(run_file) = &run_file {
-                    let _ = std::fs::remove_file(run_file);
-                }
+                let _ = std::fs::remove_file(&run_file);
             })
             .map_err(|e| ProcessError::SpawnFailed(e.to_string()))?;
+
+        if !tun {
+            // Recorded so a startup after a crash can find and kill it. An
+            // elevated child's PID is not ours to signal, so that file stays
+            // empty and its watchdog reacts to the deletion instead.
+            let _ = std::fs::write(&run_file, child.id().to_string());
+        }
 
         let (tx, rx) = std::sync::mpsc::channel();
         spawn_line_forwarder(child.stdout.take(), tx.clone());
@@ -239,10 +295,9 @@ impl Launcher for SidecarLauncher {
                 // For an elevated launch this is the stop signal that
                 // actually lands: killing our own child only reaches the
                 // osascript/pkexec wrapper, while the root sing-box under
-                // it is watching this file.
-                if let Some(run_file) = &run_file {
-                    let _ = std::fs::remove_file(run_file);
-                }
+                // it is watching this file. Unprivileged it just retires
+                // the record, so a later startup has nothing to reap.
+                let _ = std::fs::remove_file(&run_file);
                 kill_tx
                     .send(())
                     .map_err(|e| ProcessError::KillFailed(e.to_string()))
@@ -618,12 +673,58 @@ mod tests {
         ));
     }
 
+    /// The reaper must be able to tell a recycled PID from a real leftover,
+    /// or a stale file becomes a licence to kill an unrelated process.
     #[test]
-    fn a_non_tun_launch_creates_no_run_file() {
+    #[cfg(unix)]
+    fn a_recorded_pid_that_is_no_longer_sing_box_is_left_alone() {
         let dir = tempfile::tempdir().unwrap();
-        let launcher = sidecar_launcher("/definitely/not/a/real/sing-box/binary", dir.path());
-        let _ = launcher.launch(Path::new("/tmp/config.json"), false);
-        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+        let mut bystander = Command::new("/bin/sleep").arg("30").spawn().unwrap();
+        std::fs::write(
+            dir.path().join("singbox-abc.run"),
+            bystander.id().to_string(),
+        )
+        .unwrap();
+
+        clear_run_files(dir.path());
+
+        assert!(
+            bystander.try_wait().unwrap().is_none(),
+            "a PID that is not sing-box must survive the reaper"
+        );
+        let _ = bystander.kill();
+        let _ = bystander.wait();
+    }
+
+    /// And it must actually reap a real one. `ps` reports the executable, so
+    /// a copy under sing-box's name is indistinguishable to the check —
+    /// which is the point: this exercises the guard, not just the kill.
+    #[test]
+    #[cfg(unix)]
+    fn a_leftover_sing_box_is_killed_at_startup() {
+        let dir = tempfile::tempdir().unwrap();
+        let fake = dir.path().join("sing-box");
+        std::fs::copy("/bin/sleep", &fake).unwrap();
+        let mut leftover = Command::new(&fake).arg("30").spawn().unwrap();
+        std::fs::write(
+            dir.path().join("singbox-abc.run"),
+            leftover.id().to_string(),
+        )
+        .unwrap();
+
+        clear_run_files(dir.path());
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        loop {
+            if leftover.try_wait().unwrap().is_some() {
+                break;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "a leftover sing-box must not survive startup"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
     }
 
     #[test]
