@@ -1,5 +1,6 @@
-import { KeyRound, Link2, MoreHorizontal, Pencil, RefreshCw, Rss, Trash2 } from 'lucide-react'
+import { Copy, KeyRound, Link2, MoreHorizontal, Pencil, RefreshCw, Rss, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,13 +48,23 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
   const isKey = source.type === 'key'
   const statusTone = source.status === 'refresh-due' || source.status === 'updating' ? 'warn' : source.status === 'ready' ? 'neutral' : 'good'
   const Icon = isKey ? KeyRound : Rss
-  const displayedValue = isKey ? `${source.value.split('://')[0]}://••••••••••••••••` : source.value
+  const displayedValue = isKey ? `${source.value.split('://')[0]}://••••••••••••••••` : '••••••••••••••••'
   const originLabel = source.originLabel === 'Remote URL' ? t('card.remoteUrl') : t('card.localKey')
   const sourceTypeLabel = isKey ? t('card.singleKey') : t('card.subscriptionUrl')
   const localizedTimestamp = sourceTimestampKey(source.lastRefresh)
   const lastRefresh = localizedTimestamp
     ? typeof localizedTimestamp === 'string' ? t(localizedTimestamp) : t(localizedTimestamp.key, { count: localizedTimestamp.count })
     : source.lastRefresh
+
+  const copySubscriptionUrl = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
+      await navigator.clipboard.writeText(source.value)
+      toast.success(t('feedback.urlCopied'))
+    } catch {
+      toast.error(t('feedback.urlCopyFailed'))
+    }
+  }
 
   return (
     <Card className={cn('gap-0 rounded-[10px] border border-hairline bg-surface p-5 shadow-none', refreshing && 'border-warn/40')}>
@@ -72,9 +83,10 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
           <Button aria-label={t(refreshing ? 'menu.refreshingAria' : 'menu.refreshAria', { name: source.name })} className="h-9 gap-2 border-hairline px-3 text-[11px] text-body hover:bg-raised hover:text-primary" disabled={refreshing} onClick={onRefresh} type="button" variant="outline"><RefreshCw aria-hidden="true" className={cn('size-[15px]', refreshing && 'animate-spin')} /> <span>{refreshing ? t('menu.refreshing') : t('menu.refresh')}</span></Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button aria-label={t('menu.more', { name: source.name })} className="size-9 border-hairline text-body hover:bg-raised hover:text-primary" size="icon" type="button" variant="outline"><MoreHorizontal aria-hidden="true" className="size-[17px]" strokeWidth={1.7} /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 border-hairline bg-raised text-[12px]">
+            <DropdownMenuContent align="end" className="w-max min-w-[12rem] max-w-[calc(100vw-2rem)] border-hairline bg-raised text-[12px]">
               <DropdownMenuItem className="whitespace-nowrap" onSelect={onEdit}><Pencil aria-hidden="true" className="size-3.5 text-muted-copy" />{t('menu.edit')}</DropdownMenuItem>
               <DropdownMenuItem className="whitespace-nowrap" onSelect={onRefresh}><RefreshCw aria-hidden="true" className="size-3.5 text-muted-copy" />{t('menu.refreshNow')}</DropdownMenuItem>
+              {!isKey ? <DropdownMenuItem className="whitespace-nowrap" onSelect={() => { void copySubscriptionUrl() }}><Copy aria-hidden="true" className="size-3.5 text-muted-copy" />{t('menu.copyUrl')}</DropdownMenuItem> : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem className="whitespace-nowrap text-bad focus:bg-bad/10 focus:text-bad" onSelect={onRemove}><Trash2 aria-hidden="true" className="size-3.5" />{t('menu.remove')}</DropdownMenuItem>
             </DropdownMenuContent>
@@ -83,7 +95,7 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
       </div>
       <div className="mt-4 flex items-center gap-2 rounded-lg border border-hairline bg-canvas px-3 py-2.5">
         <Link2 aria-hidden="true" className="size-[15px] shrink-0 text-muted-copy" strokeWidth={1.7} />
-        <code className="min-w-0 truncate font-mono text-[11px] text-body">{displayedValue}</code>
+        <code aria-label={isKey ? undefined : t('card.hiddenUrl')} className="min-w-0 truncate font-mono text-[11px] text-body">{displayedValue}</code>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-5 border-t border-hairline pt-3.5 max-[640px]:grid-cols-1 max-[640px]:gap-3">
         <div><p className="type-eyebrow !text-[10px]">{t('card.vpnLabel')}</p><p className="mt-1 text-[13px] font-medium text-primary">{tc(profileCount === 1 ? 'counts.vpnOne' : 'counts.vpnMany', { count: profileCount })}</p></div>

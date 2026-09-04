@@ -22,15 +22,17 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
   const { t } = useTranslation('sources')
   const [type, setType] = useState<SourceType>(source?.type ?? initialType)
   const [name, setName] = useState(source?.name ?? '')
-  const [value, setValue] = useState(source?.value ?? '')
+  const [value, setValue] = useState(source?.type === 'url' ? '' : source?.value ?? '')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const editing = Boolean(source)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmedValue = value.trim()
+    const nextValue = editing && type === 'url' && !trimmedValue ? source?.value ?? '' : trimmedValue
     setSubmitting(true)
-    const validationError = await kagerouApi.validateSource(type, trimmedValue)
+    const validationError = await kagerouApi.validateSource(type, nextValue)
     if (validationError) {
       setError(validationError === 'invalidUrl' ? t('feedback.invalidUrl') : t('feedback.invalidKey'))
       setSubmitting(false)
@@ -38,7 +40,7 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
     }
 
     try {
-      await onSubmit({ type, name: name.trim() || undefined, value: trimmedValue })
+      await onSubmit({ type, name: name.trim() || undefined, value: nextValue })
       setError('')
       onOpenChange(false)
     } catch (submitError) {
@@ -47,8 +49,6 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
       setSubmitting(false)
     }
   }
-
-  const editing = Boolean(source)
 
   return (
     <Dialog onOpenChange={(nextOpen) => { if (!submitting) onOpenChange(nextOpen) }} open={open}>
@@ -70,9 +70,9 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
             <FieldDescription className="text-[11px] leading-4 text-muted-copy">{type === 'url' ? t('dialog.urlNameHelp') : t('dialog.keyNameHelp')}</FieldDescription>
           </Field>
           <Field>
-            <FieldLabel className="text-[13px] text-primary" htmlFor="source-value">{type === 'url' ? t('dialog.sourceUrl') : t('dialog.vpnKey')}</FieldLabel>
-            <Input aria-describedby="source-helper" autoFocus={!name} className="h-11 border-hairline/55 bg-surface text-[13px] font-mono" disabled={submitting} id="source-value" onChange={(event) => setValue(event.target.value)} placeholder={type === 'url' ? t('dialog.urlPlaceholder') : t('dialog.keyPlaceholder')} value={value} />
-            <FieldDescription className="flex items-center gap-1.5 text-[11px] leading-4 text-muted-copy" id="source-helper"><Info aria-hidden="true" className="size-3.5" />{type === 'url' ? t('dialog.urlValueHelp') : t('dialog.keyValueHelp')}</FieldDescription>
+            <FieldLabel className="text-[13px] text-primary" htmlFor="source-value">{type === 'url' ? editing ? t('dialog.replaceSourceUrl') : t('dialog.sourceUrl') : t('dialog.vpnKey')}</FieldLabel>
+            <Input aria-describedby="source-helper" autoComplete="off" autoFocus={!name} className="h-11 border-hairline/55 bg-surface text-[13px] font-mono" disabled={submitting} id="source-value" onChange={(event) => setValue(event.target.value)} placeholder={type === 'url' ? editing ? t('dialog.replaceUrlPlaceholder') : t('dialog.urlPlaceholder') : t('dialog.keyPlaceholder')} value={value} />
+            <FieldDescription className="flex items-center gap-1.5 text-[11px] leading-4 text-muted-copy" id="source-helper"><Info aria-hidden="true" className="size-3.5" />{type === 'url' ? editing ? t('dialog.urlReplaceHelp') : t('dialog.urlValueHelp') : t('dialog.keyValueHelp')}</FieldDescription>
           </Field>
           {error ? <FieldError className="text-[11px]">{error}</FieldError> : null}
           <DialogFooter>
