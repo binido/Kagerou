@@ -1,5 +1,15 @@
 # Contributing to Kagerou
 
+## Picking something up
+
+[ROADMAP.md](ROADMAP.md) lists every feature and its status. It is the source of truth — if the README or a code comment disagrees with it, the roadmap is right.
+
+1. Find a row you want. Rows marked **Good first issue** are small and self-contained; `📋` rows are unstarted; `🟡` rows are half-built and the note says what's missing.
+2. Open an issue quoting that row, so nobody duplicates the work. Say roughly how you plan to do it if the row leaves the approach open.
+3. Send a pull request that updates the row's status in the same commit as the code.
+
+If what you want to build isn't on the roadmap, open an issue first — it may be missing for a reason worth hearing before you write anything.
+
 ## Layout
 
 - `app/` — the frontend (React + TypeScript + Vite + Tailwind + shadcn, Zustand for state, i18n via react-i18next).
@@ -55,3 +65,5 @@ pnpm tauri build
 ## Submitting changes
 
 Keep commits small and logical — one coherent change per commit, not a single commit bundling unrelated work. Open a PR against `main` with a description of what changed and why.
+
+A change that alters behaviour also updates its row in [ROADMAP.md](ROADMAP.md), in the same commit. Don't leave it as a follow-up, and don't move a row to `✅` because the UI looks right — `🟡` exists so that half-finished work stays visible.

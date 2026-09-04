@@ -28,6 +28,10 @@ Supports Windows / macOS / Linux.
 - Clash-style YAML subscriptions (`proxies:`)
 - sing-box JSON configs (`outbounds`)
 
+## Roadmap
+
+[ROADMAP.md](ROADMAP.md) tracks what works, what's half-built, and what's planned, including how far along Kagerou is towards [NekoBox for Android](https://github.com/MatsuriDayo/NekoBoxForAndroid)'s feature set. Contributions are welcome — see [Picking something up](CONTRIBUTING.md#picking-something-up).
+
 ## Installation
 
 No prebuilt releases yet — build it yourself. See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites and build steps.
