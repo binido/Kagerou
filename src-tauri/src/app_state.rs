@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::time::Instant;
 
 use tokio::sync::watch;
 
@@ -22,6 +23,14 @@ pub struct AppState {
     pub supervisor: Mutex<Supervisor<SidecarLauncher>>,
     pub clash: Mutex<Option<ClashApiClient>>,
     pub traffic_stop: Mutex<Option<watch::Sender<bool>>>,
+    /// Set while a core is running purely to serve delay tests, which is not
+    /// the same thing as being connected: no TUN, nothing announced to the
+    /// UI, and it shuts itself down once the tests stop coming.
+    pub test_clash: Mutex<Option<ClashApiClient>>,
+    pub last_test_at: Mutex<Option<Instant>>,
+    /// Serialises starting that core, so a group test firing dozens of
+    /// concurrent requests starts exactly one.
+    pub test_core_gate: tokio::sync::Mutex<()>,
     pub paths: RuntimePaths,
 }
 
@@ -48,6 +57,9 @@ impl AppState {
             })),
             clash: Mutex::new(None),
             traffic_stop: Mutex::new(None),
+            test_clash: Mutex::new(None),
+            last_test_at: Mutex::new(None),
+            test_core_gate: tokio::sync::Mutex::new(()),
             paths,
         }
     }
@@ -59,5 +71,9 @@ impl AppState {
     /// the duration of that call.
     pub fn clash_client(&self) -> Option<ClashApiClient> {
         self.clash.lock().unwrap().clone()
+    }
+
+    pub fn test_clash_client(&self) -> Option<ClashApiClient> {
+        self.test_clash.lock().unwrap().clone()
     }
 }

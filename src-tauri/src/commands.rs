@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -130,6 +130,9 @@ fn to_dashboard_event(
 
 #[tauri::command]
 pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    // A core may already be up to serve delay tests. Take it down first: the
+    // connection needs its own config, possibly with TUN.
+    stop_test_core(&state);
     // TUN and the log level are stored preferences, not per-call arguments:
     // they are toggled in settings, and take effect on the next connection.
     let stored = settings::get(&state.db).map_err(to_err)?;
@@ -371,14 +374,12 @@ pub fn reorder_profiles(
 #[tauri::command]
 pub async fn run_profile_test(
     profile_id: String,
+    app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<TestResult, String> {
-    let result = url_test_profile(&profile_id, &state).await?;
-    // "Not connected" describes the attempt, not the server, so it is reported
-    // without overwriting whatever the last real test found.
-    if result.tone != Tone::Muted {
-        let _ = profiles::set_test_result(&state.db, &profile_id, &result);
-    }
+    let clash = clash_for_test(&app, &state).await?;
+    let result = url_test_profile(&profile_id, &clash, &state).await?;
+    let _ = profiles::set_test_result(&state.db, &profile_id, &result);
     Ok(result)
 }
 
@@ -392,18 +393,134 @@ fn latency_tone(delay_ms: u32) -> Tone {
     }
 }
 
+/// How long a test-only core lingers after the last test before shutting
+/// itself down. Long enough that testing profiles one at a time does not
+/// restart it each time, short enough that nothing is left running.
+const TEST_CORE_IDLE: Duration = Duration::from_secs(30);
+const TEST_CORE_READY_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// A client to run delay tests against. Prefers the connection the user
+/// actually asked for; otherwise brings up a core that exists only to answer
+/// tests — no TUN, no system routing, nothing announced as "connected" —
+/// because a test that silently reports "not connected" for every profile
+/// reads as a broken app rather than a precondition.
+async fn clash_for_test(
+    app: &AppHandle,
+    state: &State<'_, AppState>,
+) -> Result<ClashApiClient, String> {
+    if let Some(clash) = state.clash_client() {
+        return Ok(clash);
+    }
+    *state.last_test_at.lock().unwrap() = Some(Instant::now());
+
+    // One starter at a time: a group test fires dozens of these at once.
+    let _gate = state.test_core_gate.lock().await;
+    if let Some(clash) = state.test_clash_client() {
+        return Ok(clash);
+    }
+
+    let all_profiles = profiles::list_all(&state.db).map_err(to_err)?;
+    if all_profiles.is_empty() {
+        return Err("nothing to test: no profiles".to_string());
+    }
+    let routing_rules = routing::list_rules(&state.db).map_err(to_err)?;
+    let stored = settings::get(&state.db).map_err(to_err)?;
+    let active_profile_id = settings::get_active_profile_id(&state.db)
+        .map_err(to_err)?
+        .unwrap_or_default();
+
+    let config = singbox::generate(&singbox::ConfigInput {
+        profiles: &all_profiles,
+        active_profile_id: &active_profile_id,
+        routing_rules: &routing_rules,
+        mixed_listen_port: state.paths.mixed_listen_port,
+        clash_api_listen: &state.paths.clash_api_listen,
+        log_level: &stored.log_level,
+        // Never for a test core: creating a TUN interface asks for a
+        // password and rewrites the machine's routing, which is not
+        // something a delay test is allowed to do.
+        tun: false,
+    })
+    .map_err(to_err)?;
+    let config_bytes = serde_json::to_vec_pretty(&config).map_err(to_err)?;
+    std::fs::write(&state.paths.config_path, config_bytes).map_err(to_err)?;
+
+    state
+        .supervisor
+        .lock()
+        .unwrap()
+        .start(&state.paths.config_path, false)
+        .map_err(to_err)?;
+
+    let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
+    // The API is not up the instant the process is: poll until it answers,
+    // or the first delay request fails for a reason that has nothing to do
+    // with the profile being tested.
+    let ready = tokio::time::timeout(TEST_CORE_READY_TIMEOUT, async {
+        loop {
+            if clash.get_version().await.is_ok() {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .await;
+    if ready.is_err() {
+        let _ = state.supervisor.lock().unwrap().stop();
+        return Err("the proxy core did not come up for testing".to_string());
+    }
+
+    *state.test_clash.lock().unwrap() = Some(clash.clone());
+    spawn_test_core_reaper(app.clone());
+    Ok(clash)
+}
+
+/// Whether a test core has gone long enough without a request to be worth
+/// shutting down. No recorded request at all counts as idle: it means the
+/// core outlived whatever started it.
+fn test_core_is_idle(last_test_at: Option<Instant>, now: Instant, timeout: Duration) -> bool {
+    match last_test_at {
+        None => true,
+        Some(at) => now.duration_since(at) >= timeout,
+    }
+}
+
+/// Shuts the test-only core down once the tests stop arriving. Also stands
+/// down silently if `connect()` has taken the core over in the meantime.
+fn spawn_test_core_reaper(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            let state = app.state::<AppState>();
+            if state.test_clash_client().is_none() {
+                return;
+            }
+            let last = *state.last_test_at.lock().unwrap();
+            if test_core_is_idle(last, Instant::now(), TEST_CORE_IDLE) {
+                stop_test_core(&state);
+                return;
+            }
+        }
+    });
+}
+
+/// Takes down a core that was only up to serve tests. A no-op when there
+/// isn't one, so `connect()` can call it unconditionally.
+pub fn stop_test_core(state: &AppState) {
+    if state.test_clash.lock().unwrap().take().is_none() {
+        return;
+    }
+    let _ = state.supervisor.lock().unwrap().stop();
+    *state.last_test_at.lock().unwrap() = None;
+}
+
 /// Latency of the whole path through the proxy, which is the number that
-/// decides how the connection actually feels. Needs the core running.
+/// decides how the connection actually feels.
 async fn url_test_profile(
     profile_id: &str,
+    clash: &ClashApiClient,
     state: &State<'_, AppState>,
 ) -> Result<TestResult, String> {
-    let Some(clash) = state.clash_client() else {
-        return Ok(TestResult {
-            value: "Not connected".to_string(),
-            tone: Tone::Muted,
-        });
-    };
     let test_url = settings::get(&state.db).map_err(to_err)?.test_url;
 
     match clash.test_delay(profile_id, &test_url, 5000).await {
@@ -850,9 +967,31 @@ pub fn update_settings(
 
 #[cfg(test)]
 mod tests {
-    use super::{region_from_name, to_dashboard_event, DashboardTrafficEvent};
+    use super::{region_from_name, test_core_is_idle, to_dashboard_event, DashboardTrafficEvent};
     use crate::clash_api::model::{ConnectionsResponse, TrafficSample};
     use crate::clash_api::TrafficEvent;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn a_test_core_is_idle_only_after_the_timeout_has_passed() {
+        let now = Instant::now();
+        let timeout = Duration::from_secs(30);
+
+        assert!(!test_core_is_idle(
+            Some(now - Duration::from_secs(5)),
+            now,
+            timeout
+        ));
+        assert!(test_core_is_idle(
+            Some(now - Duration::from_secs(31)),
+            now,
+            timeout
+        ));
+        assert!(
+            test_core_is_idle(None, now, timeout),
+            "a core with no recorded test outlived whatever started it"
+        );
+    }
 
     #[test]
     fn flag_emoji_becomes_a_country_code() {
