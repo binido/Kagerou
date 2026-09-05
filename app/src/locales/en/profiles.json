@@ -124,5 +124,11 @@
       "cancel": "Cancel",
       "submit": "Delete {{count}}"
     }
+  },
+  "test": {
+    "runningLabel": "Testing VPNs",
+    "progressCount": "{{done}} of {{total}}",
+    "starting": "Starting…",
+    "stop": "Stop"
   }
 }

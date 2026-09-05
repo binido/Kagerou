@@ -124,5 +124,11 @@
       "cancel": "Отмена",
       "submit": "Удалить: {{count}}"
     }
+  },
+  "test": {
+    "runningLabel": "Проверка VPN",
+    "progressCount": "{{done}} из {{total}}",
+    "starting": "Запуск…",
+    "stop": "Остановить"
   }
 }

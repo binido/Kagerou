@@ -14,6 +14,19 @@ import type {
   UpdateInfo,
 } from '@/types/kagerou'
 
+export interface TestProgressEvent {
+  profileId: string
+  result: TestResult
+  done: number
+  total: number
+}
+
+export interface TestFinishedEvent {
+  done: number
+  total: number
+  cancelled: boolean
+}
+
 export interface AppSnapshot {
   activeProfileId: string
   profiles: Profile[]
@@ -49,6 +62,8 @@ export const kagerouApi = {
   moveProfile: (id: string, direction: 'up' | 'down') => invoke<void>('move_profile', { id, direction }),
   reorderProfiles: (fromId: string, toId: string) => invoke<void>('reorder_profiles', { fromId, toId }),
   runProfileTest: (profileId: string) => invoke<TestResult>('run_profile_test', { profileId }),
+  startGroupTest: (groupId: string | null) => invoke<number>('start_group_test', { groupId }),
+  cancelGroupTest: () => invoke<void>('cancel_group_test'),
   clearGroupTestResults: (groupId: string) => invoke<void>('clear_test_results', { groupId }),
   deleteUnavailableProfiles: (groupId: string) => invoke<number>('delete_unavailable_profiles', { groupId }),
 
@@ -71,6 +86,8 @@ export const kagerouApi = {
 
   onConnectionChanged: (handler: (connected: boolean) => void) => listen<boolean>('kagerou://connection-changed', (event) => handler(event.payload)),
   onTraffic: (handler: (event: TrafficEvent) => void) => listen<TrafficEvent>('kagerou://traffic', (event) => handler(event.payload)),
+  onTestProgress: (handler: (event: TestProgressEvent) => void) => listen<TestProgressEvent>('kagerou://test-progress', (event) => handler(event.payload)),
+  onTestFinished: (handler: (event: TestFinishedEvent) => void) => listen<TestFinishedEvent>('kagerou://test-finished', (event) => handler(event.payload)),
   onLog: (handler: (line: string) => void) => listen<string>('kagerou://log', (event) => handler(event.payload)),
   onCrashed: (handler: (exitCode: number | null) => void) => listen<number | null>('kagerou://crashed', (event) => handler(event.payload)),
 }

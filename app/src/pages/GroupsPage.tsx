@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
 import { RemoveUnavailableDialog, type RemoveUnavailableTarget } from '@/components/profiles/RemoveUnavailableDialog'
+import { TestRunBar } from '@/components/profiles/TestRunBar'
 import { localizeResultValue } from '@/lib/result-copy'
 import { sortProfiles } from '@/lib/profile-sorting'
 import { useKagerouStore } from '@/store/kagerou-store'
@@ -35,6 +36,9 @@ export function GroupsPage() {
   const runProfileTest = useKagerouStore((state) => state.runProfileTest)
   const clearGroupTestResults = useKagerouStore((state) => state.clearGroupTestResults)
   const deleteUnavailableProfiles = useKagerouStore((state) => state.deleteUnavailableProfiles)
+  const testRun = useKagerouStore((state) => state.testRun)
+  const startGroupTest = useKagerouStore((state) => state.startGroupTest)
+  const cancelGroupTest = useKagerouStore((state) => state.cancelGroupTest)
 
   const [addOpen, setAddOpen] = useState(false)
   const [name, setName] = useState('')
@@ -78,16 +82,18 @@ export function GroupsPage() {
   }
 
   const runAll = () => {
-    void Promise.all(profiles.map((profile) => runTest(profile.id)))
+    void startGroupTest(null)
     setMessage(t('feedback.testRunningAll'))
   }
 
   const runGroupTest = (group: ProfileGroup) => {
-    void Promise.all(group.profileIds.map((id) => runTest(id)))
+    void startGroupTest(group.id)
     setMessage(t('feedback.testRunningGroup', { group: groupLabel(group) }))
   }
 
-  const groupTestRunning = (group: ProfileGroup) => group.profileIds.some((id) => runningTests[id])
+  // A run holds the test core's selector, so nothing else may be aimed at it.
+  const groupTestRunning = (group: ProfileGroup) =>
+    Boolean(testRun) || group.profileIds.some((id) => runningTests[id])
 
   // Count excludes the active profile — it will be kept — and the dialog
   // never opens when nothing failed. The backend re-evaluates the same
@@ -187,6 +193,7 @@ export function GroupsPage() {
         title={t('page.title')}
       />
 
+      {testRun ? <TestRunBar onCancel={() => { void cancelGroupTest() }} run={testRun} /> : null}
       <div className="mt-7 flex flex-col gap-4">
         {groupsForRender.map((group) => (
           <ProfileGroupCard

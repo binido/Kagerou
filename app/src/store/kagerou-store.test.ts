@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppSnapshot, TrafficEvent } from '@/lib/tauri-api'
-import type { Profile, RoutingRule, Source } from '@/types/kagerou'
+import type { Profile, RoutingRule, Source, TestResult } from '@/types/kagerou'
 
 const api = vi.hoisted(() => ({
   getAppState: vi.fn(),
@@ -34,6 +34,10 @@ const api = vi.hoisted(() => ({
   onConnectionChanged: vi.fn(),
   onTraffic: vi.fn(),
   onLog: vi.fn(),
+  onTestProgress: vi.fn(),
+  onTestFinished: vi.fn(),
+  startGroupTest: vi.fn(),
+  cancelGroupTest: vi.fn(),
   onCrashed: vi.fn(),
 }))
 
@@ -89,6 +93,8 @@ beforeEach(() => {
   api.checkForUpdate.mockResolvedValue(null)
   api.onConnectionChanged.mockResolvedValue(() => {})
   api.onTraffic.mockResolvedValue(() => {})
+  api.onTestProgress.mockResolvedValue(() => {})
+  api.onTestFinished.mockResolvedValue(() => {})
   api.onLog.mockResolvedValue(() => {})
   api.onCrashed.mockResolvedValue(() => {})
   // Fire-and-forget mutations call `.catch()` on the invoke promise, so
@@ -271,6 +277,67 @@ describe('setProfileGroupOpen', () => {
 
     expect(useKagerouStore.getState().profileGroups[0].open).toBe(true)
     expect(api.setProfileGroupOpen).toHaveBeenCalledWith('g1', true)
+  })
+})
+
+describe('group test run', () => {
+  it('shows the run on the click, before the first result arrives', async () => {
+    api.startGroupTest.mockResolvedValue(12)
+
+    const started = useKagerouStore.getState().startGroupTest('g1')
+    expect(useKagerouStore.getState().testRun).toEqual({ groupId: 'g1', done: 0, total: 0 })
+    await started
+  })
+
+  it('clears the run when the group turns out to be empty', async () => {
+    api.startGroupTest.mockResolvedValue(0)
+    await useKagerouStore.getState().startGroupTest('empty')
+    expect(useKagerouStore.getState().testRun).toBeNull()
+  })
+
+  it('clears the run when the backend refuses to start one', async () => {
+    api.startGroupTest.mockRejectedValue('a test run is already in progress')
+    await useKagerouStore.getState().startGroupTest('g1')
+    expect(useKagerouStore.getState().testRun).toBeNull()
+  })
+
+  it('a progress event advances the count and applies the profile result', async () => {
+    let handler: (event: { profileId: string; result: TestResult; done: number; total: number }) => void = () => {}
+    api.onTestProgress.mockImplementation((h: typeof handler) => { handler = h; return Promise.resolve(() => {}) })
+    api.startGroupTest.mockResolvedValue(2)
+
+    await useKagerouStore.getState().hydrate()
+    useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
+    await useKagerouStore.getState().startGroupTest('g1')
+    handler({ profileId: 'p1', result: { value: '42 ms', tone: 'good' }, done: 1, total: 2 })
+
+    expect(useKagerouStore.getState().testRun).toEqual({ groupId: 'g1', done: 1, total: 2 })
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({ value: '42 ms', tone: 'good' })
+  })
+
+  it('a progress event for an unknown profile does not invent one', async () => {
+    let handler: (event: { profileId: string; result: TestResult; done: number; total: number }) => void = () => {}
+    api.onTestProgress.mockImplementation((h: typeof handler) => { handler = h; return Promise.resolve(() => {}) })
+
+    await useKagerouStore.getState().hydrate()
+    useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
+    handler({ profileId: 'ghost', result: { value: '9 ms', tone: 'good' }, done: 1, total: 1 })
+
+    expect(useKagerouStore.getState().profiles).toHaveLength(1)
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({ value: 'Not tested', tone: 'muted' })
+  })
+
+  it('the finished event ends the run, cancelled or not', async () => {
+    let finish: () => void = () => {}
+    api.onTestFinished.mockImplementation((h: () => void) => { finish = h; return Promise.resolve(() => {}) })
+    api.startGroupTest.mockResolvedValue(3)
+
+    await useKagerouStore.getState().hydrate()
+    await useKagerouStore.getState().startGroupTest('g1')
+    expect(useKagerouStore.getState().testRun).not.toBeNull()
+
+    finish()
+    expect(useKagerouStore.getState().testRun).toBeNull()
   })
 })
 
