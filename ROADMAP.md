@@ -44,8 +44,8 @@ row.
 | Config generation | ✅ | Built from stored profiles and rules: mixed inbound, one outbound per profile, a `proxy` selector, `clash_api`. |
 | Clash API client | ✅ | Version, proxies, connections, outbound selection, connection closing, traffic websocket with auto-reconnect. |
 | Hot profile switch while connected | ✅ | Selecting a profile switches the selector through the Clash API instead of restarting the core. |
-| TUN mode | 🟡 | Config generation and per-OS privilege elevation (UAC / admin prompt / `CAP_NET_ADMIN` or `pkexec`) are implemented and unit-tested, but no end-to-end run against a live server has been done yet. Needs verification before it can be called done. |
-| System proxy | 🟡 | The dashboard toggle is frontend-only state. Nothing sets the OS proxy: no `networksetup` (macOS), registry write (Windows), or GSettings/environment handling (Linux). |
+| TUN mode | 🟡 | Config generation and per-OS privilege elevation (UAC / admin prompt / `CAP_NET_ADMIN` or `pkexec`) are implemented and unit-tested, but no end-to-end run against a live server has been done yet. Needs verification before it can be called done. The mode is a stored setting, read by `connect()`, so a change takes effect on the next connection rather than the current one. |
+| System proxy | 🟡 | The settings row is present but disabled, and says so. Nothing sets the OS proxy: no `networksetup` (macOS), registry write (Windows), or GSettings/environment handling (Linux). The preference persists; only the effect is missing. |
 | Inbound listen address and port | 📋 | The mixed inbound is hardcoded to `127.0.0.1:2080` and the Clash API to `127.0.0.1:9090`. Both should be settings, along with an "allow LAN access" toggle that binds `0.0.0.0`. **Good first issue.** |
 | Configurable log level | 📋 | The generated config hardcodes `"level": "info"`. NekoBox exposes this in settings. **Good first issue.** |
 | Configurable connection-test URL | 📋 | Delay tests hardcode `http://www.gstatic.com/generate_204`. **Good first issue.** |
@@ -95,9 +95,8 @@ row.
 | Dashboard, groups, sources, routing, logs, settings | ✅ | Six pages, all driven by the real backend. |
 | Themes | ✅ | Catppuccin and Kanagawa flavours. |
 | Localisation | ✅ | English and Russian. |
-| Live traffic telemetry | ✅ | Speeds and session totals from sing-box's own traffic and connections endpoints, so they survive a frontend reload. |
+| Live traffic telemetry | ✅ | Download and upload speed plus session totals, read from sing-box's own traffic and connections endpoints so they survive a frontend reload. Deliberately just the numbers — there is no traffic chart and none is planned. |
 | Log viewer | ✅ | Streams the core's output live, with level detection. |
-| Traffic chart scale | 🟡 | `TelemetryChart` hardcodes `YAxis domain={[0, 100]}` while the points hold raw bytes/second, so any real traffic clips the line flat against the top. Fix by rescaling the axis or converting the series to Mbps in the store. **Good first issue.** |
 | Connection list | 📋 | The Clash API already reports every live connection (host, rule, upload, download, duration); nothing displays them. Include "close connection" and "close all". |
 | Embedded sing-box dashboard | 📋 | NekoBox bundles Yacd. The Clash API is already running and reachable, so this is mostly a window and a bundled static build. |
 | Onboarding for an empty install | 📋 | A fresh install shows empty tables. A first-run path — add a subscription, or paste a link — would carry more than the current fallback copy. |
@@ -123,6 +122,20 @@ row.
 | In-app updates | 📋 | `tauri-plugin-updater` against the release feed. Depends on signed releases. |
 | End-to-end connection verification | 📋 | `connect()` has never been run against a live server — only the generated config has been validated with `sing-box check`. Until someone does this, TUN mode and system proxy are unproven. |
 | Version number | 📋 | Still `0.0.0` in `tauri.conf.json` and `app-meta.ts`. Bump when the first release is cut. |
+
+---
+
+## Known issues & internal debt
+
+Not missing features — things that exist and work, but are built in a way
+worth revisiting. Kept apart from the sections above so "we haven't built it"
+never gets confused with "we built it badly".
+
+| Issue | Status | Notes |
+|---|---|---|
+| `ProfileTable` renders every row twice | 📋 | The wide table and the narrow card list are both rendered on every pass, with CSS hiding whichever doesn't apply. Correct, but it doubles the DOM and the render work for every profile in every group. A `matchMedia` hook would render one or the other. |
+| Dead profile-ordering plumbing | 📋 | `moveProfile` and `reorderProfiles` in the store, and the `move_profile` / `reorder_profiles` Tauri commands behind them, have no UI calling them. Either wire up manual reordering or delete all four; leaving them is a trap for the next person who greps for them. |
+| Dialogs remount via their `key` | 📋 | `SourceDialog` and `ProfileGroupDialog` include the open flag in their React `key`, so every open and close throws the component away to reset its form state. It works, but resetting state on open would be the honest version. |
 
 ---
 
