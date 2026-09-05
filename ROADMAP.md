@@ -117,7 +117,7 @@ row.
 |---|---|---|
 | Unit test coverage | ✅ | 163 Rust tests, 32 frontend tests; storage, parsers, config generation, supervisor, Clash API, and privilege planning are covered. |
 | Continuous integration | ✅ | `.github/workflows/ci.yml` runs `cargo fmt --check` / `clippy -D warnings` / `test` (including the ignored smoke test against the real core) and `pnpm lint` / `test` / `build` on every pull request and push to `main`. |
-| Release builds | 🟡 | `.github/workflows/release.yml` builds macOS (both architectures), Linux and Windows bundles from a `v*` tag and attaches them to a draft release, after checking the tag against `tauri.conf.json`. No release has been cut yet, so there is still nothing to download. |
+| Release builds | 🟡 | `.github/workflows/release.yml` builds macOS (both architectures), Linux and Windows bundles from a `v*` tag and attaches them to a draft release, after checking the tag against `tauri.conf.json`. Proven on `v0.1.0`: dmg, deb, rpm, AppImage, msi and exe all built. Nothing is downloadable until that draft is published. Linux ships x86_64 only. |
 | Code signing and notarisation | 📋 | Unsigned builds mean a Gatekeeper warning on macOS and a SmartScreen warning on Windows. Needs certificates and secrets before it's worth automating. |
 | Update notification | ✅ | On launch the app asks GitHub for the latest release and, if it is newer than the running build, the sidebar links straight to it. Silent when the check fails or there are no releases. |
 | In-app updates | 📋 | Downloading and applying the update in place, via `tauri-plugin-updater`. Depends on signed releases; today the notification just sends you to the release page. |
