@@ -10,7 +10,8 @@
     "startup": "Запуск",
     "subscriptions": "Подписки",
     "groups": "Группы",
-    "network": "Сеть"
+    "network": "Сеть",
+    "diagnostics": "Диагностика"
   },
   "fields": {
     "theme": "Тема",
@@ -22,14 +23,16 @@
     "updateInterval": "Интервал обновления",
     "customInterval": "Свой интервал (минуты)",
     "sortVpns": "Сортировать VPN по",
-    "tunInterface": "Интерфейс TUN"
+    "tunInterface": "Интерфейс TUN",
+    "logLevel": "Уровень журнала"
   },
   "descriptions": {
     "autoUpdateSubscriptions": "Автоматически поддерживать группы URL-подписок актуальными.",
     "customInterval": "Выберите, как часто Kagerou проверяет удалённые подписки.",
     "customIntervalA11y": "Количество минут между автоматическими обновлениями подписок.",
     "tunMode": "Применится при следующем подключении.",
-    "systemProxyUnavailable": "Пока не реализовано — Kagerou не меняет системный прокси."
+    "systemProxyUnavailable": "Пока не реализовано — Kagerou не меняет системный прокси.",
+    "logLevel": "Применится при следующем подключении."
   },
   "options": {
     "interval5": "5 минут",

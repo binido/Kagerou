@@ -19,6 +19,7 @@ pub use error::StorageError;
 const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0001_init.sql"),
     include_str!("migrations/0002_connection_modes.sql"),
+    include_str!("migrations/0003_settings_log_level.sql"),
 ];
 
 /// A handle to the application's SQLite database.

@@ -198,4 +198,5 @@ pub struct Settings {
     pub subscription_update_interval: String,
     pub custom_subscription_update_minutes: i64,
     pub group_sort: String,
+    pub log_level: String,
 }

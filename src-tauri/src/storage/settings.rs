@@ -6,7 +6,7 @@ use super::{Db, StorageError};
 pub fn get(db: &Db) -> Result<Settings, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT theme, language, startup, tun_mode, system_proxy, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort
+        "SELECT theme, language, startup, tun_mode, system_proxy, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level
          FROM settings WHERE id = 1",
         [],
         |row| {
@@ -21,6 +21,7 @@ pub fn get(db: &Db) -> Result<Settings, StorageError> {
                 subscription_update_interval: row.get("subscription_update_interval")?,
                 custom_subscription_update_minutes: row.get("custom_subscription_update_minutes")?,
                 group_sort: row.get("group_sort")?,
+                log_level: row.get("log_level")?,
             })
         },
     )
@@ -39,6 +40,7 @@ pub struct SettingsPatch<'a> {
     pub subscription_update_interval: Option<&'a str>,
     pub custom_subscription_update_minutes: Option<i64>,
     pub group_sort: Option<&'a str>,
+    pub log_level: Option<&'a str>,
 }
 
 pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
@@ -54,7 +56,8 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             auto_update_subscriptions = COALESCE(?7, auto_update_subscriptions),
             subscription_update_interval = COALESCE(?8, subscription_update_interval),
             custom_subscription_update_minutes = COALESCE(?9, custom_subscription_update_minutes),
-            group_sort = COALESCE(?10, group_sort)
+            group_sort = COALESCE(?10, group_sort),
+            log_level = COALESCE(?11, log_level)
          WHERE id = 1",
         params![
             patch.theme,
@@ -67,6 +70,7 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             patch.subscription_update_interval,
             patch.custom_subscription_update_minutes,
             patch.group_sort,
+            patch.log_level,
         ],
     )?;
     Ok(())
@@ -111,6 +115,31 @@ mod tests {
             !settings.tun_mode && !settings.system_proxy,
             "connection modes default to off on a fresh install"
         );
+        assert_eq!(settings.log_level, "info");
+    }
+
+    #[test]
+    fn log_level_round_trip() {
+        let db = Db::open_in_memory().unwrap();
+        update(
+            &db,
+            &SettingsPatch {
+                log_level: Some("trace"),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(get(&db).unwrap().log_level, "trace");
+
+        update(
+            &db,
+            &SettingsPatch {
+                log_level: Some("error"),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(get(&db).unwrap().log_level, "error");
     }
 
     #[test]

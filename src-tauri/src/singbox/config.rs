@@ -28,6 +28,7 @@ pub struct ConfigInput<'a> {
     pub routing_rules: &'a [RoutingRule],
     pub mixed_listen_port: u16,
     pub clash_api_listen: &'a str,
+    pub log_level: &'a str,
     pub tun: bool,
 }
 
@@ -82,7 +83,7 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
     }
 
     Ok(json!({
-        "log": { "level": "info", "timestamp": true },
+        "log": { "level": input.log_level, "timestamp": true },
         "inbounds": inbounds,
         "outbounds": outbounds,
         "route": {
@@ -189,6 +190,7 @@ mod tests {
             routing_rules: rules,
             mixed_listen_port: 2080,
             clash_api_listen: "127.0.0.1:9090",
+            log_level: "info",
             tun: false,
         }
     }
@@ -359,6 +361,15 @@ mod tests {
         let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
         let config = generate(&base_input(&profiles, &[])).unwrap();
         assert_eq!(config["route"]["final"], "proxy");
+    }
+
+    #[test]
+    fn log_uses_the_configured_level() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let mut input = base_input(&profiles, &[]);
+        input.log_level = "debug";
+        let config = generate(&input).unwrap();
+        assert_eq!(config["log"]["level"], "debug");
     }
 
     #[test]
