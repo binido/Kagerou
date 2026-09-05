@@ -26,8 +26,9 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 
-# Local-only project notes
+# Local-only agent notes
 CLAUDE.md
+AGENTS.md
 
 # Fetched by scripts/fetch-singbox.mjs, never committed
 src-tauri/binaries/
