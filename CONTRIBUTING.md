@@ -56,6 +56,12 @@ New backend logic should ship with tests covering edge cases and error paths, no
 - Rust: run `cargo fmt` and `cargo clippy --all-targets` before committing; both should be clean.
 - Frontend: `pnpm lint` (oxlint) and `pnpm build` (runs `tsc -b`) should both be clean.
 
+## What CI checks
+
+Every pull request runs the commands above — `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (plus the `--ignored` smoke test against the real sing-box binary), and `pnpm lint` / `test` / `build`. Run them locally first; the workflow is `.github/workflows/ci.yml`.
+
+The backend job runs on Linux only. The per-OS privilege logic takes the target OS as an argument rather than being `cfg`-gated, so all three branches are exercised from a single host.
+
 ## Building
 
 ```bash

@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same branch makes the previous run pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      - run: pnpm test
+
+      # `pnpm build` is `tsc -b && vite build`, so this is the typecheck too.
+      - run: pnpm build
+
+  backend:
+    name: Backend
+    # One runner is enough: the per-OS privilege logic is pure decision code
+    # that takes the target OS as an argument, so all three branches are
+    # exercised from any host. See src-tauri/src/privilege/plan.rs.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # The `tauri` crate does not compile without these, not even for tests.
+      - name: Install Tauri's Linux dependencies
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            patchelf
+
+      # tauri-build expects the sidecar binary to exist; without it the crate
+      # fails to build. The script verifies a pinned sha256 before writing it.
+      - name: Fetch the pinned sing-box core
+        working-directory: .
+        run: node scripts/fetch-singbox.mjs
+
+      - run: cargo fmt --check
+
+      - run: cargo clippy --all-targets -- -D warnings
+
+      - run: cargo test
+
+      # Runs the real sing-box binary against a config from our generator.
+      - name: Check the generated config against the real core
+        run: cargo test -- --ignored

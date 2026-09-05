@@ -116,7 +116,7 @@ row.
 | Feature | Status | Notes |
 |---|---|---|
 | Unit test coverage | ✅ | 163 Rust tests, 32 frontend tests; storage, parsers, config generation, supervisor, Clash API, and privilege planning are covered. |
-| Continuous integration | 📋 | No `.github/` yet. Needs `cargo fmt --check` / `clippy` / `test` plus `pnpm lint` / `test` / `build` on pull requests. |
+| Continuous integration | ✅ | `.github/workflows/ci.yml` runs `cargo fmt --check` / `clippy -D warnings` / `test` (including the ignored smoke test against the real core) and `pnpm lint` / `test` / `build` on every pull request and push to `main`. |
 | Release builds | 📋 | No published binaries. Cross-platform bundles via `tauri-action`, triggered on tags. |
 | Code signing and notarisation | 📋 | Unsigned builds mean a Gatekeeper warning on macOS and a SmartScreen warning on Windows. Needs certificates and secrets before it's worth automating. |
 | In-app updates | 📋 | `tauri-plugin-updater` against the release feed. Depends on signed releases. |
