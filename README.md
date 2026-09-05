@@ -9,7 +9,7 @@ Supports Windows / macOS / Linux.
 ## Features
 
 - Native desktop app (Tauri + Rust), not an Electron wrapper — small binary, low idle memory.
-- TUN mode and system proxy, with per-OS privilege handling: Windows (UAC), macOS (admin prompt), Linux (`CAP_NET_ADMIN` on the binary, falling back to a polkit prompt).
+- TUN mode, with per-OS privilege handling: Windows (UAC), macOS (admin prompt), Linux (`CAP_NET_ADMIN` on the binary, falling back to a polkit prompt).
 - Profile groups, routing rules, live traffic telemetry, and logs, all driven by sing-box's own Clash-compatible API.
 - Catppuccin and Kanagawa themes, English and Russian UI.
 
@@ -35,6 +35,8 @@ Supports Windows / macOS / Linux.
 ## Installation
 
 No prebuilt releases yet — build it yourself. See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites and build steps.
+
+Kagerou has been run end to end on macOS. It builds and its tests pass on Windows and Linux, but nobody has yet connected through it there — see the [roadmap](ROADMAP.md#distribution--quality) for what that leaves unproven.
 
 ## Credits
 

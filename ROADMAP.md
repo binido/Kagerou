@@ -44,7 +44,7 @@ row.
 | Config generation | ✅ | Built from stored profiles and rules: mixed inbound, one outbound per profile, a `proxy` selector, `clash_api`. |
 | Clash API client | ✅ | Version, proxies, connections, outbound selection, connection closing, traffic websocket with auto-reconnect. |
 | Hot profile switch while connected | ✅ | Selecting a profile switches the selector through the Clash API instead of restarting the core. |
-| TUN mode | 🟡 | Config generation and per-OS privilege elevation (UAC / admin prompt / `CAP_NET_ADMIN` or `pkexec`) are implemented and unit-tested, but no end-to-end run against a live server has been done yet. Needs verification before it can be called done. The mode is a stored setting, read by `connect()`, so a change takes effect on the next connection rather than the current one. |
+| TUN mode | ✅ | Confirmed end-to-end on macOS: connected to a real server with traffic routed through the TUN interface. The Windows (UAC) and Linux (`CAP_NET_ADMIN`, falling back to `pkexec`) elevation paths are implemented and unit-tested but have not been run on those systems — see [End-to-end verification](#distribution--quality). The mode is a stored setting read by `connect()`, so a change takes effect on the next connection rather than the current one. |
 | System proxy | 🟡 | The settings row is present but disabled, and says so. Nothing sets the OS proxy: no `networksetup` (macOS), registry write (Windows), or GSettings/environment handling (Linux). The preference persists; only the effect is missing. |
 | Inbound listen address and port | 📋 | The mixed inbound is hardcoded to `127.0.0.1:2080` and the Clash API to `127.0.0.1:9090`. Both should be settings, along with an "allow LAN access" toggle that binds `0.0.0.0`. **Good first issue.** |
 | Configurable log level | 📋 | The generated config hardcodes `"level": "info"`. NekoBox exposes this in settings. **Good first issue.** |
@@ -121,8 +121,8 @@ row.
 | Code signing and notarisation | 📋 | Unsigned builds mean a Gatekeeper warning on macOS and a SmartScreen warning on Windows. Needs certificates and secrets before it's worth automating. |
 | Update notification | ✅ | On launch the app asks GitHub for the latest release and, if it is newer than the running build, the sidebar links straight to it. Silent when the check fails or there are no releases. |
 | In-app updates | 📋 | Downloading and applying the update in place, via `tauri-plugin-updater`. Depends on signed releases; today the notification just sends you to the release page. |
-| End-to-end connection verification | 📋 | `connect()` has never been run against a live server — only the generated config has been validated with `sing-box check`. Until someone does this, TUN mode and system proxy are unproven. |
-| Version number | 🟡 | `tauri.conf.json` is the single source of truth — Vite injects it into the frontend, and both package.json files no longer carry one. Still `0.0.0`: bump it there when the first release is cut. |
+| End-to-end verification | 🟡 | `connect()` has been run against a real server on macOS in TUN mode. Windows and Linux have never been exercised beyond unit tests and `sing-box check`, so their elevation and TUN paths are unproven — first-hand reports from either are welcome. |
+| Version number | ✅ | `tauri.conf.json` is the single source of truth — Vite injects it into the frontend, and neither package.json carries one. Currently `0.1.0`. |
 
 ---
 
