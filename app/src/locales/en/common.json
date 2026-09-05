@@ -46,7 +46,8 @@
     "unavailable": "Unavailable",
     "timeout": "Timeout",
     "noResponse": "No response",
-    "ok": "200 OK"
+    "ok": "200 OK",
+    "notConnected": "Not connected"
   },
   "counts": {
     "vpnOne": "{{count}} VPN",
