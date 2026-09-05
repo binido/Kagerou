@@ -818,8 +818,30 @@ pub struct SettingsPatchInput {
     pub test_url: Option<String>,
 }
 
+/// Makes the OS launch-at-login registration agree with `enabled`. The DB is
+/// the source of truth: a failure here leaves the two briefly out of sync and
+/// the reconcile at startup or the next toggle converges on the DB. No-op in
+/// dev — `tauri dev` would otherwise register the debug binary as a real
+/// login item.
+pub fn apply_startup_flag(app: &AppHandle, enabled: bool) -> Result<(), String> {
+    if tauri::is_dev() {
+        return Ok(());
+    }
+    use tauri_plugin_autostart::ManagerExt;
+    let autostart = app.autolaunch();
+    if enabled {
+        autostart.enable().map_err(to_err)
+    } else {
+        autostart.disable().map_err(to_err)
+    }
+}
+
 #[tauri::command]
-pub fn update_settings(patch: SettingsPatchInput, state: State<AppState>) -> Result<(), String> {
+pub fn update_settings(
+    patch: SettingsPatchInput,
+    state: State<AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
     settings::update(
         &state.db,
         &settings::SettingsPatch {
@@ -837,7 +859,11 @@ pub fn update_settings(patch: SettingsPatchInput, state: State<AppState>) -> Res
             test_url: patch.test_url.as_deref(),
         },
     )
-    .map_err(to_err)
+    .map_err(to_err)?;
+    if let Some(startup) = patch.startup {
+        apply_startup_flag(&app, startup)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

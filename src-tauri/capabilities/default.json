@@ -4,6 +4,7 @@
   "description": "Capabilities for the main Kagerou window",
   "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "autostart:default"
   ]
 }
