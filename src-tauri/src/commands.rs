@@ -6,6 +6,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::app_state::AppState;
 use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
+use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
     NewProfile, NewProfileGroup, NewRoutingRule, NewSource, Profile, ProfileGroup, Protocol,
@@ -509,25 +510,41 @@ pub fn stop_test_core(state: &AppState) {
     *state.last_test_at.lock().unwrap() = None;
 }
 
-/// Latency of the whole path through the proxy, which is the number that
-/// decides how the connection actually feels.
+const TEST_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Round trip through this profile, measured by sending a real request over
+/// the test core's own inbound. Aiming at one profile means pointing that
+/// core's selector at it, which is why tests run one at a time.
 async fn url_test_profile(
     profile_id: &str,
     clash: &ClashApiClient,
     state: &State<'_, AppState>,
 ) -> Result<TestResult, String> {
     let test_url = settings::get(&state.db).map_err(to_err)?.test_url;
-
-    match clash.test_delay(profile_id, &test_url, 5000).await {
-        Ok(delay_ms) => Ok(TestResult {
-            value: format!("{delay_ms} ms"),
-            tone: latency_tone(delay_ms),
-        }),
-        Err(_) => Ok(TestResult {
-            value: "Timeout".to_string(),
+    if clash.select_outbound("proxy", profile_id).await.is_err() {
+        return Ok(TestResult {
+            value: "Unavailable".to_string(),
             tone: Tone::Bad,
-        }),
+        });
     }
+
+    let socks = format!("127.0.0.1:{}", state.paths.test_mixed_listen_port);
+    Ok(
+        match probe::rtt_through_socks(&socks, &test_url, TEST_TIMEOUT).await {
+            Ok(delay_ms) => TestResult {
+                value: format!("{delay_ms} ms"),
+                tone: latency_tone(delay_ms),
+            },
+            Err(probe::ProbeError::Timeout) => TestResult {
+                value: "Timeout".to_string(),
+                tone: Tone::Bad,
+            },
+            Err(probe::ProbeError::Unreachable) => TestResult {
+                value: "No response".to_string(),
+                tone: Tone::Bad,
+            },
+        },
+    )
 }
 
 // ---------------------------------------------------------------------
