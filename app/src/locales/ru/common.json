@@ -47,7 +47,8 @@
     "timeout": "Тайм-аут",
     "noResponse": "Нет ответа",
     "ok": "200 OK",
-    "notConnected": "Нет подключения"
+    "notConnected": "Нет подключения",
+    "notApplicable": "н/д"
   },
   "counts": {
     "vpnOne": "{{count}} VPN",

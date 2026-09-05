@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProfileActionsMenu } from '@/components/profiles/ProfileActionsMenu'
 import { ResultBadge } from '@/components/common/ResultBadge'
-import { getReachabilityAwarePing } from '@/lib/profile-sorting'
 import { cn } from '@/lib/utils'
 import type { Profile, ProfileGroup, TestMethod, TestResult } from '@/types/kagerou'
 
@@ -44,12 +43,11 @@ function getProfileResultState(profile: Profile, runningTests: Record<string, bo
   const runningTcp = runningTests[`${profile.id}:tcp`]
   const runningUrl = runningTests[`${profile.id}:url`]
 
+  // Each column reports its own measurement. They answer different questions
+  // — the ping reaches the server directly, the URL test goes through the
+  // proxy — so neither stands in for the other.
   return {
-    ping: runningUrl
-      ? { value: labels.checking, tone: 'warn' }
-      : profile.url.tone === 'good' && runningTcp
-        ? { value: labels.running, tone: 'warn' }
-        : getReachabilityAwarePing(profile),
+    ping: runningTcp ? { value: labels.running, tone: 'warn' } : profile.tcp,
     url: runningUrl ? { value: labels.running, tone: 'warn' } : profile.url,
   }
 }
