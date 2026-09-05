@@ -99,7 +99,7 @@ export function SourcesPage() {
         <section aria-label={t('page.ariaLabel')} className="mt-4 grid gap-3 lg:grid-cols-2">
           {sources.map((source) => <SourceCard key={source.id} onEdit={() => openEdit(source)} onRefresh={() => void refresh(source)} onRemove={() => setRemovingSource(source)} profileCount={profileCountBySourceId[source.id] ?? 0} refreshing={Boolean(refreshingIds[source.id])} source={source} />)}
         </section>
-      <SourceDialog key={`${editingSource?.id ?? 'new'}-${dialogType}-${dialogOpen}`} initialType={dialogType} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingSource(null) }} onSubmit={handleSourceSubmit} open={dialogOpen} source={editingSource} />
+      <SourceDialog initialType={dialogType} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingSource(null) }} onSubmit={handleSourceSubmit} open={dialogOpen} source={editingSource} />
       <RemoveSourceDialog onConfirm={confirmRemove} onOpenChange={(open) => { if (!open) setRemovingSource(null) }} source={removingSource} />
     </PageContainer>
   )
