@@ -131,7 +131,7 @@ row.
 | Flatpak | 💡 | The one package that would reach nearly every distro, and integrated into GNOME Software and KDE Discover — but it needs its sandbox question answered before anyone commits. A TUN interface needs `/dev/net/tun` and `CAP_NET_ADMIN`, and a Flatpak cannot simply elevate to get them; VPN clients on Flathub tend to hand the privileged half to something on the host. Establish whether TUN can work at all under Flatpak before packaging anything. |
 | In-app updates | 📋 | Downloading and applying the update in place, via `tauri-plugin-updater`. Depends on signed releases; today the notification just sends you to the release page. **Discuss first.** |
 | End-to-end verification | 🟡 | `connect()` has been run against a real server on macOS in TUN mode. Windows and Linux have never been exercised beyond unit tests and `sing-box check`, so their elevation and TUN paths are unproven — first-hand reports from either are welcome. |
-| Version number | ✅ | `tauri.conf.json` is the single source of truth — Vite injects it into the frontend, and neither package.json carries one. Currently `0.1.0`. |
+| Version number | ✅ | `tauri.conf.json` is the single source of truth — Vite injects it into the frontend, and neither package.json carries one. |
 
 ---
 
