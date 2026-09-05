@@ -114,7 +114,7 @@ row.
 |---|---|---|
 | System tray | 📋 | Connect/disconnect, active profile, and quick profile switching without opening the window. Close-to-tray instead of quit. The single most valuable desktop-only feature, and it has no NekoBox counterpart. |
 | Launch at login | ✅ | The `startup` setting stays the single source of truth: `update_settings` and a reconcile at every startup make the OS registration agree with it, via `tauri-plugin-autostart` (LaunchAgent on macOS). Registration is skipped under `tauri dev` so a debug binary never lands in login items. |
-| Single-instance guard | 📋 | Two running copies would both drive the sing-box sidecar and fight over ports. **Good first issue.** |
+| Single-instance guard | ✅ | `tauri-plugin-single-instance` is registered before every other plugin; a second copy focuses the existing window instead of starting, so two supervisors never fight over the sidecar's ports. |
 | Deep links (`vless://`, `vmess://`, …) | 📋 | Desktop equivalent of NekoBox's intent-based import: register the URI schemes and import the profile on click. **Discuss first.** |
 | Encrypted storage for profile keys | 💡 | Profile keys sit in plain text in the SQLite database and in the generated sing-box config, both under the OS app-data directory. That is normal for this class of app and the files are readable only by the account that owns them, so the threat model is worth arguing about before anyone writes code — a shared or backed-up machine is the case that would justify it. If it is worth doing, the OS keychain is a better home for the keys than a password on the database. |
 | Linux accent colour from the desktop portal | ❌ | Considered and dropped (2026-09-03). Kagerou uses its own theme colours on every platform. |

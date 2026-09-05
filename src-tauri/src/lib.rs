@@ -15,6 +15,17 @@ use app_state::AppState;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Must be the first plugin registered — see the plugin's docs.
+        // A second copy would drive a second sing-box and fight over the
+        // ports; put the original window in front instead of exiting
+        // silently, or the user gets no feedback at all.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_shell::init())
         // LaunchAgent writes a plist under the user's LaunchAgents directory;
         // the AppleScript route it competes with is unreliable on modern macOS.
