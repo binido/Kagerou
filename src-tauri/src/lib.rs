@@ -71,6 +71,8 @@ pub fn run() {
             commands::move_profile,
             commands::reorder_profiles,
             commands::run_profile_test,
+            commands::clear_test_results,
+            commands::delete_unavailable_profiles,
             commands::set_profile_group_open,
             commands::add_profile_group,
             commands::rename_profile_group,

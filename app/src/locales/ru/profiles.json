@@ -35,7 +35,12 @@
     "moved": "VPN перемещён в группу «{{group}}».",
     "moveSubscription": "VPN подписки нельзя переместить в другую группу.",
     "selected": "{{name}} готов к следующему подключению.",
-    "deleted": "{{name}} удалён из локальных VPN."
+    "deleted": "{{name}} удалён из локальных VPN.",
+    "testRunningGroup": "Запущена {{method}} для группы «{{group}}»…",
+    "resultsCleared": "Результаты проверок очищены для «{{group}}».",
+    "nothingUnavailable": "В «{{group}}» нет недоступных VPN.",
+    "deletedUnavailable": "Удалено недоступных VPN из «{{group}}»: {{count}}.",
+    "activeKept": "Выбранный VPN оставлен."
   },
   "group": {
     "defaultName": "Default",
@@ -72,7 +77,10 @@
     "test": "Проверить",
     "managed": "Управляется подпиской",
     "defaultRenameDisabled": "Группу Default нельзя переименовать",
-    "locked": "Привязан к этой подписке"
+    "locked": "Привязан к этой подписке",
+    "testGroup": "Проверить группу",
+    "clearResults": "Очистить результаты",
+    "deleteUnavailable": "Удалить недоступные"
   },
   "dialogs": {
     "group": {
@@ -117,6 +125,14 @@
       "warningSuffix": ". VPN подписки останутся под управлением источника.",
       "cancel": "Отмена",
       "submit": "Удалить VPN"
+    },
+    "removeUnavailable": {
+      "eyebrow": "Удаление недоступных",
+      "title": "Удалить недоступные VPN?",
+      "description": "{{count}} VPN в группе «{{group}}» не прошли проверку {{method}}. Действие нельзя отменить.",
+      "activeKept": "Выбранный VPN будет оставлен.",
+      "cancel": "Отмена",
+      "submit": "Удалить: {{count}}"
     }
   }
 }

@@ -160,6 +160,51 @@ pub fn set_test_result(
     Ok(())
 }
 
+/// Resets both stored test results of every profile in `group_id` back to
+/// their untested state. Idempotent on profiles that were never tested;
+/// an unknown or empty group is not an error.
+pub fn clear_test_results(db: &Db, group_id: &str) -> Result<(), StorageError> {
+    let conn = db.lock();
+    conn.execute(
+        "UPDATE profiles
+         SET tcp_value = 'Not tested', tcp_tone = 'muted',
+             url_value = 'Not tested', url_tone = 'muted'
+         WHERE group_id = ?1",
+        params![group_id],
+    )?;
+    Ok(())
+}
+
+/// Deletes every profile in `group_id` whose stored result for `method`
+/// carries the `bad` tone — the ones that failed their last test. `skip_id`
+/// (the active profile) is never deleted, and untested profiles survive by
+/// construction: their tone is `muted`. Returns how many rows were deleted.
+pub fn delete_unavailable(
+    db: &Db,
+    group_id: &str,
+    method: TestMethod,
+    skip_id: Option<&str>,
+) -> Result<usize, StorageError> {
+    let tone_column = match method {
+        TestMethod::Tcp => "tcp_tone",
+        TestMethod::Url => "url_tone",
+    };
+    let conn = db.lock();
+    let affected = match skip_id {
+        Some(skip) => conn.execute(
+            &format!(
+                "DELETE FROM profiles WHERE group_id = ?1 AND {tone_column} = 'bad' AND id != ?2"
+            ),
+            params![group_id, skip],
+        )?,
+        None => conn.execute(
+            &format!("DELETE FROM profiles WHERE group_id = ?1 AND {tone_column} = 'bad'"),
+            params![group_id],
+        )?,
+    };
+    Ok(affected)
+}
+
 /// Moves a profile into `target_group_id`, appending it at the end of that
 /// group's ordering.
 pub fn move_to_group(db: &Db, id: &str, target_group_id: &str) -> Result<(), StorageError> {
@@ -413,6 +458,106 @@ mod tests {
         assert_eq!(profile.tcp.value, "42 ms");
         assert_eq!(profile.tcp.tone, Tone::Good);
         assert_eq!(profile.url.value, "Not tested");
+    }
+
+    fn fail(db: &Db, id: &str, method: TestMethod) {
+        set_test_result(
+            db,
+            id,
+            method,
+            &TestResult {
+                value: "No response".into(),
+                tone: Tone::Bad,
+            },
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn clear_test_results_resets_only_the_target_group() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        insert(&db, &new_profile("p2", "default")).unwrap();
+        insert(&db, &new_profile("p3", "custom")).unwrap();
+        fail(&db, "p1", TestMethod::Tcp);
+        fail(&db, "p2", TestMethod::Url);
+        fail(&db, "p3", TestMethod::Tcp);
+
+        clear_test_results(&db, "default").unwrap();
+
+        for id in ["p1", "p2"] {
+            let profile = get(&db, id).unwrap();
+            assert_eq!(profile.tcp.value, "Not tested");
+            assert_eq!(profile.tcp.tone, Tone::Muted);
+            assert_eq!(profile.url.value, "Not tested");
+            assert_eq!(profile.url.tone, Tone::Muted);
+        }
+        let untouched = get(&db, "p3").unwrap();
+        assert_eq!(untouched.tcp.value, "No response");
+        assert_eq!(untouched.tcp.tone, Tone::Bad);
+    }
+
+    #[test]
+    fn clear_test_results_is_idempotent_on_untested_profiles() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        clear_test_results(&db, "default").unwrap();
+        clear_test_results(&db, "no-such-group").unwrap();
+        assert_eq!(get(&db, "p1").unwrap().tcp.value, "Not tested");
+    }
+
+    #[test]
+    fn delete_unavailable_deletes_only_bad_rows_of_the_targeted_method() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        insert(&db, &new_profile("p2", "default")).unwrap();
+        insert(&db, &new_profile("p3", "default")).unwrap();
+        insert(&db, &new_profile("p4", "custom")).unwrap();
+        fail(&db, "p1", TestMethod::Tcp);
+        fail(&db, "p2", TestMethod::Url);
+        fail(&db, "p4", TestMethod::Tcp);
+
+        let deleted = delete_unavailable(&db, "default", TestMethod::Tcp, None).unwrap();
+
+        assert_eq!(deleted, 1);
+        assert!(matches!(get(&db, "p1"), Err(StorageError::NotFound)));
+        assert!(
+            get(&db, "p2").is_ok(),
+            "url-failed profile survives a tcp sweep"
+        );
+        assert!(
+            get(&db, "p3").is_ok(),
+            "never-tested profile survives by construction"
+        );
+        assert!(get(&db, "p4").is_ok(), "other groups are untouched");
+    }
+
+    #[test]
+    fn delete_unavailable_never_deletes_the_skipped_profile() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        insert(&db, &new_profile("p2", "default")).unwrap();
+        fail(&db, "p1", TestMethod::Url);
+        fail(&db, "p2", TestMethod::Url);
+
+        let deleted = delete_unavailable(&db, "default", TestMethod::Url, Some("p1")).unwrap();
+
+        assert_eq!(deleted, 1);
+        assert!(get(&db, "p1").is_ok());
+        assert!(matches!(get(&db, "p2"), Err(StorageError::NotFound)));
+    }
+
+    #[test]
+    fn delete_unavailable_on_an_unknown_group_deletes_nothing() {
+        let db = seeded_db();
+        insert(&db, &new_profile("p1", "default")).unwrap();
+        fail(&db, "p1", TestMethod::Tcp);
+
+        assert_eq!(
+            delete_unavailable(&db, "ghost", TestMethod::Tcp, None).unwrap(),
+            0
+        );
+        assert!(get(&db, "p1").is_ok());
     }
 
     #[test]

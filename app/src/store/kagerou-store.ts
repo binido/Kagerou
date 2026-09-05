@@ -242,6 +242,26 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       }
     },
 
+    clearGroupTestResults: async (groupId) => {
+      try {
+        await kagerouApi.clearGroupTestResults(groupId)
+        await refresh()
+      } catch (error) {
+        console.error('clearGroupTestResults failed', error)
+      }
+    },
+
+    deleteUnavailableProfiles: async (groupId, method) => {
+      try {
+        const deleted = await kagerouApi.deleteUnavailableProfiles(groupId, method)
+        await refresh()
+        return deleted
+      } catch (error) {
+        console.error('deleteUnavailableProfiles failed', error)
+        return 0
+      }
+    },
+
     addSource: async (input: AddSourceInput) => {
       try {
         const id = await kagerouApi.addSource(input)

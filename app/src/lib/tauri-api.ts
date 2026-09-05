@@ -50,6 +50,8 @@ export const kagerouApi = {
   moveProfile: (id: string, direction: 'up' | 'down') => invoke<void>('move_profile', { id, direction }),
   reorderProfiles: (fromId: string, toId: string) => invoke<void>('reorder_profiles', { fromId, toId }),
   runProfileTest: (profileId: string, method: TestMethod) => invoke<TestResult>('run_profile_test', { profileId, method }),
+  clearGroupTestResults: (groupId: string) => invoke<void>('clear_test_results', { groupId }),
+  deleteUnavailableProfiles: (groupId: string, method: TestMethod) => invoke<number>('delete_unavailable_profiles', { groupId, method }),
 
   setProfileGroupOpen: (id: string, open: boolean) => invoke<void>('set_profile_group_open', { id, open }),
   addProfileGroup: (label: string) => invoke<string>('add_profile_group', { label }),

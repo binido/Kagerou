@@ -73,7 +73,7 @@ row.
 | Manual profile creation | 📋 | Profiles can only be added by pasting a link or config. NekoBox has a per-protocol form (server, port, transport, TLS, mux, fingerprint…). This is the largest missing piece in this section and should be split per protocol. **Discuss first.** |
 | Subscription auto-update | 🟡 | `autoUpdateSubscriptions` and its interval are stored in settings and shown in the UI, but nothing schedules a refresh. Needs a background task honouring the interval. |
 | Subscription options: custom User-Agent, deduplication, force-resolve | 📋 | NekoBox exposes all three per group. Deduplication is the cheapest and most useful. |
-| Group-wide delay test | 📋 | Test every profile in a group, then "delete unavailable" and "clear results" actions. **Good first issue.** |
+| Group-wide delay test | ✅ | Each group's menu tests all its members concurrently (TCP or URL), then "clear results" resets both stored results and "delete unavailable" removes the profiles that failed the chosen method — never the active profile, never untested ones, behind a confirmation. |
 | Export and sharing | 📋 | Copy a profile as a link, show it as a QR code, export a whole group to clipboard or file. |
 | QR code import | 📋 | Scan a QR from an image file, the clipboard, or a screen region. |
 | Backup and restore | 📋 | Export groups, profiles, routing rules, and settings as one JSON file, and import it back. NekoBox lets you pick which of the three to include. **Discuss first.** |
@@ -171,7 +171,7 @@ Kagerou do X yet".
 | QR code scan / share, clipboard and file import | 📋 Partly — pasted links work, QR and file import don't. |
 | NFC sharing | ❌ Android hardware feature. |
 | Backup and restore (groups, rules, settings) | 📋 |
-| Profile groups, group ordering, group-wide URL test | 🟡 Groups and sorting done; group-wide test missing. |
+| Profile groups, group ordering, group-wide URL test | ✅ Groups, sorting, group-wide testing and the delete/clear actions are all in. |
 | Proxy chains, front/landing proxy | 📋 |
 | Custom config profiles and global config override | 📋 |
 | Routing rules by domain, IP, port, source, network, protocol | 🟡 Domain and IP only. |

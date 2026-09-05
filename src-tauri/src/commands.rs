@@ -297,6 +297,29 @@ pub fn delete_profile(id: String, state: State<AppState>) -> Result<(), String> 
 }
 
 #[tauri::command]
+pub fn clear_test_results(group_id: String, state: State<AppState>) -> Result<(), String> {
+    profiles::clear_test_results(&state.db, &group_id).map_err(to_err)
+}
+
+#[tauri::command]
+pub fn delete_unavailable_profiles(
+    group_id: String,
+    method: String,
+    state: State<AppState>,
+) -> Result<usize, String> {
+    let method = match method.as_str() {
+        "tcp" => profiles::TestMethod::Tcp,
+        "url" => profiles::TestMethod::Url,
+        other => return Err(format!("unknown test method: {other}")),
+    };
+    // The active profile is skipped at the command layer: storage stays
+    // ignorant of settings, and generate()'s silent fallback to the first
+    // profile never gets a chance to happen.
+    let active = settings::get_active_profile_id(&state.db).map_err(to_err)?;
+    profiles::delete_unavailable(&state.db, &group_id, method, active.as_deref()).map_err(to_err)
+}
+
+#[tauri::command]
 pub fn move_profile_to_group(
     profile_id: String,
     target_group_id: String,
