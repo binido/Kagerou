@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- App icon source. Regenerate the platform icons with:
+       pnpm tauri icon assets/icon-source.png
+       The plate follows Apple's macOS grid: an 824x824 rounded square inset
+       100px on each side of a 1024px canvas, so the icon sits the same size
+       as its neighbours in the dock. Colours are Catppuccin Mocha. -->
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#313244"/>
+      <stop offset="1" stop-color="#181825"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#plate)"/>
+  <g transform="translate(194.5 197.7) scale(6.35)">
+    <path d="M50 88C43 88 38 83 35 76L13 79L27 64C20 61 15 56 11 49L28 49L22 11L42 36Q50 33 58 36L78 11L72 49L89 49C85 56 80 61 73 64L87 79L65 76C62 83 57 88 50 88ZM27 23L37 37Q33 39 30 44Q28 35 27 23ZM73 23L63 37Q67 39 70 44Q72 35 73 23ZM26 50L40 46L46 51L40 56L30 55L26 50ZM74 50L60 46L54 51L60 56L70 55L74 50ZM16 56Q27 56 39 65L42 74L30 68Q22 63 16 56ZM84 56Q73 56 61 65L58 74L70 68Q78 63 84 56ZM43 58L50 63L57 58L60 67L55 75Q50 81 45 75L40 67L43 58Z" fill="#b4befe" fill-rule="evenodd"/>
+  </g>
+</svg>
