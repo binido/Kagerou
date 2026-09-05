@@ -34,3 +34,18 @@ export const regionToCountry = (region: string, language: string): string | null
   const flag = String.fromCodePoint(...[...region].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
   return `${flag} ${new Intl.DisplayNames([language], { type: 'region' }).of(region)}`
 }
+
+const MASK = '••••'
+
+/** Hides the secret half of a subscription URL while keeping the host, so
+ * two sources stay distinguishable at a glance. The token lives in the path
+ * or query, never in the hostname. Anything unparseable is masked whole. */
+export const maskSubscriptionUrl = (value: string): string => {
+  try {
+    const url = new URL(value)
+    const hasSecret = url.pathname.replace(/^\/+$/, '') !== '' || url.search !== '' || url.hash !== ''
+    return hasSecret ? `${url.protocol}//${url.host}/${MASK}` : `${url.protocol}//${url.host}`
+  } catch {
+    return MASK.repeat(4)
+  }
+}

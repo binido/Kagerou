@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { maskSubscriptionUrl } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import type { Source } from '@/types/kagerou'
 
@@ -48,7 +49,7 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
   const isKey = source.type === 'key'
   const statusTone = source.status === 'refresh-due' || source.status === 'updating' ? 'warn' : source.status === 'ready' ? 'neutral' : 'good'
   const Icon = isKey ? KeyRound : Rss
-  const displayedValue = isKey ? `${source.value.split('://')[0]}://••••••••••••••••` : '••••••••••••••••'
+  const displayedValue = isKey ? `${source.value.split('://')[0]}://••••••••••••••••` : maskSubscriptionUrl(source.value)
   const originLabel = source.originLabel === 'Remote URL' ? t('card.remoteUrl') : t('card.localKey')
   const sourceTypeLabel = isKey ? t('card.singleKey') : t('card.subscriptionUrl')
   const localizedTimestamp = sourceTimestampKey(source.lastRefresh)
@@ -95,7 +96,7 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
       </div>
       <div className="mt-4 flex items-center gap-2 rounded-lg border border-hairline bg-canvas px-3 py-2.5">
         <Link2 aria-hidden="true" className="size-[15px] shrink-0 text-muted-copy" strokeWidth={1.7} />
-        <code aria-label={isKey ? undefined : t('card.hiddenUrl')} className="min-w-0 truncate font-mono text-[11px] text-body">{displayedValue}</code>
+        <code className="min-w-0 truncate font-mono text-[11px] text-body">{displayedValue}</code>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-5 border-t border-hairline pt-3.5 max-[640px]:grid-cols-1 max-[640px]:gap-3">
         <div><p className="type-eyebrow !text-[10px]">{t('card.vpnLabel')}</p><p className="mt-1 text-[13px] font-medium text-primary">{tc(profileCount === 1 ? 'counts.vpnOne' : 'counts.vpnMany', { count: profileCount })}</p></div>
