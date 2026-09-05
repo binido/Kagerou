@@ -2,10 +2,12 @@ use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
+use tokio::sync::watch;
 
 use crate::app_state::AppState;
 use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
+use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
     NewProfile, NewProfileGroup, NewRoutingRule, NewSource, Profile, ProfileGroup, Protocol,
@@ -130,9 +132,6 @@ fn to_dashboard_event(
 
 #[tauri::command]
 pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    // A core may already be up to serve delay tests. Take it down first: the
-    // connection needs its own config, possibly with TUN.
-    stop_test_core(&state);
     // TUN and the log level are stored preferences, not per-call arguments:
     // they are toggled in settings, and take effect on the next connection.
     let stored = settings::get(&state.db).map_err(to_err)?;
@@ -299,6 +298,123 @@ pub fn delete_profile(id: String, state: State<AppState>) -> Result<(), String> 
     profiles::delete(&state.db, &id).map_err(to_err)
 }
 
+/// One profile's result, as a group run produces them.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestProgress {
+    pub profile_id: String,
+    pub result: TestResult,
+    pub done: usize,
+    pub total: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestFinished {
+    pub done: usize,
+    pub total: usize,
+    pub cancelled: bool,
+}
+
+/// Tests every profile in `group_id`, or the whole app when it is `None`,
+/// reporting each result as it lands.
+///
+/// The run lives in the backend rather than the frontend firing one command
+/// per profile: aiming a test means pointing the test core's selector at one
+/// profile, so they cannot overlap, and a sequence of hundreds needs somewhere
+/// to report progress from and something to stop it with.
+#[tauri::command]
+pub async fn start_group_test(
+    group_id: Option<String>,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<usize, String> {
+    let profile_ids: Vec<String> = match &group_id {
+        Some(id) => groups::get(&state.db, id).map_err(to_err)?.profile_ids,
+        None => profiles::list_all(&state.db)
+            .map_err(to_err)?
+            .into_iter()
+            .map(|p| p.id)
+            .collect(),
+    };
+    if profile_ids.is_empty() {
+        return Ok(0);
+    }
+
+    let (cancel_tx, mut cancel_rx) = watch::channel(false);
+    {
+        let mut slot = state.test_run_cancel.lock().unwrap();
+        if slot.is_some() {
+            return Err("a test run is already in progress".to_string());
+        }
+        *slot = Some(cancel_tx);
+    }
+
+    let total = profile_ids.len();
+    let run_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let state = run_app.state::<AppState>();
+        let mut done = 0usize;
+        let mut cancelled = false;
+
+        for profile_id in profile_ids {
+            if *cancel_rx.borrow_and_update() {
+                cancelled = true;
+                break;
+            }
+            let result = match clash_for_test(&run_app, &state).await {
+                Ok(clash) => url_test_profile(&profile_id, &clash, &state)
+                    .await
+                    .unwrap_or(TestResult {
+                        value: "No response".to_string(),
+                        tone: Tone::Bad,
+                    }),
+                // The core itself failed to come up: report the profile as
+                // untested rather than blaming it for the run's problem.
+                Err(_) => TestResult {
+                    value: "Not tested".to_string(),
+                    tone: Tone::Muted,
+                },
+            };
+            if result.tone != Tone::Muted {
+                let _ = profiles::set_test_result(&state.db, &profile_id, &result);
+            }
+            done += 1;
+            let _ = run_app.emit(
+                "kagerou://test-progress",
+                TestProgress {
+                    profile_id,
+                    result,
+                    done,
+                    total,
+                },
+            );
+        }
+
+        *state.test_run_cancel.lock().unwrap() = None;
+        let _ = run_app.emit(
+            "kagerou://test-finished",
+            TestFinished {
+                done,
+                total,
+                cancelled,
+            },
+        );
+    });
+
+    Ok(total)
+}
+
+/// Asks a running group test to stop after the profile it is on. A no-op when
+/// nothing is running.
+#[tauri::command]
+pub fn cancel_group_test(state: State<AppState>) -> Result<(), String> {
+    if let Some(cancel) = state.test_run_cancel.lock().unwrap().as_ref() {
+        let _ = cancel.send(true);
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn clear_test_results(group_id: String, state: State<AppState>) -> Result<(), String> {
     profiles::clear_test_results(&state.db, &group_id).map_err(to_err)
@@ -399,18 +515,16 @@ fn latency_tone(delay_ms: u32) -> Tone {
 const TEST_CORE_IDLE: Duration = Duration::from_secs(30);
 const TEST_CORE_READY_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// A client to run delay tests against. Prefers the connection the user
-/// actually asked for; otherwise brings up a core that exists only to answer
-/// tests — no TUN, no system routing, nothing announced as "connected" —
-/// because a test that silently reports "not connected" for every profile
-/// reads as a broken app rather than a precondition.
+/// Brings up the core that exists only to answer tests, and hands back a
+/// client for it. Never the connection's own core, even when one is running:
+/// aiming a test at a particular server means pointing the selector at it,
+/// and doing that to a live tunnel would silently reroute the user's traffic
+/// through whatever is being tested. Its own ports, its own config, no TUN,
+/// nothing announced to the UI as connected.
 async fn clash_for_test(
     app: &AppHandle,
     state: &State<'_, AppState>,
 ) -> Result<ClashApiClient, String> {
-    if let Some(clash) = state.clash_client() {
-        return Ok(clash);
-    }
     *state.last_test_at.lock().unwrap() = Some(Instant::now());
 
     // One starter at a time: a group test fires dozens of these at once.
@@ -433,8 +547,8 @@ async fn clash_for_test(
         profiles: &all_profiles,
         active_profile_id: &active_profile_id,
         routing_rules: &routing_rules,
-        mixed_listen_port: state.paths.mixed_listen_port,
-        clash_api_listen: &state.paths.clash_api_listen,
+        mixed_listen_port: state.paths.test_mixed_listen_port,
+        clash_api_listen: &state.paths.test_clash_api_listen,
         log_level: &stored.log_level,
         // Never for a test core: creating a TUN interface asks for a
         // password and rewrites the machine's routing, which is not
@@ -443,16 +557,16 @@ async fn clash_for_test(
     })
     .map_err(to_err)?;
     let config_bytes = serde_json::to_vec_pretty(&config).map_err(to_err)?;
-    std::fs::write(&state.paths.config_path, config_bytes).map_err(to_err)?;
+    std::fs::write(&state.paths.test_config_path, config_bytes).map_err(to_err)?;
 
     state
-        .supervisor
+        .test_supervisor
         .lock()
         .unwrap()
-        .start(&state.paths.config_path, false)
+        .start(&state.paths.test_config_path, false)
         .map_err(to_err)?;
 
-    let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
+    let clash = ClashApiClient::new(format!("http://{}", state.paths.test_clash_api_listen));
     // The API is not up the instant the process is: poll until it answers,
     // or the first delay request fails for a reason that has nothing to do
     // with the profile being tested.
@@ -466,7 +580,7 @@ async fn clash_for_test(
     })
     .await;
     if ready.is_err() {
-        let _ = state.supervisor.lock().unwrap().stop();
+        let _ = state.test_supervisor.lock().unwrap().stop();
         return Err("the proxy core did not come up for testing".to_string());
     }
 
@@ -504,35 +618,51 @@ fn spawn_test_core_reaper(app: AppHandle) {
     });
 }
 
-/// Takes down a core that was only up to serve tests. A no-op when there
-/// isn't one, so `connect()` can call it unconditionally.
+/// Takes down the core that was up to serve tests. A no-op when there isn't
+/// one.
 pub fn stop_test_core(state: &AppState) {
     if state.test_clash.lock().unwrap().take().is_none() {
         return;
     }
-    let _ = state.supervisor.lock().unwrap().stop();
+    let _ = state.test_supervisor.lock().unwrap().stop();
     *state.last_test_at.lock().unwrap() = None;
 }
 
-/// Latency of the whole path through the proxy, which is the number that
-/// decides how the connection actually feels.
+const TEST_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Round trip through this profile, measured by sending a real request over
+/// the test core's own inbound. Aiming at one profile means pointing that
+/// core's selector at it, which is why tests run one at a time.
 async fn url_test_profile(
     profile_id: &str,
     clash: &ClashApiClient,
     state: &State<'_, AppState>,
 ) -> Result<TestResult, String> {
     let test_url = settings::get(&state.db).map_err(to_err)?.test_url;
-
-    match clash.test_delay(profile_id, &test_url, 5000).await {
-        Ok(delay_ms) => Ok(TestResult {
-            value: format!("{delay_ms} ms"),
-            tone: latency_tone(delay_ms),
-        }),
-        Err(_) => Ok(TestResult {
-            value: "Timeout".to_string(),
+    if clash.select_outbound("proxy", profile_id).await.is_err() {
+        return Ok(TestResult {
+            value: "Unavailable".to_string(),
             tone: Tone::Bad,
-        }),
+        });
     }
+
+    let socks = format!("127.0.0.1:{}", state.paths.test_mixed_listen_port);
+    Ok(
+        match probe::rtt_through_socks(&socks, &test_url, TEST_TIMEOUT).await {
+            Ok(delay_ms) => TestResult {
+                value: format!("{delay_ms} ms"),
+                tone: latency_tone(delay_ms),
+            },
+            Err(probe::ProbeError::Timeout) => TestResult {
+                value: "Timeout".to_string(),
+                tone: Tone::Bad,
+            },
+            Err(probe::ProbeError::Unreachable) => TestResult {
+                value: "No response".to_string(),
+                tone: Tone::Bad,
+            },
+        },
+    )
 }
 
 // ---------------------------------------------------------------------

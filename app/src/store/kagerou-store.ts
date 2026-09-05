@@ -72,6 +72,16 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       }))
     })
 
+    void kagerouApi.onTestProgress((event) => {
+      set((state) => ({
+        testRun: state.testRun ? { ...state.testRun, done: event.done, total: event.total } : state.testRun,
+        profiles: state.profiles.map((profile) =>
+          profile.id === event.profileId ? { ...profile, url: event.result } : profile),
+      }))
+    })
+
+    void kagerouApi.onTestFinished(() => set({ testRun: null }))
+
     void kagerouApi.onLog((line) => {
       set((state) => ({ logs: [...state.logs.slice(-(MAX_LOG_ENTRIES - 1)), toLogEntry(line)] }))
     })
@@ -93,6 +103,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     trafficSample: { download: 0, upload: 0 },
     sessionTraffic: { download: 0, upload: 0 },
     updateAvailable: null,
+    testRun: null,
     settings: {
       theme: getInitialThemeId(),
       language: 'en',
@@ -239,6 +250,27 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       } catch (error) {
         console.error('runProfileTest failed', error)
         return null
+      }
+    },
+
+    startGroupTest: async (groupId) => {
+      // Optimistic so the progress bar appears on the click rather than after
+      // the first profile has been measured, which can be seconds later.
+      set({ testRun: { groupId, done: 0, total: 0 } })
+      try {
+        const total = await kagerouApi.startGroupTest(groupId)
+        if (total === 0) set({ testRun: null })
+      } catch (error) {
+        console.error('startGroupTest failed', error)
+        set({ testRun: null })
+      }
+    },
+
+    cancelGroupTest: async () => {
+      try {
+        await kagerouApi.cancelGroupTest()
+      } catch (error) {
+        console.error('cancelGroupTest failed', error)
       }
     },
 

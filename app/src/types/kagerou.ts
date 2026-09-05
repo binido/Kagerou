@@ -103,6 +103,13 @@ export interface LogEntry {
   message: string
 }
 
+/** A group test walking its profiles one at a time. */
+export interface TestRun {
+  groupId: string | null
+  done: number
+  total: number
+}
+
 /** A GitHub release newer than the running build. */
 export interface UpdateInfo {
   version: string
@@ -149,6 +156,7 @@ export interface KagerouStore {
   logs: LogEntry[]
   trafficSample: TrafficSample
   updateAvailable: UpdateInfo | null
+  testRun: TestRun | null
   sessionTraffic: SessionTraffic
   settings: SettingsState
   hydrate: () => Promise<void>
@@ -165,6 +173,8 @@ export interface KagerouStore {
   moveProfile: (id: string, direction: 'up' | 'down') => Promise<boolean>
   reorderProfiles: (fromId: string, toId: string) => Promise<boolean>
   runProfileTest: (id: string) => Promise<TestResult | null>
+  startGroupTest: (groupId: string | null) => Promise<void>
+  cancelGroupTest: () => Promise<void>
   clearGroupTestResults: (groupId: string) => Promise<void>
   deleteUnavailableProfiles: (groupId: string) => Promise<number>
   addSource: (input: AddSourceInput) => Promise<string | null>

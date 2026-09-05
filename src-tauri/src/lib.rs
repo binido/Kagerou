@@ -2,6 +2,7 @@ pub mod app_state;
 pub mod clash_api;
 pub mod commands;
 pub mod privilege;
+pub mod probe;
 pub mod singbox;
 pub mod storage;
 pub mod subscription;
@@ -61,6 +62,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_app_state,
             commands::check_for_update,
+            commands::start_group_test,
+            commands::cancel_group_test,
             commands::connect,
             commands::disconnect,
             commands::select_profile,
