@@ -130,9 +130,6 @@ fn to_dashboard_event(
 
 #[tauri::command]
 pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    // A core may already be up to serve delay tests. Take it down first: the
-    // connection needs its own config, possibly with TUN.
-    stop_test_core(&state);
     // TUN and the log level are stored preferences, not per-call arguments:
     // they are toggled in settings, and take effect on the next connection.
     let stored = settings::get(&state.db).map_err(to_err)?;
@@ -399,18 +396,16 @@ fn latency_tone(delay_ms: u32) -> Tone {
 const TEST_CORE_IDLE: Duration = Duration::from_secs(30);
 const TEST_CORE_READY_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// A client to run delay tests against. Prefers the connection the user
-/// actually asked for; otherwise brings up a core that exists only to answer
-/// tests — no TUN, no system routing, nothing announced as "connected" —
-/// because a test that silently reports "not connected" for every profile
-/// reads as a broken app rather than a precondition.
+/// Brings up the core that exists only to answer tests, and hands back a
+/// client for it. Never the connection's own core, even when one is running:
+/// aiming a test at a particular server means pointing the selector at it,
+/// and doing that to a live tunnel would silently reroute the user's traffic
+/// through whatever is being tested. Its own ports, its own config, no TUN,
+/// nothing announced to the UI as connected.
 async fn clash_for_test(
     app: &AppHandle,
     state: &State<'_, AppState>,
 ) -> Result<ClashApiClient, String> {
-    if let Some(clash) = state.clash_client() {
-        return Ok(clash);
-    }
     *state.last_test_at.lock().unwrap() = Some(Instant::now());
 
     // One starter at a time: a group test fires dozens of these at once.
@@ -433,8 +428,8 @@ async fn clash_for_test(
         profiles: &all_profiles,
         active_profile_id: &active_profile_id,
         routing_rules: &routing_rules,
-        mixed_listen_port: state.paths.mixed_listen_port,
-        clash_api_listen: &state.paths.clash_api_listen,
+        mixed_listen_port: state.paths.test_mixed_listen_port,
+        clash_api_listen: &state.paths.test_clash_api_listen,
         log_level: &stored.log_level,
         // Never for a test core: creating a TUN interface asks for a
         // password and rewrites the machine's routing, which is not
@@ -443,16 +438,16 @@ async fn clash_for_test(
     })
     .map_err(to_err)?;
     let config_bytes = serde_json::to_vec_pretty(&config).map_err(to_err)?;
-    std::fs::write(&state.paths.config_path, config_bytes).map_err(to_err)?;
+    std::fs::write(&state.paths.test_config_path, config_bytes).map_err(to_err)?;
 
     state
-        .supervisor
+        .test_supervisor
         .lock()
         .unwrap()
-        .start(&state.paths.config_path, false)
+        .start(&state.paths.test_config_path, false)
         .map_err(to_err)?;
 
-    let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
+    let clash = ClashApiClient::new(format!("http://{}", state.paths.test_clash_api_listen));
     // The API is not up the instant the process is: poll until it answers,
     // or the first delay request fails for a reason that has nothing to do
     // with the profile being tested.
@@ -466,7 +461,7 @@ async fn clash_for_test(
     })
     .await;
     if ready.is_err() {
-        let _ = state.supervisor.lock().unwrap().stop();
+        let _ = state.test_supervisor.lock().unwrap().stop();
         return Err("the proxy core did not come up for testing".to_string());
     }
 
@@ -504,13 +499,13 @@ fn spawn_test_core_reaper(app: AppHandle) {
     });
 }
 
-/// Takes down a core that was only up to serve tests. A no-op when there
-/// isn't one, so `connect()` can call it unconditionally.
+/// Takes down the core that was up to serve tests. A no-op when there isn't
+/// one.
 pub fn stop_test_core(state: &AppState) {
     if state.test_clash.lock().unwrap().take().is_none() {
         return;
     }
-    let _ = state.supervisor.lock().unwrap().stop();
+    let _ = state.test_supervisor.lock().unwrap().stop();
     *state.last_test_at.lock().unwrap() = None;
 }
 
