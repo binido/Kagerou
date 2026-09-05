@@ -68,6 +68,14 @@ The backend job runs on Linux only. The per-OS privilege logic takes the target 
 pnpm tauri build
 ```
 
+## Cutting a release
+
+1. Bump `version` in `src-tauri/tauri.conf.json`. It is the only place the version lives — Vite injects it into the frontend, and the release workflow refuses a tag that disagrees with it.
+2. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
+3. The workflow builds macOS (Apple silicon and Intel), Linux and Windows bundles and attaches them to a **draft** release. Check the artifacts, write the notes, then publish it yourself.
+
+Builds are unsigned, so macOS and Windows will warn on first launch. A tag with a pre-release suffix (`v0.2.0-alpha.1`) is marked as a pre-release; GitHub's "latest release" endpoint skips those and drafts alike, which is also what the in-app update check reads.
+
 ## Submitting changes
 
 Keep commits small and logical — one coherent change per commit, not a single commit bundling unrelated work. Open a PR against `main` with a description of what changed and why.
