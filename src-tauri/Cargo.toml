@@ -1,5 +1,7 @@
 [package]
 name = "kagerou"
+# Inert: tauri.conf.json carries the app version and takes precedence over
+# this field for everything user-facing. Bump it there, not here.
 version = "0.0.0"
 description = "A cleaner, cross-platform sing-box VPN client for desktop"
 authors = ["Binido"]

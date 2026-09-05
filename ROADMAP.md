@@ -121,7 +121,7 @@ row.
 | Code signing and notarisation | 📋 | Unsigned builds mean a Gatekeeper warning on macOS and a SmartScreen warning on Windows. Needs certificates and secrets before it's worth automating. |
 | In-app updates | 📋 | `tauri-plugin-updater` against the release feed. Depends on signed releases. |
 | End-to-end connection verification | 📋 | `connect()` has never been run against a live server — only the generated config has been validated with `sing-box check`. Until someone does this, TUN mode and system proxy are unproven. |
-| Version number | 📋 | Still `0.0.0` in `tauri.conf.json` and `app-meta.ts`. Bump when the first release is cut. |
+| Version number | 🟡 | `tauri.conf.json` is the single source of truth — Vite injects it into the frontend, and both package.json files no longer carry one. Still `0.0.0`: bump it there when the first release is cut. |
 
 ---
 
