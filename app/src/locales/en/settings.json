@@ -34,7 +34,7 @@
     "tunMode": "Applies the next time you connect.",
     "systemProxyUnavailable": "Not implemented yet — Kagerou does not change your system proxy.",
     "logLevel": "Applies the next time you connect.",
-    "testUrl": "The endpoint requested by the TCP and URL delay tests."
+    "testUrl": "Fetched through the VPN to measure its delay. Something small that answers from anywhere works best."
   },
   "options": {
     "interval5": "5 minutes",
