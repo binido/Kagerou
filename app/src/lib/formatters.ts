@@ -1,7 +1,7 @@
 export const formatSourceTimestamp = (value: string) => value
 
 /** Bytes/sec (what the Clash API reports) → Mbit/s with one decimal,
- * matching the telemetry panel's fixed "Mbps" unit label. */
+ * matching the dashboard readout's fixed "Mbps" unit label. */
 export const formatSpeedMbps = (bytesPerSecond: number): string => ((bytesPerSecond * 8) / 1_000_000).toFixed(1)
 
 /** Splits a byte count into a value + unit pair so the UI can style the

@@ -325,16 +325,15 @@ describe('backend event handling', () => {
     expect(useKagerouStore.getState().connected).toBe(false)
   })
 
-  it('a traffic sample event appends a telemetry point, capped at 60', async () => {
+  it('a traffic sample event replaces the latest speed sample', async () => {
     let handler: (event: TrafficEvent) => void = () => {}
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
 
     await useKagerouStore.getState().hydrate()
-    for (let i = 0; i < 65; i++) handler({ kind: 'sample', up: i, down: i * 2, uploadTotal: null, downloadTotal: null })
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null })
+    handler({ kind: 'sample', up: 64, down: 128, uploadTotal: null, downloadTotal: null })
 
-    const telemetry = useKagerouStore.getState().telemetry
-    expect(telemetry.length).toBe(60)
-    expect(telemetry.at(-1)).toEqual({ label: 'now', download: 128, upload: 64 })
+    expect(useKagerouStore.getState().trafficSample).toEqual({ download: 128, upload: 64 })
   })
 
   it('a traffic sample event replaces sessionTraffic with the backend-reported totals', async () => {
@@ -359,16 +358,16 @@ describe('backend event handling', () => {
     expect(useKagerouStore.getState().sessionTraffic).toEqual({ download: 500, upload: 100 })
   })
 
-  it('a non-sample traffic event (disconnected/reconnecting) does not touch telemetry', async () => {
+  it('a non-sample traffic event (disconnected/reconnecting) leaves the last sample alone', async () => {
     let handler: (event: TrafficEvent) => void = () => {}
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
-    useKagerouStore.setState({ telemetry: [] })
+    useKagerouStore.setState({ trafficSample: { download: 7, upload: 3 } })
 
     await useKagerouStore.getState().hydrate()
     handler({ kind: 'disconnected' })
     handler({ kind: 'reconnecting' })
 
-    expect(useKagerouStore.getState().telemetry).toEqual([])
+    expect(useKagerouStore.getState().trafficSample).toEqual({ download: 7, upload: 3 })
   })
 
   it('a log event is appended and level-detected from the message text', async () => {

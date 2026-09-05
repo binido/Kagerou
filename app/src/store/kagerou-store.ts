@@ -10,12 +10,10 @@ import type {
   LogEntry,
   LogLevel,
   Source,
-  TelemetryPoint,
 } from '@/types/kagerou'
 
 const DEFAULT_PROFILE_GROUP_ID = 'default'
 const MAX_LOG_ENTRIES = 500
-const MAX_TELEMETRY_POINTS = 60
 
 let logSequence = 0
 let backendEventsSubscribed = false
@@ -63,16 +61,15 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
 
     void kagerouApi.onTraffic((event) => {
       if (event.kind !== 'sample') return
-      set((state) => {
-        const point: TelemetryPoint = { label: 'now', download: event.down, upload: event.up }
+      set((state) => ({
+        trafficSample: { download: event.down, upload: event.up },
         // A null total means the backend's `/connections` fetch failed for
         // this sample — keep the previous value rather than blanking it.
-        const sessionTraffic =
+        sessionTraffic:
           event.downloadTotal !== null && event.uploadTotal !== null
             ? { download: event.downloadTotal, upload: event.uploadTotal }
-            : state.sessionTraffic
-        return { telemetry: [...state.telemetry.slice(-(MAX_TELEMETRY_POINTS - 1)), point], sessionTraffic }
-      })
+            : state.sessionTraffic,
+      }))
     })
 
     void kagerouApi.onLog((line) => {
@@ -93,7 +90,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     routingPresets: [],
     routingRules: [],
     logs: [],
-    telemetry: [],
+    trafficSample: { download: 0, upload: 0 },
     sessionTraffic: { download: 0, upload: 0 },
     settings: {
       theme: getInitialThemeId(),

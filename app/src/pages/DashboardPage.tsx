@@ -14,7 +14,7 @@ export function DashboardPage() {
   const profiles = useKagerouStore((state) => state.profiles)
   const profileGroups = useKagerouStore((state) => state.profileGroups)
   const activeProfileId = useKagerouStore((state) => state.activeProfileId)
-  const telemetry = useKagerouStore((state) => state.telemetry)
+  const trafficSample = useKagerouStore((state) => state.trafficSample)
   const sessionTraffic = useKagerouStore((state) => state.sessionTraffic)
   const toggleConnection = useKagerouStore((state) => state.toggleConnection)
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0]
@@ -27,23 +27,22 @@ export function DashboardPage() {
     : t('connection.fallbackProfile')
   const ping = activeProfile ? getReachabilityAwarePing(activeProfile) : { value: 'Not tested', tone: 'muted' as const }
   const location = regionToCountry(activeProfile?.region ?? '', i18n.resolvedLanguage ?? 'en') ?? t('connection.fallbackLocation')
-  const latestTelemetry = telemetry.at(-1)
 
   return (
     <PageContainer className="flex h-dvh min-h-0 flex-col overflow-hidden" contentClassName="flex h-full min-h-0 flex-col">
-        <PageHeader eyebrow={t('page.eyebrow')} title={t('page.title')} />
-        <section className="mt-6 flex min-h-0 flex-1" aria-labelledby="connection-stage-title">
-          <ConnectionStage
-            connected={connected}
-            latestDownload={latestTelemetry?.download ?? 0}
-            latestUpload={latestTelemetry?.upload ?? 0}
-            location={location}
-            onToggleConnection={toggleConnection}
-            ping={ping}
-            profileName={profileName}
-            sessionTraffic={sessionTraffic}
-          />
-        </section>
+      <PageHeader eyebrow={t('page.eyebrow')} title={t('page.title')} />
+      <section aria-labelledby="connection-stage-title" className="mt-6 flex min-h-0 flex-1">
+        <ConnectionStage
+          connected={connected}
+          latestDownload={trafficSample.download}
+          latestUpload={trafficSample.upload}
+          location={location}
+          onToggleConnection={toggleConnection}
+          ping={ping}
+          profileName={profileName}
+          sessionTraffic={sessionTraffic}
+        />
+      </section>
     </PageContainer>
   )
 }

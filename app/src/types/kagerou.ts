@@ -103,8 +103,8 @@ export interface LogEntry {
   message: string
 }
 
-export interface TelemetryPoint {
-  label: string
+/** The most recent per-second speed sample from sing-box, in bytes/s. */
+export interface TrafficSample {
   download: number
   upload: number
 }
@@ -139,7 +139,7 @@ export interface KagerouStore {
   routingPresets: RoutingPreset[]
   routingRules: RoutingRule[]
   logs: LogEntry[]
-  telemetry: TelemetryPoint[]
+  trafficSample: TrafficSample
   sessionTraffic: SessionTraffic
   settings: SettingsState
   hydrate: () => Promise<void>
