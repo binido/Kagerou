@@ -131,6 +131,25 @@ mod tests {
     }
 
     #[test]
+    fn update_rejects_an_unknown_log_level() {
+        let db = Db::open_in_memory().unwrap();
+        let err = update(
+            &db,
+            &SettingsPatch {
+                log_level: Some("verbose"),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, StorageError::Sqlite(_)));
+        assert_eq!(
+            get(&db).unwrap().log_level,
+            "info",
+            "the rejected update must not partially apply"
+        );
+    }
+
+    #[test]
     fn log_level_round_trip() {
         let db = Db::open_in_memory().unwrap();
         update(
