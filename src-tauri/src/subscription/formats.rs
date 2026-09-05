@@ -146,6 +146,7 @@ fn convert_singbox_outbound(
                 sni,
                 ws_path,
                 ws_host,
+                grpc_service_name: json_str(&transport, "service_name"),
                 reality_public_key: json_str(&reality, "public_key"),
                 reality_short_id: json_str(&reality, "short_id"),
                 fingerprint: tls.get("utls").and_then(|u| json_str(u, "fingerprint")),
@@ -288,6 +289,9 @@ fn convert_clash_proxy(
                 sni,
                 ws_path,
                 ws_host,
+                grpc_service_name: entry
+                    .get("grpc-opts")
+                    .and_then(|o| yaml_str(o, "grpc-service-name")),
                 reality_public_key: yaml_str(&reality_opts, "public-key"),
                 reality_short_id: yaml_str(&reality_opts, "short-id"),
                 fingerprint: yaml_str(entry, "client-fingerprint"),

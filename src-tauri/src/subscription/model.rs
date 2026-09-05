@@ -27,6 +27,9 @@ pub struct VlessOutbound {
     pub sni: Option<String>,
     pub ws_path: Option<String>,
     pub ws_host: Option<String>,
+    /// gRPC `serviceName`. sing-box needs it to address the right service on
+    /// the server; a link that carries one and loses it connects to nothing.
+    pub grpc_service_name: Option<String>,
     pub reality_public_key: Option<String>,
     pub reality_short_id: Option<String>,
     /// uTLS fingerprint (`fp=`). sing-box refuses to start a REALITY client
