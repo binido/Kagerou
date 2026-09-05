@@ -1,78 +1,78 @@
 {
-    "brand": {
-        "name": "Kagerou"
-    },
-    "sidebar": {
-        "primaryNavigation": "Основная навигация",
-        "dashboard": "Панель",
-        "groups": "Группы",
-        "sources": "Источники",
-        "routingRules": "Маршрутизация",
-        "logs": "Журнал",
-        "settings": "Настройки",
-        "collapse": "Свернуть панель",
-        "expand": "Развернуть панель",
-        "updateAvailable": "Доступна новая версия",
-        "viewReleases": "Открыть релизы Kagerou"
-    },
-    "actions": {
-        "cancel": "Отмена",
-        "save": "Сохранить",
-        "delete": "Удалить",
-        "edit": "Изменить",
-        "refresh": "Обновить",
-        "refreshing": "Обновление",
-        "removeSource": "Удалить источник",
-        "more": "Дополнительные действия: {{name}}",
-        "use": "Использовать",
-        "selected": "Выбрано",
-        "add": "Добавить",
-        "close": "Закрыть"
-    },
-    "status": {
-        "connected": "Подключено",
-        "connectionActive": "Соединение активно",
-        "connectedState": "Подключено",
-        "disconnectedState": "Отключено",
-        "on": "Вкл.",
-        "off": "Выкл.",
-        "upToDate": "Актуально",
-        "ready": "Готово",
-        "refreshDue": "Требуется обновление",
-        "updating": "Обновление…",
-        "checking": "Проверка…",
-        "running": "Выполняется…",
-        "notTested": "Не проверено",
-        "unavailable": "Недоступно",
-        "timeout": "Тайм-аут",
-        "noResponse": "Нет ответа",
-        "ok": "200 OK"
-    },
-    "counts": {
-        "vpnOne": "{{count}} VPN",
-        "vpnMany": "{{count}} VPN",
-        "sourceOne": "{{count}} источник",
-        "sourceMany": "{{count}} источников",
-        "entryOne": "{{count}} запись",
-        "entryMany": "{{count}} записей",
-        "matchingEntryOne": "{{count}} совпадение",
-        "matchingEntryMany": "{{count}} совпадений"
-    },
-    "source": {
-        "subscriptionUrl": "URL подписки",
-        "singleKey": "Одиночный ключ",
-        "sourceUrl": "URL источника",
-        "vpnKey": "Ключ VPN",
-        "remoteUrl": "Удалённый URL",
-        "localKey": "Локальный ключ"
-    },
-    "origin": {
-        "local": "Локальный",
-        "imported": "Импортирован",
-        "localVpn": "Локальный VPN",
-        "managedBySubscription": "Управляется подпиской"
-    },
-    "validation": {
-        "positiveInteger": "Введите целое число больше 0."
-    }
+  "brand": {
+    "name": "Kagerou"
+  },
+  "sidebar": {
+    "primaryNavigation": "Основная навигация",
+    "dashboard": "Панель",
+    "groups": "Группы",
+    "sources": "Источники",
+    "routingRules": "Правила маршрутизации",
+    "logs": "Журнал",
+    "settings": "Настройки",
+    "collapse": "Свернуть боковую панель",
+    "expand": "Развернуть боковую панель",
+    "updateAvailable": "Доступна новая версия",
+    "viewReleases": "Открыть релизы Kagerou"
+  },
+  "actions": {
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "refresh": "Обновить",
+    "refreshing": "Обновление",
+    "removeSource": "Удалить источник",
+    "more": "Дополнительные действия: {{name}}",
+    "use": "Использовать",
+    "selected": "Выбрано",
+    "add": "Добавить",
+    "close": "Закрыть"
+  },
+  "status": {
+    "connected": "Подключено",
+    "connectionActive": "Соединение активно",
+    "connectedState": "Подключено",
+    "disconnectedState": "Отключено",
+    "on": "Вкл.",
+    "off": "Выкл.",
+    "upToDate": "Актуально",
+    "ready": "Готово",
+    "refreshDue": "Требуется обновление",
+    "updating": "Обновление…",
+    "checking": "Проверка…",
+    "running": "Выполняется…",
+    "notTested": "Не проверено",
+    "unavailable": "Недоступно",
+    "timeout": "Тайм-аут",
+    "noResponse": "Нет ответа",
+    "ok": "200 OK"
+  },
+  "counts": {
+    "vpnOne": "{{count}} VPN",
+    "vpnMany": "{{count}} VPN",
+    "sourceOne": "{{count}} источник",
+    "sourceMany": "{{count}} источников",
+    "entryOne": "{{count}} запись",
+    "entryMany": "{{count}} записей",
+    "matchingEntryOne": "{{count}} совпадение",
+    "matchingEntryMany": "{{count}} совпадений"
+  },
+  "source": {
+    "subscriptionUrl": "URL подписки",
+    "singleKey": "Одиночный ключ",
+    "sourceUrl": "URL источника",
+    "vpnKey": "Ключ VPN",
+    "remoteUrl": "Удалённый URL",
+    "localKey": "Локальный ключ"
+  },
+  "origin": {
+    "local": "Локальный",
+    "imported": "Импортирован",
+    "localVpn": "Локальный VPN",
+    "managedBySubscription": "Управляется подпиской"
+  },
+  "validation": {
+    "positiveInteger": "Введите целое число больше 0."
+  }
 }
