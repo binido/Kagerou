@@ -13,6 +13,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
+import { RemoveUnavailableDialog, type RemoveUnavailableTarget } from '@/components/profiles/RemoveUnavailableDialog'
 import { localizeResultValue } from '@/lib/result-copy'
 import { sortProfiles } from '@/lib/profile-sorting'
 import { useKagerouStore } from '@/store/kagerou-store'
@@ -33,6 +34,8 @@ export function GroupsPage() {
   const moveProfileToGroup = useKagerouStore((state) => state.moveProfileToGroup)
   const groupSort = useKagerouStore((state) => state.settings.groupSort)
   const runProfileTest = useKagerouStore((state) => state.runProfileTest)
+  const clearGroupTestResults = useKagerouStore((state) => state.clearGroupTestResults)
+  const deleteUnavailableProfiles = useKagerouStore((state) => state.deleteUnavailableProfiles)
 
   const [addOpen, setAddOpen] = useState(false)
   const [name, setName] = useState('')
@@ -44,6 +47,7 @@ export function GroupsPage() {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
   const [groupDialogTarget, setGroupDialogTarget] = useState<ProfileGroup | null>(null)
   const [runningTests, setRunningTests] = useState<Record<string, boolean>>({})
+  const [removeUnavailableTarget, setRemoveUnavailableTarget] = useState<RemoveUnavailableTarget | null>(null)
   const [feedback, setFeedback] = useState('')
   const [feedbackTone, setFeedbackTone] = useState<'muted' | 'good' | 'bad'>('muted')
 
@@ -79,6 +83,43 @@ export function GroupsPage() {
     const methodLabel = method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
     void Promise.all(profiles.map((profile) => runTest(profile.id, method)))
     setMessage(t('feedback.testRunningAll', { method: methodLabel }))
+  }
+
+  const runGroupTest = (group: ProfileGroup, method: TestMethod) => {
+    const methodLabel = method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
+    void Promise.all(group.profileIds.map((id) => runTest(id, method)))
+    setMessage(t('feedback.testRunningGroup', { method: methodLabel, group: groupLabel(group) }))
+  }
+
+  const groupTestRunning = (group: ProfileGroup) =>
+    group.profileIds.some((id) => runningTests[`${id}:tcp`] || runningTests[`${id}:url`])
+
+  // Count excludes the active profile — it will be kept — and the dialog
+  // never opens when nothing failed. The backend re-evaluates the same
+  // predicate in its transaction, so a stale count here is only cosmetic.
+  const openRemoveUnavailable = (group: ProfileGroup, method: TestMethod) => {
+    const failing = group.profileIds.filter((id) => profilesById.get(id)?.[method].tone === 'bad')
+    if (failing.length === 0) {
+      setMessage(t('feedback.nothingUnavailable', { group: groupLabel(group) }))
+      return
+    }
+    const activeKept = failing.some((id) => profilesById.get(id)?.selected)
+    setRemoveUnavailableTarget({
+      groupId: group.id,
+      groupLabel: groupLabel(group),
+      method,
+      count: failing.length - (activeKept ? 1 : 0),
+      activeKept,
+    })
+  }
+
+  const confirmRemoveUnavailable = async () => {
+    const target = removeUnavailableTarget
+    if (!target) return
+    const deleted = await deleteUnavailableProfiles(target.groupId, target.method)
+    setRemoveUnavailableTarget(null)
+    const message = t('feedback.deletedUnavailable', { count: deleted, group: target.groupLabel })
+    setMessage(target.activeKept ? `${message} ${t('feedback.activeKept')}` : message, 'good')
   }
 
   const submitAdd = async (event: FormEvent<HTMLFormElement>) => {
@@ -168,6 +209,11 @@ export function GroupsPage() {
             key={group.id}
             movableGroups={movableGroups}
             onDelete={setDeleteTarget}
+            onClearResults={() => {
+              void clearGroupTestResults(group.id)
+              setMessage(t('feedback.resultsCleared', { group: groupLabel(group) }))
+            }}
+            onDeleteUnavailable={(method) => openRemoveUnavailable(group, method)}
             onMoveToGroup={(profileId, targetGroupId) => {
               const target = groups.find((candidate) => candidate.id === targetGroupId)
               void moveProfileToGroup(profileId, targetGroupId).then((moved) => {
@@ -178,9 +224,11 @@ export function GroupsPage() {
             onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}
             onSelect={(id) => { selectProfile(id); const selected = profilesById.get(id); if (selected) setMessage(t('feedback.selected', { name: selected.name }), 'good') }}
             onTest={runTest}
+            onTestGroup={(method) => runGroupTest(group, method)}
             onToggle={() => setProfileGroupOpen(group.id, !group.open)}
             profiles={sortedGroupProfiles(group)}
             runningTests={runningTests}
+            testRunning={groupTestRunning(group)}
           />
         ))}
       </div>
@@ -188,6 +236,8 @@ export function GroupsPage() {
       <p className="sr-only">{t('table.available', { count: profiles.length })}</p>
 
       <ProfileGroupDialog key={`${groupDialogTarget?.id ?? 'new'}-${groupDialogOpen}`} group={groupDialogTarget} onOpenChange={(open) => { setGroupDialogOpen(open); if (!open) setGroupDialogTarget(null) }} onSubmit={handleGroupSubmit} open={groupDialogOpen} />
+
+      <RemoveUnavailableDialog onConfirm={() => { void confirmRemoveUnavailable() }} onOpenChange={(open) => { if (!open) setRemoveUnavailableTarget(null) }} target={removeUnavailableTarget} />
 
       <Dialog onOpenChange={(open) => { setAddOpen(open); if (!open) setAddError('') }} open={addOpen}>
         <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[480px]">

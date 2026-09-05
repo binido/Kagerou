@@ -14,6 +14,7 @@ interface ProfileGroupCardProps {
   profiles: Profile[]
   movableGroups: ProfileGroup[]
   runningTests: Record<string, boolean>
+  testRunning: boolean
   onToggle: () => void
   onRenameGroup: (group: ProfileGroup) => void
   onSelect: (id: string) => void
@@ -21,9 +22,12 @@ interface ProfileGroupCardProps {
   onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
   onTest: (id: string, method: TestMethod) => void
+  onTestGroup: (method: TestMethod) => void
+  onClearResults: () => void
+  onDeleteUnavailable: (method: TestMethod) => void
 }
 
-export function ProfileGroupCard({ group, profiles, movableGroups, runningTests, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileGroupCardProps) {
+export function ProfileGroupCard({ group, profiles, movableGroups, runningTests, testRunning, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest, onTestGroup, onClearResults, onDeleteUnavailable }: ProfileGroupCardProps) {
   const { t } = useTranslation('profiles')
   const { t: tc } = useTranslation('common')
   const isSubscription = group.kind === 'subscription'
@@ -49,7 +53,7 @@ export function ProfileGroupCard({ group, profiles, movableGroups, runningTests,
           ) : (
             <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy"><Folder aria-hidden="true" className="size-3.5" />{t('group.customGroup')}</span>
           )}
-          <ProfileGroupActionsMenu group={group} onRename={() => onRenameGroup(group)} />
+          <ProfileGroupActionsMenu group={group} onClearResults={onClearResults} onDeleteUnavailable={onDeleteUnavailable} onRename={() => onRenameGroup(group)} onTestGroup={onTestGroup} testRunning={testRunning} />
         </div>
       </div>
       {group.open ? (

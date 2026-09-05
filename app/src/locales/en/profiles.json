@@ -35,7 +35,12 @@
     "moved": "VPN moved to {{group}}.",
     "moveSubscription": "Subscription VPNs cannot be moved to another group.",
     "selected": "{{name}} is ready for the next connection.",
-    "deleted": "{{name}} deleted from local VPNs."
+    "deleted": "{{name}} deleted from local VPNs.",
+    "testRunningGroup": "{{method}} test running for {{group}}…",
+    "resultsCleared": "Test results cleared for {{group}}.",
+    "nothingUnavailable": "No unavailable VPNs in {{group}}.",
+    "deletedUnavailable": "{{count}} unavailable VPNs deleted from {{group}}.",
+    "activeKept": "The selected VPN was kept."
   },
   "group": {
     "defaultName": "Default",
@@ -72,7 +77,10 @@
     "test": "Test",
     "managed": "Managed by subscription",
     "defaultRenameDisabled": "Default group cannot be renamed",
-    "locked": "Locked to this subscription"
+    "locked": "Locked to this subscription",
+    "testGroup": "Test group",
+    "clearResults": "Clear results",
+    "deleteUnavailable": "Delete unavailable"
   },
   "dialogs": {
     "group": {
@@ -117,6 +125,14 @@
       "warningSuffix": ". Subscription VPNs remain managed by their source.",
       "cancel": "Cancel",
       "submit": "Delete VPN"
+    },
+    "removeUnavailable": {
+      "eyebrow": "Delete unavailable",
+      "title": "Delete unavailable VPNs?",
+      "description": "{{count}} VPNs in {{group}} failed the {{method}} test. This cannot be undone.",
+      "activeKept": "The selected VPN will be kept.",
+      "cancel": "Cancel",
+      "submit": "Delete {{count}}"
     }
   }
 }
