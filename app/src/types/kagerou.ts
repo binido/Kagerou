@@ -28,6 +28,8 @@ export type Language = 'en' | 'ru'
 export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
 export type SubscriptionUpdateInterval = '5' | '10' | '15' | '30' | '60' | 'custom'
 export type GroupSortMode = 'ping' | 'name' | 'protocol'
+/** sing-box's config log levels — deliberately not the display `LogLevel` above. */
+export type SingBoxLogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'panic'
 
 export interface TestResult {
   value: string
@@ -132,6 +134,8 @@ export interface SettingsState {
   subscriptionUpdateInterval: SubscriptionUpdateInterval
   customSubscriptionUpdateMinutes: number
   groupSort: GroupSortMode
+  logLevel: SingBoxLogLevel
+  testUrl: string
 }
 
 export interface KagerouStore {

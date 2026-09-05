@@ -6,7 +6,7 @@ use super::{Db, StorageError};
 pub fn get(db: &Db) -> Result<Settings, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT theme, language, startup, tun_mode, system_proxy, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort
+        "SELECT theme, language, startup, tun_mode, system_proxy, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level, test_url
          FROM settings WHERE id = 1",
         [],
         |row| {
@@ -21,6 +21,8 @@ pub fn get(db: &Db) -> Result<Settings, StorageError> {
                 subscription_update_interval: row.get("subscription_update_interval")?,
                 custom_subscription_update_minutes: row.get("custom_subscription_update_minutes")?,
                 group_sort: row.get("group_sort")?,
+                log_level: row.get("log_level")?,
+                test_url: row.get("test_url")?,
             })
         },
     )
@@ -39,9 +41,18 @@ pub struct SettingsPatch<'a> {
     pub subscription_update_interval: Option<&'a str>,
     pub custom_subscription_update_minutes: Option<i64>,
     pub group_sort: Option<&'a str>,
+    pub log_level: Option<&'a str>,
+    pub test_url: Option<&'a str>,
 }
 
 pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
+    if let Some(url) = patch.test_url {
+        if url.trim().is_empty() {
+            return Err(StorageError::InvalidInput(
+                "test url cannot be empty".into(),
+            ));
+        }
+    }
     let conn = db.lock();
     conn.execute(
         "UPDATE settings SET
@@ -54,7 +65,9 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             auto_update_subscriptions = COALESCE(?7, auto_update_subscriptions),
             subscription_update_interval = COALESCE(?8, subscription_update_interval),
             custom_subscription_update_minutes = COALESCE(?9, custom_subscription_update_minutes),
-            group_sort = COALESCE(?10, group_sort)
+            group_sort = COALESCE(?10, group_sort),
+            log_level = COALESCE(?11, log_level),
+            test_url = COALESCE(?12, test_url)
          WHERE id = 1",
         params![
             patch.theme,
@@ -67,6 +80,8 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             patch.subscription_update_interval,
             patch.custom_subscription_update_minutes,
             patch.group_sort,
+            patch.log_level,
+            patch.test_url.map(str::trim),
         ],
     )?;
     Ok(())
@@ -110,6 +125,81 @@ mod tests {
         assert!(
             !settings.tun_mode && !settings.system_proxy,
             "connection modes default to off on a fresh install"
+        );
+        assert_eq!(settings.log_level, "info");
+        assert_eq!(settings.test_url, "http://www.gstatic.com/generate_204");
+    }
+
+    #[test]
+    fn update_rejects_an_unknown_log_level() {
+        let db = Db::open_in_memory().unwrap();
+        let err = update(
+            &db,
+            &SettingsPatch {
+                log_level: Some("verbose"),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, StorageError::Sqlite(_)));
+        assert_eq!(
+            get(&db).unwrap().log_level,
+            "info",
+            "the rejected update must not partially apply"
+        );
+    }
+
+    #[test]
+    fn log_level_round_trip() {
+        let db = Db::open_in_memory().unwrap();
+        update(
+            &db,
+            &SettingsPatch {
+                log_level: Some("trace"),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(get(&db).unwrap().log_level, "trace");
+
+        update(
+            &db,
+            &SettingsPatch {
+                log_level: Some("error"),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(get(&db).unwrap().log_level, "error");
+    }
+
+    #[test]
+    fn test_url_round_trip() {
+        let db = Db::open_in_memory().unwrap();
+        update(
+            &db,
+            &SettingsPatch {
+                test_url: Some("http://example.com/health"),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(get(&db).unwrap().test_url, "http://example.com/health");
+
+        // A blank value is rejected and the stored URL survives.
+        let err = update(
+            &db,
+            &SettingsPatch {
+                test_url: Some("   "),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, StorageError::InvalidInput(_)));
+        assert_eq!(
+            get(&db).unwrap().test_url,
+            "http://example.com/health",
+            "the rejected update must not partially apply"
         );
     }
 

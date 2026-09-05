@@ -7,10 +7,11 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { SettingNumberRow } from '@/components/settings/SettingNumberRow'
 import { SettingSelectRow } from '@/components/settings/SettingSelectRow'
 import { SettingSwitchRow } from '@/components/settings/SettingSwitchRow'
+import { SettingTextRow } from '@/components/settings/SettingTextRow'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { ThemePicker } from '@/components/settings/ThemePicker'
 import { useKagerouStore } from '@/store/kagerou-store'
-import type { GroupSortMode, SubscriptionUpdateInterval, TunInterface } from '@/types/kagerou'
+import type { GroupSortMode, SingBoxLogLevel, SubscriptionUpdateInterval, TunInterface } from '@/types/kagerou'
 
 export function SettingsPage() {
   const { t } = useTranslation('settings')
@@ -30,6 +31,7 @@ export function SettingsPage() {
     { value: 'name', label: t('options.sortName') },
     { value: 'protocol', label: t('options.sortProtocol') },
   ] as const
+  const logLevelOptions = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic'] as const
 
   return (
     <PageContainer className="flex flex-col" contentClassName="flex flex-1 flex-col">
@@ -56,6 +58,10 @@ export function SettingsPage() {
           </SettingsSection>
           <SettingsSection title={t('sections.groups')}><SettingSelectRow id="group-sort" label={t('fields.sortVpns')} onChange={(groupSort) => updateSettings({ groupSort: groupSort as GroupSortMode })} options={groupSortOptions} value={settings.groupSort} /></SettingsSection>
           <SettingsSection title={t('sections.network')}><SettingSelectRow id="tun-interface" label={t('fields.tunInterface')} onChange={(tunInterface) => updateSettings({ tunInterface: tunInterface as TunInterface })} options={[{ value: 'utun / tun0', label: t('options.tunBoth') }, { value: 'utun', label: t('options.utun') }, { value: 'tun0', label: t('options.tun0') }]} value={settings.tunInterface} /></SettingsSection>
+          <SettingsSection title={t('sections.diagnostics')}>
+            <SettingSelectRow id="log-level" label={t('fields.logLevel')} onChange={(logLevel) => updateSettings({ logLevel: logLevel as SingBoxLogLevel })} options={[...logLevelOptions]} value={settings.logLevel} />
+            <SettingTextRow description={t('descriptions.testUrl')} id="test-url" label={t('fields.testUrl')} onChange={(testUrl) => updateSettings({ testUrl })} value={settings.testUrl} />
+          </SettingsSection>
           <div className="mt-auto">
             <SettingsFooter />
           </div>

@@ -59,6 +59,8 @@ const emptySnapshot: AppSnapshot = {
     subscriptionUpdateInterval: '30',
     customSubscriptionUpdateMinutes: 60,
     groupSort: 'ping',
+    logLevel: 'info',
+    testUrl: 'http://www.gstatic.com/generate_204',
   },
 }
 

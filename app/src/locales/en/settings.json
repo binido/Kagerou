@@ -10,7 +10,8 @@
     "startup": "Startup",
     "subscriptions": "Subscriptions",
     "groups": "Groups",
-    "network": "Network"
+    "network": "Network",
+    "diagnostics": "Diagnostics"
   },
   "fields": {
     "theme": "Theme",
@@ -22,14 +23,18 @@
     "updateInterval": "Update interval",
     "customInterval": "Custom interval (minutes)",
     "sortVpns": "Sort VPNs by",
-    "tunInterface": "TUN interface"
+    "tunInterface": "TUN interface",
+    "logLevel": "Log level",
+    "testUrl": "Connection-test URL"
   },
   "descriptions": {
     "autoUpdateSubscriptions": "Keep URL subscription groups fresh automatically.",
     "customInterval": "Choose how often Kagerou checks remote subscriptions.",
     "customIntervalA11y": "Minutes between automatic subscription updates.",
     "tunMode": "Applies the next time you connect.",
-    "systemProxyUnavailable": "Not implemented yet — Kagerou does not change your system proxy."
+    "systemProxyUnavailable": "Not implemented yet — Kagerou does not change your system proxy.",
+    "logLevel": "Applies the next time you connect.",
+    "testUrl": "The endpoint requested by the TCP and URL delay tests."
   },
   "options": {
     "interval5": "5 minutes",
@@ -61,7 +66,8 @@
     }
   },
   "validation": {
-    "positiveInteger": "Enter a whole number greater than 0."
+    "positiveInteger": "Enter a whole number greater than 0.",
+    "nonEmpty": "The value cannot be empty."
   },
   "footer": {
     "repository": "Project repository",

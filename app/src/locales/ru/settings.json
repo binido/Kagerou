@@ -10,7 +10,8 @@
     "startup": "Запуск",
     "subscriptions": "Подписки",
     "groups": "Группы",
-    "network": "Сеть"
+    "network": "Сеть",
+    "diagnostics": "Диагностика"
   },
   "fields": {
     "theme": "Тема",
@@ -22,14 +23,18 @@
     "updateInterval": "Интервал обновления",
     "customInterval": "Свой интервал (минуты)",
     "sortVpns": "Сортировать VPN по",
-    "tunInterface": "Интерфейс TUN"
+    "tunInterface": "Интерфейс TUN",
+    "logLevel": "Уровень журнала",
+    "testUrl": "URL проверки соединения"
   },
   "descriptions": {
     "autoUpdateSubscriptions": "Автоматически поддерживать группы URL-подписок актуальными.",
     "customInterval": "Выберите, как часто Kagerou проверяет удалённые подписки.",
     "customIntervalA11y": "Количество минут между автоматическими обновлениями подписок.",
     "tunMode": "Применится при следующем подключении.",
-    "systemProxyUnavailable": "Пока не реализовано — Kagerou не меняет системный прокси."
+    "systemProxyUnavailable": "Пока не реализовано — Kagerou не меняет системный прокси.",
+    "logLevel": "Применится при следующем подключении.",
+    "testUrl": "Адрес, запрашиваемый тестами задержки (TCP и URL)."
   },
   "options": {
     "interval5": "5 минут",
@@ -61,7 +66,8 @@
     }
   },
   "validation": {
-    "positiveInteger": "Введите целое число больше 0."
+    "positiveInteger": "Введите целое число больше 0.",
+    "nonEmpty": "Значение не может быть пустым."
   },
   "footer": {
     "repository": "Репозиторий проекта",
