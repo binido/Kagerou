@@ -39,6 +39,9 @@ pub struct AppState {
     /// Serialises starting that core, so a group test firing dozens of
     /// concurrent requests starts exactly one.
     pub test_core_gate: tokio::sync::Mutex<()>,
+    /// Set while a group test is running; dropping it asks the run to stop
+    /// and doubles as the "already running" guard.
+    pub test_run_cancel: Mutex<Option<watch::Sender<bool>>>,
     pub paths: RuntimePaths,
 }
 
@@ -76,6 +79,7 @@ impl AppState {
             test_clash: Mutex::new(None),
             last_test_at: Mutex::new(None),
             test_core_gate: tokio::sync::Mutex::new(()),
+            test_run_cancel: Mutex::new(None),
             paths,
         }
     }

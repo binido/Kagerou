@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
+use tokio::sync::watch;
 
 use crate::app_state::AppState;
 use crate::clash_api::model::ConnectionsResponse;
@@ -295,6 +296,123 @@ pub fn rename_profile(id: String, name: String, state: State<AppState>) -> Resul
 #[tauri::command]
 pub fn delete_profile(id: String, state: State<AppState>) -> Result<(), String> {
     profiles::delete(&state.db, &id).map_err(to_err)
+}
+
+/// One profile's result, as a group run produces them.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestProgress {
+    pub profile_id: String,
+    pub result: TestResult,
+    pub done: usize,
+    pub total: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestFinished {
+    pub done: usize,
+    pub total: usize,
+    pub cancelled: bool,
+}
+
+/// Tests every profile in `group_id`, or the whole app when it is `None`,
+/// reporting each result as it lands.
+///
+/// The run lives in the backend rather than the frontend firing one command
+/// per profile: aiming a test means pointing the test core's selector at one
+/// profile, so they cannot overlap, and a sequence of hundreds needs somewhere
+/// to report progress from and something to stop it with.
+#[tauri::command]
+pub async fn start_group_test(
+    group_id: Option<String>,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<usize, String> {
+    let profile_ids: Vec<String> = match &group_id {
+        Some(id) => groups::get(&state.db, id).map_err(to_err)?.profile_ids,
+        None => profiles::list_all(&state.db)
+            .map_err(to_err)?
+            .into_iter()
+            .map(|p| p.id)
+            .collect(),
+    };
+    if profile_ids.is_empty() {
+        return Ok(0);
+    }
+
+    let (cancel_tx, mut cancel_rx) = watch::channel(false);
+    {
+        let mut slot = state.test_run_cancel.lock().unwrap();
+        if slot.is_some() {
+            return Err("a test run is already in progress".to_string());
+        }
+        *slot = Some(cancel_tx);
+    }
+
+    let total = profile_ids.len();
+    let run_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let state = run_app.state::<AppState>();
+        let mut done = 0usize;
+        let mut cancelled = false;
+
+        for profile_id in profile_ids {
+            if *cancel_rx.borrow_and_update() {
+                cancelled = true;
+                break;
+            }
+            let result = match clash_for_test(&run_app, &state).await {
+                Ok(clash) => url_test_profile(&profile_id, &clash, &state)
+                    .await
+                    .unwrap_or(TestResult {
+                        value: "No response".to_string(),
+                        tone: Tone::Bad,
+                    }),
+                // The core itself failed to come up: report the profile as
+                // untested rather than blaming it for the run's problem.
+                Err(_) => TestResult {
+                    value: "Not tested".to_string(),
+                    tone: Tone::Muted,
+                },
+            };
+            if result.tone != Tone::Muted {
+                let _ = profiles::set_test_result(&state.db, &profile_id, &result);
+            }
+            done += 1;
+            let _ = run_app.emit(
+                "kagerou://test-progress",
+                TestProgress {
+                    profile_id,
+                    result,
+                    done,
+                    total,
+                },
+            );
+        }
+
+        *state.test_run_cancel.lock().unwrap() = None;
+        let _ = run_app.emit(
+            "kagerou://test-finished",
+            TestFinished {
+                done,
+                total,
+                cancelled,
+            },
+        );
+    });
+
+    Ok(total)
+}
+
+/// Asks a running group test to stop after the profile it is on. A no-op when
+/// nothing is running.
+#[tauri::command]
+pub fn cancel_group_test(state: State<AppState>) -> Result<(), String> {
+    if let Some(cancel) = state.test_run_cancel.lock().unwrap().as_ref() {
+        let _ = cancel.send(true);
+    }
+    Ok(())
 }
 
 #[tauri::command]

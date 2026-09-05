@@ -62,6 +62,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_app_state,
             commands::check_for_update,
+            commands::start_group_test,
+            commands::cancel_group_test,
             commands::connect,
             commands::disconnect,
             commands::select_profile,
