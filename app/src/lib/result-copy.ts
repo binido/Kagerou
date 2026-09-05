@@ -5,6 +5,7 @@ const resultTranslationKeys = {
   'Checking…': 'status.checking',
   'No response': 'status.noResponse',
   'Not connected': 'status.notConnected',
+  'n/a': 'status.notApplicable',
   'Not tested': 'status.notTested',
   'Running…': 'status.running',
   'Testing…': 'status.checking',

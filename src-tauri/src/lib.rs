@@ -2,6 +2,7 @@ pub mod app_state;
 pub mod clash_api;
 pub mod commands;
 pub mod privilege;
+pub mod probe;
 pub mod singbox;
 pub mod storage;
 pub mod subscription;

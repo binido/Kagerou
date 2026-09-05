@@ -6,6 +6,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::app_state::AppState;
 use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
+use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
     NewProfile, NewProfileGroup, NewRoutingRule, NewSource, Profile, ProfileGroup, Protocol,
@@ -380,82 +381,82 @@ pub async fn run_profile_test(
     method: String,
     state: State<'_, AppState>,
 ) -> Result<TestResult, String> {
+    let result = match method.as_str() {
+        "tcp" => ping_profile(&profile_id, &state).await?,
+        "url" => url_test_profile(&profile_id, &state).await?,
+        other => return Err(format!("unknown test method: {other}")),
+    };
+
+    let stored_as = if method == "tcp" {
+        profiles::TestMethod::Tcp
+    } else {
+        profiles::TestMethod::Url
+    };
+    // "Not connected" and "n/a" describe the attempt, not the server, so they
+    // are reported without overwriting whatever the last real test found.
+    if result.tone != Tone::Muted {
+        let _ = profiles::set_test_result(&state.db, &profile_id, stored_as, &result);
+    }
+    Ok(result)
+}
+
+fn latency_tone(delay_ms: u32) -> Tone {
+    if delay_ms < 150 {
+        Tone::Good
+    } else if delay_ms < 400 {
+        Tone::Warn
+    } else {
+        Tone::Bad
+    }
+}
+
+/// Round trip to the proxy server itself. Needs no running core, so it works
+/// while disconnected — the point of having it alongside the URL test.
+async fn ping_profile(profile_id: &str, state: &State<'_, AppState>) -> Result<TestResult, String> {
+    let profile = profiles::get(&state.db, profile_id).map_err(to_err)?;
+    let outbound = subscription::parse_uri(&profile.key).map_err(to_err)?;
+    if !outbound.answers_tcp() {
+        return Ok(TestResult {
+            value: "n/a".to_string(),
+            tone: Tone::Muted,
+        });
+    }
+
+    match probe::tcp_ping(outbound.server(), outbound.port(), Duration::from_secs(5)).await {
+        Some(delay_ms) => Ok(TestResult {
+            value: format!("{delay_ms} ms"),
+            tone: latency_tone(delay_ms),
+        }),
+        None => Ok(TestResult {
+            value: "No response".to_string(),
+            tone: Tone::Bad,
+        }),
+    }
+}
+
+/// Latency of the whole path through the proxy, which is the number that
+/// decides how the connection actually feels. Needs the core running.
+async fn url_test_profile(
+    profile_id: &str,
+    state: &State<'_, AppState>,
+) -> Result<TestResult, String> {
     let Some(clash) = state.clash_client() else {
         return Ok(TestResult {
             value: "Not connected".to_string(),
             tone: Tone::Muted,
         });
     };
-
-    // Both methods hit the same Clash delay endpoint; the branch only
-    // changes how the result is displayed, so one URL serves both.
     let test_url = settings::get(&state.db).map_err(to_err)?.test_url;
 
-    match method.as_str() {
-        "tcp" => match clash.test_delay(&profile_id, &test_url, 5000).await {
-            Ok(delay_ms) => {
-                let tone = if delay_ms < 150 {
-                    Tone::Good
-                } else if delay_ms < 400 {
-                    Tone::Warn
-                } else {
-                    Tone::Bad
-                };
-                let result = TestResult {
-                    value: format!("{delay_ms} ms"),
-                    tone,
-                };
-                let _ = profiles::set_test_result(
-                    &state.db,
-                    &profile_id,
-                    profiles::TestMethod::Tcp,
-                    &result,
-                );
-                Ok(result)
-            }
-            Err(_) => {
-                let result = TestResult {
-                    value: "No response".to_string(),
-                    tone: Tone::Bad,
-                };
-                let _ = profiles::set_test_result(
-                    &state.db,
-                    &profile_id,
-                    profiles::TestMethod::Tcp,
-                    &result,
-                );
-                Ok(result)
-            }
-        },
-        "url" => match clash.test_delay(&profile_id, &test_url, 5000).await {
-            Ok(_) => {
-                let result = TestResult {
-                    value: "200 OK".to_string(),
-                    tone: Tone::Good,
-                };
-                let _ = profiles::set_test_result(
-                    &state.db,
-                    &profile_id,
-                    profiles::TestMethod::Url,
-                    &result,
-                );
-                Ok(result)
-            }
-            Err(_) => {
-                let result = TestResult {
-                    value: "Timeout".to_string(),
-                    tone: Tone::Bad,
-                };
-                let _ = profiles::set_test_result(
-                    &state.db,
-                    &profile_id,
-                    profiles::TestMethod::Url,
-                    &result,
-                );
-                Ok(result)
-            }
-        },
-        other => Err(format!("unknown test method: {other}")),
+    match clash.test_delay(profile_id, &test_url, 5000).await {
+        Ok(delay_ms) => Ok(TestResult {
+            value: format!("{delay_ms} ms"),
+            tone: latency_tone(delay_ms),
+        }),
+        Err(_) => Ok(TestResult {
+            value: "Timeout".to_string(),
+            tone: Tone::Bad,
+        }),
     }
 }
 

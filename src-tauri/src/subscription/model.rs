@@ -111,6 +111,24 @@ impl ParsedOutbound {
         }
     }
 
+    pub fn port(&self) -> u16 {
+        match self {
+            ParsedOutbound::Vmess(o) => o.port,
+            ParsedOutbound::Vless(o) => o.port,
+            ParsedOutbound::Trojan(o) => o.port,
+            ParsedOutbound::Shadowsocks(o) => o.port,
+            ParsedOutbound::Hysteria2(o) => o.port,
+            ParsedOutbound::Tuic(o) => o.port,
+        }
+    }
+
+    /// Whether a TCP handshake to `server:port` says anything about this
+    /// outbound. Hysteria2 and TUIC ride QUIC, so their port only answers
+    /// UDP: a TCP probe there times out on a perfectly healthy server.
+    pub fn answers_tcp(&self) -> bool {
+        !matches!(self, ParsedOutbound::Hysteria2(_) | ParsedOutbound::Tuic(_))
+    }
+
     pub fn protocol_label(&self) -> &'static str {
         match self {
             ParsedOutbound::Vmess(_) => "VMess",

@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { ConnectionStage } from '@/components/dashboard/ConnectionStage'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { getReachabilityAwarePing } from '@/lib/profile-sorting'
 import { regionToCountry } from '@/lib/formatters'
 import { useKagerouStore } from '@/store/kagerou-store'
 
@@ -25,7 +24,12 @@ export function DashboardPage() {
       ? t('connection.profile', { group: groupLabel, name: activeProfile.name })
       : activeProfile.name
     : t('connection.fallbackProfile')
-  const ping = activeProfile ? getReachabilityAwarePing(activeProfile) : { value: 'Not tested', tone: 'muted' as const }
+  // The dashboard shows the latency that matters — through the proxy —
+  // falling back to the reachability ping before any URL test has run.
+  const urlTested = activeProfile && activeProfile.url.tone !== 'muted'
+  const ping = activeProfile
+    ? (urlTested ? activeProfile.url : activeProfile.tcp)
+    : { value: 'Not tested', tone: 'muted' as const }
   const location = regionToCountry(activeProfile?.region ?? '', i18n.resolvedLanguage ?? 'en') ?? t('connection.fallbackLocation')
 
   return (
