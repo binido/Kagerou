@@ -53,6 +53,16 @@ No. Kagerou only asks for elevated privileges when you turn on TUN mode, since c
 **TUN mode isn't working.** <br/>
 Make sure you accepted the elevation prompt — Kagerou ships with its own sing-box core, so there's nothing to install separately. If it still doesn't come up, check the Logs page for what sing-box itself reported.
 
+**macOS says Kagerou is damaged and should be moved to the Trash.** <br/>
+It isn't damaged — it just isn't notarised by Apple, and Kagerou has no paid developer certificate to notarise it with. macOS phrases that badly. Clear the quarantine flag it added on download and the app opens normally:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kagerou.app
+```
+
+**Windows SmartScreen warns about an unrecognised app.** <br/>
+Same reason: the installer isn't signed with a certificate Microsoft recognises. Choose "More info" and then "Run anyway".
+
 **Where is my data stored?** <br/>
 Profiles, subscriptions, routing rules, and settings live in a local SQLite database under your OS's app-data directory — nothing is synced anywhere.
 

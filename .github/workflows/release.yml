@@ -93,14 +93,27 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Ad-hoc signing. Read only by the macOS bundler, so it is harmless
+          # on the other runners. Without it the bundle carries only the
+          # signature Rust's linker leaves on the executable, which seals no
+          # resources and does not bind Info.plist — macOS calls that
+          # "damaged" and offers nothing but the Trash. This does not make the
+          # app notarised; it makes its signature valid.
+          APPLE_SIGNING_IDENTITY: '-'
         with:
           args: --target ${{ matrix.target }}
           tagName: ${{ github.ref_name }}
           releaseName: Kagerou ${{ github.ref_name }}
           releaseBody: |
-            Unsigned builds: macOS will need Gatekeeper talked round, Windows will show a SmartScreen warning.
-
             Bundles sing-box as its proxy core — nothing to install separately.
+
+            **These builds are not notarised.** macOS may refuse to open the app; clear the quarantine flag it adds on download:
+
+            ```
+            xattr -dr com.apple.quarantine /Applications/Kagerou.app
+            ```
+
+            Windows SmartScreen will warn for the same reason — choose "More info", then "Run anyway".
 
             See the [roadmap](https://github.com/binido/Kagerou/blob/main/ROADMAP.md) for what works, what is half-built, and what is not there yet.
           # Left as a draft on purpose: check the artifacts, write the notes,
