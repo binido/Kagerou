@@ -696,15 +696,21 @@ mod tests {
         let _ = bystander.wait();
     }
 
-    /// And it must actually reap a real one. `ps` reports the executable, so
-    /// a copy under sing-box's name is indistinguishable to the check —
-    /// which is the point: this exercises the guard, not just the kill.
+    /// And it must actually reap a real one. `ps` reports the name the
+    /// process was executed under, so something launched via a path ending
+    /// in `sing-box` is indistinguishable to the check — which is the point:
+    /// this exercises the guard, not just the kill.
+    ///
+    /// A symlink, not a copy: copying opens the destination for writing, and
+    /// a sibling test forking in another thread inherits that descriptor for
+    /// the moment between its fork and its exec. The file is then still open
+    /// for writing when this test execs it, and Linux answers ETXTBSY.
     #[test]
     #[cfg(unix)]
     fn a_leftover_sing_box_is_killed_at_startup() {
         let dir = tempfile::tempdir().unwrap();
         let fake = dir.path().join("sing-box");
-        std::fs::copy("/bin/sleep", &fake).unwrap();
+        std::os::unix::fs::symlink("/bin/sleep", &fake).unwrap();
         let mut leftover = Command::new(&fake).arg("30").spawn().unwrap();
         std::fs::write(
             dir.path().join("singbox-abc.run"),
