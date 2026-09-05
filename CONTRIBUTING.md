@@ -4,7 +4,7 @@
 
 [ROADMAP.md](ROADMAP.md) lists every feature and its status. It is the source of truth — if the README or a code comment disagrees with it, the roadmap is right.
 
-1. Find a row you want. Rows marked **Good first issue** are small and self-contained; `📋` rows are unstarted; `🟡` rows are half-built and the note says what's missing.
+1. Find a row you want. Rows marked **Good first issue** are small and self-contained; `📋` rows are unstarted; `🟡` rows are half-built and the note says what's missing. A `💡` row is an idea nobody has committed to — say what you think before building it.
 2. Open an issue quoting that row, so nobody duplicates the work. Say roughly how you plan to do it if the row leaves the approach open.
 3. Send a pull request that updates the row's status in the same commit as the code.
 

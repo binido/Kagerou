@@ -19,6 +19,7 @@ at the end maps NekoBox's surface onto these sections.
 | 🟡 | Partial — visible in the app but incomplete or non-functional behind the UI. The note says what's missing. |
 | 📋 | Planned — not started. The note says what it involves. |
 | ❌ | Won't do — with the reason. |
+| 💡 | Idea — worth considering, not committed to. Talk it up or argue it down before anyone builds it. |
 
 Rows marked **Good first issue** are self-contained: small, well-bounded, and
 they don't require understanding the whole app. Start there.
@@ -99,6 +100,7 @@ row.
 | Log viewer | ✅ | Streams the core's output live, with level detection. |
 | Connection list | 📋 | The Clash API already reports every live connection (host, rule, upload, download, duration); nothing displays them. Include "close connection" and "close all". |
 | Embedded sing-box dashboard | 📋 | NekoBox bundles Yacd. The Clash API is already running and reachable, so this is mostly a window and a bundled static build. |
+| App icon has no backplate | 📋 | `app/public/logo-1024.png`, which every icon is generated from, is RGBA with a transparent background, so the mark floats on whatever sits behind it — in the dock and in Finder it reads as unfinished. Needs an opaque plate behind the mark (macOS also wants the padding from Apple's icon grid rather than a full-bleed square), then a regenerate with `tauri icon`. **Good first issue.** |
 | Onboarding for an empty install | 📋 | A fresh install shows empty tables. A first-run path — add a subscription, or paste a link — would carry more than the current fallback copy. |
 
 ## Platform integration
@@ -109,6 +111,7 @@ row.
 | Launch at login | 🟡 | The `startup` setting is stored and shown, but nothing registers the app with the OS. Needs `tauri-plugin-autostart`. |
 | Single-instance guard | 📋 | Two running copies would both drive the sing-box sidecar and fight over ports. |
 | Deep links (`vless://`, `vmess://`, …) | 📋 | Desktop equivalent of NekoBox's intent-based import: register the URI schemes and import the profile on click. |
+| Encrypted storage for profile keys | 💡 | Profile keys sit in plain text in the SQLite database and in the generated sing-box config, both under the OS app-data directory. That is normal for this class of app and the files are readable only by the account that owns them, so the threat model is worth arguing about before anyone writes code — a shared or backed-up machine is the case that would justify it. If it is worth doing, the OS keychain is a better home for the keys than a password on the database. |
 | Linux accent colour from the desktop portal | ❌ | Considered and dropped (2026-09-03). Kagerou uses its own theme colours on every platform. |
 
 ## Distribution & quality
