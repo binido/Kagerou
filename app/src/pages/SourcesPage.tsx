@@ -96,7 +96,7 @@ export function SourcesPage() {
           <p className="type-data text-body">{t('page.summary', { sources: sources.length, vpns: profileCount })}</p>
           <p className="flex items-center gap-2 text-[11px] text-muted-copy max-[720px]:text-right"><Info aria-hidden="true" className="size-3.5 shrink-0" />{t('page.info')}</p>
         </div>
-        <section aria-label={t('page.ariaLabel')} className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+        <section aria-label={t('page.ariaLabel')} className="mt-4 grid gap-3 lg:grid-cols-2">
           {sources.map((source) => <SourceCard key={source.id} onEdit={() => openEdit(source)} onRefresh={() => void refresh(source)} onRemove={() => setRemovingSource(source)} profileCount={profileCountBySourceId[source.id] ?? 0} refreshing={Boolean(refreshingIds[source.id])} source={source} />)}
         </section>
       <SourceDialog key={`${editingSource?.id ?? 'new'}-${dialogType}-${dialogOpen}`} initialType={dialogType} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingSource(null) }} onSubmit={handleSourceSubmit} open={dialogOpen} source={editingSource} />
