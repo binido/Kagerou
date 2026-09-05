@@ -59,7 +59,9 @@
     "imported": "Imported",
     "localVpn": "Local VPN",
     "managedBySubscription": "Managed by subscription",
-    "available": "{{count}} VPNs available."
+    "available": "{{count}} VPNs available.",
+    "checking": "Checking…",
+    "running": "Running…"
   },
   "menu": {
     "more": "More actions for {{name}}",

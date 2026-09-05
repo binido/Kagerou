@@ -59,7 +59,9 @@
     "imported": "Импортирован",
     "localVpn": "Локальный VPN",
     "managedBySubscription": "Управляется подпиской",
-    "available": "Доступно VPN: {{count}}."
+    "available": "Доступно VPN: {{count}}.",
+    "checking": "Проверка…",
+    "running": "Выполняется…"
   },
   "menu": {
     "more": "Дополнительные действия: {{name}}",

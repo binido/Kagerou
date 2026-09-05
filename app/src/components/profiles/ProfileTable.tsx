@@ -26,17 +26,17 @@ interface ProfileResultState {
   url: TestResult
 }
 
-function getProfileResultState(profile: Profile, runningTests: Record<string, boolean>): ProfileResultState {
+function getProfileResultState(profile: Profile, runningTests: Record<string, boolean>, labels: { checking: string; running: string }): ProfileResultState {
   const runningTcp = runningTests[`${profile.id}:tcp`]
   const runningUrl = runningTests[`${profile.id}:url`]
 
   return {
     ping: runningUrl
-      ? { value: 'Checking…', tone: 'warn' }
+      ? { value: labels.checking, tone: 'warn' }
       : profile.url.tone === 'good' && runningTcp
-        ? { value: 'Running…', tone: 'warn' }
+        ? { value: labels.running, tone: 'warn' }
         : getReachabilityAwarePing(profile),
-    url: runningUrl ? { value: 'Running…', tone: 'warn' } : profile.url,
+    url: runningUrl ? { value: labels.running, tone: 'warn' } : profile.url,
   }
 }
 
@@ -107,6 +107,7 @@ function ProfileCompactRow({
 
 export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileTableProps) {
   const { t } = useTranslation('profiles')
+  const testLabels = { checking: t('table.checking'), running: t('table.running') }
 
   return (
     <div className="min-w-0">
@@ -125,7 +126,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
           </TableHeader>
           <TableBody>
             {profiles.map((profile, index) => {
-              const result = getProfileResultState(profile, runningTests)
+              const result = getProfileResultState(profile, runningTests, testLabels)
               return (
                 <TableRow className={cn('min-h-[75px] border-b border-hairline/55 text-body hover:bg-row-hover focus-within:bg-row-hover', profile.selected && 'bg-selected hover:bg-selected')} data-profile-id={profile.id} key={profile.id}>
                   <TableCell className="px-5 py-4 align-middle"><div className="font-mono text-[12px] tabular-nums text-muted-copy"><span className="w-3 text-center">{index + 1}</span></div></TableCell>
@@ -138,7 +139,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
                   <TableCell className="px-3 py-4 align-middle"><span className="inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[10px] text-body">{profile.protocol}</span></TableCell>
                   <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.ping.tone} value={result.ping.value} /></TableCell>
                   <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.url.tone} value={result.url.value} /></TableCell>
-                  <TableCell className="w-[13%] px-3 py-4 align-middle"><ProfileSelectButton onSelect={onSelect} profile={profile} /></TableCell>
+                  <TableCell className="px-3 py-4 align-middle"><ProfileSelectButton onSelect={onSelect} profile={profile} /></TableCell>
                   <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} /></TableCell>
                 </TableRow>
               )
@@ -158,7 +159,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
             onSelect={onSelect}
             onTest={onTest}
             profile={profile}
-            result={getProfileResultState(profile, runningTests)}
+            result={getProfileResultState(profile, runningTests, testLabels)}
           />
         ))}
       </div>
