@@ -86,8 +86,6 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     hydrated: false,
     sidebarCollapsed: false,
     connected: false,
-    tunMode: false,
-    systemProxy: false,
     activeProfileId: '',
     profiles: [],
     profileGroups: [],
@@ -101,6 +99,8 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       theme: getInitialThemeId(),
       language: 'en',
       startup: true,
+      tunMode: false,
+      systemProxy: false,
       tunInterface: 'utun / tun0',
       autoUpdateSubscriptions: false,
       subscriptionUpdateInterval: '30',
@@ -117,17 +117,14 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
     toggleConnection: async () => {
-      const { connected, tunMode } = get()
+      const { connected } = get()
       try {
         if (connected) await kagerouApi.disconnect()
-        else await kagerouApi.connect(tunMode)
+        else await kagerouApi.connect()
       } catch (error) {
         console.error('toggleConnection failed', error)
       }
     },
-
-    toggleMode: (mode) =>
-      set((state) => (mode === 'tun' ? { tunMode: !state.tunMode } : { systemProxy: !state.systemProxy })),
 
     setProfileGroupOpen: (id, open) => {
       set((state) => ({

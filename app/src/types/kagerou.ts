@@ -119,6 +119,8 @@ export interface SettingsState {
   theme: ThemeId
   language: Language
   startup: boolean
+  tunMode: boolean
+  systemProxy: boolean
   tunInterface: TunInterface
   autoUpdateSubscriptions: boolean
   subscriptionUpdateInterval: SubscriptionUpdateInterval
@@ -130,8 +132,6 @@ export interface KagerouStore {
   hydrated: boolean
   sidebarCollapsed: boolean
   connected: boolean
-  tunMode: boolean
-  systemProxy: boolean
   activeProfileId: string
   profiles: Profile[]
   profileGroups: ProfileGroup[]
@@ -145,7 +145,6 @@ export interface KagerouStore {
   hydrate: () => Promise<void>
   toggleSidebar: () => void
   toggleConnection: () => Promise<void>
-  toggleMode: (mode: 'tun' | 'proxy') => void
   setProfileGroupOpen: (id: string, open: boolean) => void
   addProfileGroup: (label: string) => Promise<string | null>
   renameProfileGroup: (id: string, label: string) => Promise<boolean>

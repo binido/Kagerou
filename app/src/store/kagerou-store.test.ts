@@ -51,6 +51,8 @@ const emptySnapshot: AppSnapshot = {
     theme: 'catppuccin-mocha',
     language: 'en',
     startup: true,
+    tunMode: false,
+    systemProxy: false,
     tunInterface: 'utun / tun0',
     autoUpdateSubscriptions: false,
     subscriptionUpdateInterval: '30',
@@ -129,26 +131,24 @@ describe('toggleSidebar', () => {
   })
 })
 
-describe('toggleMode', () => {
-  it('tun only flips tunMode, proxy only flips systemProxy, with no backend call', () => {
-    const before = useKagerouStore.getState()
-    useKagerouStore.getState().toggleMode('tun')
-    expect(useKagerouStore.getState().tunMode).toBe(!before.tunMode)
-    expect(useKagerouStore.getState().systemProxy).toBe(before.systemProxy)
+describe('connection modes', () => {
+  it('are persisted settings, not runtime state: the backend decides TUN at connect time', async () => {
+    api.updateSettings.mockResolvedValue(undefined)
+    useKagerouStore.getState().updateSettings({ tunMode: true })
 
-    useKagerouStore.getState().toggleMode('proxy')
-    expect(useKagerouStore.getState().systemProxy).toBe(!before.systemProxy)
+    expect(useKagerouStore.getState().settings.tunMode).toBe(true)
+    expect(api.updateSettings).toHaveBeenCalledWith({ tunMode: true })
     expect(api.connect).not.toHaveBeenCalled()
     expect(api.disconnect).not.toHaveBeenCalled()
   })
 })
 
 describe('toggleConnection', () => {
-  it('calls connect with the current tunMode when disconnected', async () => {
-    useKagerouStore.setState({ connected: false, tunMode: true })
+  it('calls connect without arguments when disconnected', async () => {
+    useKagerouStore.setState({ connected: false })
     api.connect.mockResolvedValue(undefined)
     await useKagerouStore.getState().toggleConnection()
-    expect(api.connect).toHaveBeenCalledWith(true)
+    expect(api.connect).toHaveBeenCalledWith()
     expect(api.disconnect).not.toHaveBeenCalled()
   })
 

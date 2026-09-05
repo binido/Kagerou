@@ -191,6 +191,8 @@ pub struct Settings {
     pub theme: String,
     pub language: String,
     pub startup: bool,
+    pub tun_mode: bool,
+    pub system_proxy: bool,
     pub tun_interface: String,
     pub auto_update_subscriptions: bool,
     pub subscription_update_interval: String,

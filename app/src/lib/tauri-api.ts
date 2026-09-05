@@ -37,7 +37,7 @@ export type TrafficEvent =
  * tests) can depend on this instead of scattering string literals. */
 export const kagerouApi = {
   getAppState: () => invoke<AppSnapshot>('get_app_state'),
-  connect: (tun: boolean) => invoke<void>('connect', { tun }),
+  connect: () => invoke<void>('connect'),
   disconnect: () => invoke<void>('disconnect'),
 
   selectProfile: (id: string) => invoke<void>('select_profile', { id }),

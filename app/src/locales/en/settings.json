@@ -27,7 +27,9 @@
   "descriptions": {
     "autoUpdateSubscriptions": "Keep URL subscription groups fresh automatically.",
     "customInterval": "Choose how often Kagerou checks remote subscriptions.",
-    "customIntervalA11y": "Minutes between automatic subscription updates."
+    "customIntervalA11y": "Minutes between automatic subscription updates.",
+    "tunMode": "Applies the next time you connect.",
+    "systemProxyUnavailable": "Not implemented yet — Kagerou does not change your system proxy."
   },
   "options": {
     "interval5": "5 minutes",
