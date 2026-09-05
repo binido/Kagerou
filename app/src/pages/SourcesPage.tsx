@@ -9,6 +9,7 @@ import { SourceCard } from '@/components/sources/SourceCard'
 import { SourceDialog } from '@/components/sources/SourceDialog'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { backendErrorMessage } from '@/lib/errors'
 import { deriveSubscriptionName } from '@/lib/formatters'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type { AddSourceInput, Source, SourceType } from '@/types/kagerou'
@@ -73,7 +74,7 @@ export function SourcesPage() {
       await refreshSource(source.id)
       toast.success(t('feedback.refreshed'), { id: toastId })
     } catch (refreshError) {
-      toast.error(refreshError instanceof Error ? refreshError.message : t('feedback.refreshFailed'), { id: toastId })
+      toast.error(backendErrorMessage(refreshError, t('feedback.refreshFailed')), { id: toastId })
     } finally {
       setRefreshingIds((state) => { const next = { ...state }; delete next[source.id]; return next })
     }

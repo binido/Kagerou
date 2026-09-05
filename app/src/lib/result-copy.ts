@@ -4,6 +4,7 @@ const resultTranslationKeys = {
   '200 OK': 'status.ok',
   'Checking…': 'status.checking',
   'No response': 'status.noResponse',
+  'Not connected': 'status.notConnected',
   'Not tested': 'status.notTested',
   'Running…': 'status.running',
   'Testing…': 'status.checking',

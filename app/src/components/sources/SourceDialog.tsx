@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { backendErrorMessage } from '@/lib/errors'
 import { kagerouApi } from '@/lib/tauri-api'
 import type { AddSourceInput, Source, SourceType } from '@/types/kagerou'
 
@@ -61,7 +62,7 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
       setError('')
       onOpenChange(false)
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : t('feedback.importError'))
+      setError(backendErrorMessage(submitError, t('feedback.importError')))
     } finally {
       setSubmitting(false)
     }
