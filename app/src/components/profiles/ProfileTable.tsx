@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 
@@ -24,6 +25,19 @@ interface ProfileTableProps {
 interface ProfileResultState {
   ping: TestResult
   url: TestResult
+}
+
+// Tailwind's max-[1220px] compiles to `width < 1220px`; max-width: 1220px would disagree with it at exactly 1220
+const NARROW_QUERY = '(max-width: 1219.98px)'
+
+function subscribeNarrow(onChange: () => void) {
+  const queryList = window.matchMedia(NARROW_QUERY)
+  queryList.addEventListener('change', onChange)
+  return () => queryList.removeEventListener('change', onChange)
+}
+
+function useNarrowViewport() {
+  return useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches)
 }
 
 function getProfileResultState(profile: Profile, runningTests: Record<string, boolean>, labels: { checking: string; running: string }): ProfileResultState {
@@ -108,10 +122,26 @@ function ProfileCompactRow({
 export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileTableProps) {
   const { t } = useTranslation('profiles')
   const testLabels = { checking: t('table.checking'), running: t('table.running') }
+  const narrow = useNarrowViewport()
 
   return (
     <div className="min-w-0">
-      <div className="max-[1220px]:hidden">
+      {narrow ? (
+        profiles.map((profile, index) => (
+          <ProfileCompactRow
+            index={index}
+            key={profile.id}
+            movableGroups={movableGroups}
+            onDelete={onDelete}
+            onMoveToGroup={onMoveToGroup}
+            onRename={onRename}
+            onSelect={onSelect}
+            onTest={onTest}
+            profile={profile}
+            result={getProfileResultState(profile, runningTests, testLabels)}
+          />
+        ))
+      ) : (
         <Table className="w-full text-left">
           <TableHeader>
             <TableRow className="border-b border-hairline hover:bg-transparent">
@@ -146,23 +176,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
             })}
           </TableBody>
         </Table>
-      </div>
-      <div className="hidden max-[1220px]:block">
-        {profiles.map((profile, index) => (
-          <ProfileCompactRow
-            index={index}
-            key={profile.id}
-            movableGroups={movableGroups}
-            onDelete={onDelete}
-            onMoveToGroup={onMoveToGroup}
-            onRename={onRename}
-            onSelect={onSelect}
-            onTest={onTest}
-            profile={profile}
-            result={getProfileResultState(profile, runningTests, testLabels)}
-          />
-        ))}
-      </div>
+      )}
     </div>
   )
 }
