@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { ProfileGroupActionsMenu } from '@/components/profiles/ProfileGroupActionsMenu'
 import { ProfileTable } from '@/components/profiles/ProfileTable'
 import { cn } from '@/lib/utils'
-import type { Profile, ProfileGroup, TestMethod } from '@/types/kagerou'
+import type { Profile, ProfileGroup } from '@/types/kagerou'
 
 interface ProfileGroupCardProps {
   group: ProfileGroup
@@ -21,10 +21,10 @@ interface ProfileGroupCardProps {
   onRename: (profile: Profile) => void
   onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
-  onTest: (id: string, method: TestMethod) => void
-  onTestGroup: (method: TestMethod) => void
+  onTest: (id: string) => void
+  onTestGroup: () => void
   onClearResults: () => void
-  onDeleteUnavailable: (method: TestMethod) => void
+  onDeleteUnavailable: () => void
 }
 
 export function ProfileGroupCard({ group, profiles, movableGroups, runningTests, testRunning, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest, onTestGroup, onClearResults, onDeleteUnavailable }: ProfileGroupCardProps) {

@@ -24,12 +24,7 @@ export function DashboardPage() {
       ? t('connection.profile', { group: groupLabel, name: activeProfile.name })
       : activeProfile.name
     : t('connection.fallbackProfile')
-  // The dashboard shows the latency that matters — through the proxy —
-  // falling back to the reachability ping before any URL test has run.
-  const urlTested = activeProfile && activeProfile.url.tone !== 'muted'
-  const ping = activeProfile
-    ? (urlTested ? activeProfile.url : activeProfile.tcp)
-    : { value: 'Not tested', tone: 'muted' as const }
+  const ping = activeProfile ? activeProfile.url : { value: 'Not tested', tone: 'muted' as const }
   const location = regionToCountry(activeProfile?.region ?? '', i18n.resolvedLanguage ?? 'en') ?? t('connection.fallbackLocation')
 
   return (

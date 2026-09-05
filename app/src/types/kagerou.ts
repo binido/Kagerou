@@ -17,7 +17,6 @@ export type ProfileProtocol =
   | 'Shadowsocks'
   | 'Hysteria2'
   | 'Tuic'
-export type TestMethod = 'tcp' | 'url'
 export type TestTone = 'good' | 'warn' | 'bad' | 'muted'
 export type SourceType = 'url' | 'key'
 export type SourceStatus = 'up-to-date' | 'ready' | 'refresh-due' | 'updating'
@@ -45,7 +44,6 @@ export interface Profile {
   groupId: string
   sourceId?: string
   selected: boolean
-  tcp: TestResult
   url: TestResult
   key: string
 }
@@ -166,9 +164,9 @@ export interface KagerouStore {
   moveProfileToGroup: (profileId: string, targetGroupId: string) => Promise<boolean>
   moveProfile: (id: string, direction: 'up' | 'down') => Promise<boolean>
   reorderProfiles: (fromId: string, toId: string) => Promise<boolean>
-  runProfileTest: (id: string, method: TestMethod) => Promise<TestResult | null>
+  runProfileTest: (id: string) => Promise<TestResult | null>
   clearGroupTestResults: (groupId: string) => Promise<void>
-  deleteUnavailableProfiles: (groupId: string, method: TestMethod) => Promise<number>
+  deleteUnavailableProfiles: (groupId: string) => Promise<number>
   addSource: (input: AddSourceInput) => Promise<string | null>
   updateSource: (id: string, patch: Partial<Pick<Source, 'name' | 'value'>>) => Promise<boolean>
   refreshSource: (id: string) => Promise<void>

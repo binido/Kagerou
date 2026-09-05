@@ -9,23 +9,14 @@
     "addSingleKey": "Add single key",
     "runTest": "Run test"
   },
-  "test": {
-    "allVpns": "All VPNs",
-    "tcp": "TCP connection",
-    "tcpShort": "TCP",
-    "url": "URL check",
-    "urlShort": "URL",
-    "about": "About diagnostics",
-    "aboutText": "Diagnostics use mock service data in this prototype."
-  },
   "fallback": {
     "vpn": "VPN",
     "group": "group"
   },
   "feedback": {
-    "testRunning": "{{method}} test running for {{name}}…",
-    "testRunningAll": "{{method}} test running for all VPNs…",
-    "testFinished": "{{method}} test finished for {{name}}: {{value}}.",
+    "testRunning": "Testing {{name}}…",
+    "testRunningAll": "Testing all VPNs…",
+    "testFinished": "{{name}}: {{value}}.",
     "added": "{{name}} added to Default.",
     "vpnNameEmpty": "VPN name cannot be empty.",
     "renameLocalOnly": "Only local VPNs can be renamed.",
@@ -36,7 +27,7 @@
     "moveSubscription": "Subscription VPNs cannot be moved to another group.",
     "selected": "{{name}} is ready for the next connection.",
     "deleted": "{{name}} deleted from local VPNs.",
-    "testRunningGroup": "{{method}} test running for {{group}}…",
+    "testRunningGroup": "Testing {{group}}…",
     "resultsCleared": "Test results cleared for {{group}}.",
     "nothingUnavailable": "No unavailable VPNs in {{group}}.",
     "deletedUnavailable": "{{count}} unavailable VPNs deleted from {{group}}.",
@@ -56,7 +47,6 @@
     "vpn": "VPN",
     "protocol": "Protocol",
     "ping": "Ping",
-    "url": "URL",
     "use": "Use",
     "selected": "Selected",
     "actions": "Actions",
@@ -65,7 +55,6 @@
     "localVpn": "Local VPN",
     "managedBySubscription": "Managed by subscription",
     "available": "{{count}} VPNs available.",
-    "checking": "Checking…",
     "running": "Running…"
   },
   "menu": {

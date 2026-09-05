@@ -1,11 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import type { TestMethod } from '@/types/kagerou'
 
 export interface RemoveUnavailableTarget {
   groupId: string
   groupLabel: string
-  method: TestMethod
   count: number
   activeKept: boolean
 }
@@ -18,7 +16,6 @@ interface RemoveUnavailableDialogProps {
 
 export function RemoveUnavailableDialog({ target, onOpenChange, onConfirm }: RemoveUnavailableDialogProps) {
   const { t } = useTranslation('profiles')
-  const methodLabel = target?.method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
 
   return (
     <AlertDialog onOpenChange={onOpenChange} open={Boolean(target)}>
@@ -26,7 +23,7 @@ export function RemoveUnavailableDialog({ target, onOpenChange, onConfirm }: Rem
         <AlertDialogHeader>
           <p className="type-eyebrow !text-bad">{t('dialogs.removeUnavailable.eyebrow')}</p>
           <AlertDialogTitle className="type-display mt-2 text-[23px] text-primary">{t('dialogs.removeUnavailable.title')}</AlertDialogTitle>
-          <AlertDialogDescription className="text-[13px] leading-5 text-body">{t('dialogs.removeUnavailable.description', { count: target?.count ?? 0, group: target?.groupLabel, method: methodLabel })}</AlertDialogDescription>
+          <AlertDialogDescription className="text-[13px] leading-5 text-body">{t('dialogs.removeUnavailable.description', { count: target?.count ?? 0, group: target?.groupLabel })}</AlertDialogDescription>
         </AlertDialogHeader>
         {target?.activeKept ? <p className="text-[12px] leading-5 text-body">{t('dialogs.removeUnavailable.activeKept')}</p> : null}
         <p className="rounded-lg bg-canvas px-3 py-2.5 font-mono text-[11px] text-muted-copy">{target?.groupLabel}</p>

@@ -94,7 +94,6 @@ pub struct Profile {
     pub group_id: String,
     pub source_id: Option<String>,
     pub selected: bool,
-    pub tcp: TestResult,
     pub url: TestResult,
     pub key: String,
 }

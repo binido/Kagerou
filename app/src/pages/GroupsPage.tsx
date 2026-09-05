@@ -1,11 +1,10 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, ChevronDown, FolderPlus, Loader2, Plus, Radar } from 'lucide-react'
+import { Check, FolderPlus, Plus, Radar } from 'lucide-react'
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,7 +16,7 @@ import { RemoveUnavailableDialog, type RemoveUnavailableTarget } from '@/compone
 import { localizeResultValue } from '@/lib/result-copy'
 import { sortProfiles } from '@/lib/profile-sorting'
 import { useKagerouStore } from '@/store/kagerou-store'
-import type { Profile, ProfileGroup, TestMethod } from '@/types/kagerou'
+import type { Profile, ProfileGroup } from '@/types/kagerou'
 
 export function GroupsPage() {
   const { t } = useTranslation('profiles')
@@ -60,45 +59,38 @@ export function GroupsPage() {
     setFeedbackTone(tone)
   }
 
-  const runTest = async (profileId: string, method: TestMethod) => {
-    const keyName = `${profileId}:${method}`
-    const methodLabel = method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
+  const runTest = async (profileId: string) => {
     const profile = profilesById.get(profileId)
-    setRunningTests((state) => ({ ...state, [keyName]: true }))
-    setMessage(t('feedback.testRunning', { method: methodLabel, name: profile?.name ?? t('fallback.vpn') }))
-    const result = await runProfileTest(profileId, method)
+    const name = profile?.name ?? t('fallback.vpn')
+    setRunningTests((state) => ({ ...state, [profileId]: true }))
+    setMessage(t('feedback.testRunning', { name }))
+    const result = await runProfileTest(profileId)
     setRunningTests((state) => {
       const next = { ...state }
-      delete next[keyName]
+      delete next[profileId]
       return next
     })
-    if (!result) {
-      setMessage(t('feedback.testFinished', { method: methodLabel, name: profile?.name ?? t('fallback.vpn'), value: localizeResultValue('Not connected', tc) }), 'bad')
-      return
-    }
-    setMessage(t('feedback.testFinished', { method: methodLabel, name: profile?.name ?? t('fallback.vpn'), value: localizeResultValue(result.value, tc) }), result.tone === 'bad' ? 'bad' : 'good')
+    const value = localizeResultValue(result?.value ?? 'Not connected', tc)
+    setMessage(t('feedback.testFinished', { name, value }), result && result.tone !== 'bad' ? 'good' : 'bad')
   }
 
-  const runAll = (method: TestMethod) => {
-    const methodLabel = method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
-    void Promise.all(profiles.map((profile) => runTest(profile.id, method)))
-    setMessage(t('feedback.testRunningAll', { method: methodLabel }))
+  const runAll = () => {
+    void Promise.all(profiles.map((profile) => runTest(profile.id)))
+    setMessage(t('feedback.testRunningAll'))
   }
 
-  const runGroupTest = (group: ProfileGroup, method: TestMethod) => {
-    const methodLabel = method === 'tcp' ? t('test.tcpShort') : t('test.urlShort')
-    void Promise.all(group.profileIds.map((id) => runTest(id, method)))
-    setMessage(t('feedback.testRunningGroup', { method: methodLabel, group: groupLabel(group) }))
+  const runGroupTest = (group: ProfileGroup) => {
+    void Promise.all(group.profileIds.map((id) => runTest(id)))
+    setMessage(t('feedback.testRunningGroup', { group: groupLabel(group) }))
   }
 
-  const groupTestRunning = (group: ProfileGroup) =>
-    group.profileIds.some((id) => runningTests[`${id}:tcp`] || runningTests[`${id}:url`])
+  const groupTestRunning = (group: ProfileGroup) => group.profileIds.some((id) => runningTests[id])
 
   // Count excludes the active profile — it will be kept — and the dialog
   // never opens when nothing failed. The backend re-evaluates the same
   // predicate in its transaction, so a stale count here is only cosmetic.
-  const openRemoveUnavailable = (group: ProfileGroup, method: TestMethod) => {
-    const failing = group.profileIds.filter((id) => profilesById.get(id)?.[method].tone === 'bad')
+  const openRemoveUnavailable = (group: ProfileGroup) => {
+    const failing = group.profileIds.filter((id) => profilesById.get(id)?.url.tone === 'bad')
     if (failing.length === 0) {
       setMessage(t('feedback.nothingUnavailable', { group: groupLabel(group) }))
       return
@@ -107,7 +99,6 @@ export function GroupsPage() {
     setRemoveUnavailableTarget({
       groupId: group.id,
       groupLabel: groupLabel(group),
-      method,
       count: failing.length - (activeKept ? 1 : 0),
       activeKept,
     })
@@ -116,7 +107,7 @@ export function GroupsPage() {
   const confirmRemoveUnavailable = async () => {
     const target = removeUnavailableTarget
     if (!target) return
-    const deleted = await deleteUnavailableProfiles(target.groupId, target.method)
+    const deleted = await deleteUnavailableProfiles(target.groupId)
     setRemoveUnavailableTarget(null)
     const message = t('feedback.deletedUnavailable', { count: deleted, group: target.groupLabel })
     setMessage(target.activeKept ? `${message} ${t('feedback.activeKept')}` : message, 'good')
@@ -185,16 +176,7 @@ export function GroupsPage() {
           <div className="flex flex-wrap justify-end gap-2">
             <Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" onClick={() => { setGroupDialogTarget(null); setGroupDialogOpen(true) }} type="button" variant="outline"><FolderPlus aria-hidden="true" className="size-4" />{t('actions.addGroup')}</Button>
             <Button className="h-10 gap-2 bg-lavender px-3.5 text-[12px] font-semibold text-ink hover:bg-lavender-hi" onClick={() => setAddOpen(true)} type="button"><Plus aria-hidden="true" className="size-4" />{t('actions.addSingleKey')}</Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" type="button" variant="outline"><Radar aria-hidden="true" className="size-4" />{t('actions.runTest')}<ChevronDown aria-hidden="true" className="size-3 text-muted-copy" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 border-hairline bg-popover text-[11px]">
-                <DropdownMenuLabel className="font-mono text-[9px] uppercase tracking-[0.08em] text-muted-copy">{t('test.allVpns')}</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={() => runAll('tcp')}><Loader2 aria-hidden="true" className="size-3.5" />{t('test.tcp')}</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => runAll('url')}><Radar aria-hidden="true" className="size-3.5" />{t('test.url')}</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => { setMessage(t('test.aboutText')) }}>{t('test.about')}</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" onClick={runAll} type="button" variant="outline"><Radar aria-hidden="true" className="size-4" />{t('actions.runTest')}</Button>
           </div>
         )}
         description={t('page.description')}
@@ -213,7 +195,7 @@ export function GroupsPage() {
               void clearGroupTestResults(group.id)
               setMessage(t('feedback.resultsCleared', { group: groupLabel(group) }))
             }}
-            onDeleteUnavailable={(method) => openRemoveUnavailable(group, method)}
+            onDeleteUnavailable={() => openRemoveUnavailable(group)}
             onMoveToGroup={(profileId, targetGroupId) => {
               const target = groups.find((candidate) => candidate.id === targetGroupId)
               void moveProfileToGroup(profileId, targetGroupId).then((moved) => {
@@ -224,7 +206,7 @@ export function GroupsPage() {
             onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}
             onSelect={(id) => { selectProfile(id); const selected = profilesById.get(id); if (selected) setMessage(t('feedback.selected', { name: selected.name }), 'good') }}
             onTest={runTest}
-            onTestGroup={(method) => runGroupTest(group, method)}
+            onTestGroup={() => runGroupTest(group)}
             onToggle={() => setProfileGroupOpen(group.id, !group.open)}
             profiles={sortedGroupProfiles(group)}
             runningTests={runningTests}

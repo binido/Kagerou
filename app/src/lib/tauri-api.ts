@@ -10,7 +10,6 @@ import type {
   RoutingRule,
   SettingsState,
   Source,
-  TestMethod,
   TestResult,
   UpdateInfo,
 } from '@/types/kagerou'
@@ -49,9 +48,9 @@ export const kagerouApi = {
   moveProfileToGroup: (profileId: string, targetGroupId: string) => invoke<void>('move_profile_to_group', { profileId, targetGroupId }),
   moveProfile: (id: string, direction: 'up' | 'down') => invoke<void>('move_profile', { id, direction }),
   reorderProfiles: (fromId: string, toId: string) => invoke<void>('reorder_profiles', { fromId, toId }),
-  runProfileTest: (profileId: string, method: TestMethod) => invoke<TestResult>('run_profile_test', { profileId, method }),
+  runProfileTest: (profileId: string) => invoke<TestResult>('run_profile_test', { profileId }),
   clearGroupTestResults: (groupId: string) => invoke<void>('clear_test_results', { groupId }),
-  deleteUnavailableProfiles: (groupId: string, method: TestMethod) => invoke<number>('delete_unavailable_profiles', { groupId, method }),
+  deleteUnavailableProfiles: (groupId: string) => invoke<number>('delete_unavailable_profiles', { groupId }),
 
   setProfileGroupOpen: (id: string, open: boolean) => invoke<void>('set_profile_group_open', { id, open }),
   addProfileGroup: (label: string) => invoke<string>('add_profile_group', { label }),

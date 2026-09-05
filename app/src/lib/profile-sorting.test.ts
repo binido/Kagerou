@@ -6,36 +6,26 @@ import type { Profile, TestResult } from '@/types/kagerou'
 const untested: TestResult = { value: 'Not tested', tone: 'muted' }
 const ms = (value: number): TestResult => ({ value: `${value} ms`, tone: 'good' })
 
-const profile = (name: string, tcp: TestResult, url: TestResult): Profile => ({
+const profile = (name: string, url: TestResult): Profile => ({
   id: name, name, region: '', protocol: 'VLESS', origin: 'imported',
-  groupId: 'g', selected: false, tcp, url, key: 'vless://x@h:443',
+  groupId: 'g', selected: false, url, key: 'vless://x@h:443',
 })
 
 describe('sortProfiles by ping', () => {
-  it('orders on the latency through the proxy, not the reachability ping', () => {
-    const order = sortProfiles([
-      profile('slow-path', ms(20), ms(400)),
-      profile('fast-path', ms(200), ms(50)),
-    ], 'ping').map((p) => p.name)
+  it('orders on the measured latency', () => {
+    const order = sortProfiles([profile('slow', ms(400)), profile('fast', ms(50))], 'ping')
+      .map((p) => p.name)
 
-    expect(order).toEqual(['fast-path', 'slow-path'])
+    expect(order).toEqual(['fast', 'slow'])
   })
 
-  it('falls back to the ping for profiles the URL test has not reached', () => {
+  it('sinks untested and failed profiles below every measured one', () => {
     const order = sortProfiles([
-      profile('no-url-slow', ms(300), untested),
-      profile('no-url-fast', ms(30), untested),
+      profile('untested', untested),
+      profile('failed', { value: 'Timeout', tone: 'bad' }),
+      profile('measured', ms(300)),
     ], 'ping').map((p) => p.name)
 
-    expect(order).toEqual(['no-url-fast', 'no-url-slow'])
-  })
-
-  it('sinks profiles with no usable measurement to the bottom', () => {
-    const order = sortProfiles([
-      profile('dead', { value: 'No response', tone: 'bad' }, untested),
-      profile('alive', untested, ms(100)),
-    ], 'ping').map((p) => p.name)
-
-    expect(order).toEqual(['alive', 'dead'])
+    expect(order[0]).toBe('measured')
   })
 })
