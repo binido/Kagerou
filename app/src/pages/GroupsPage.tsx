@@ -70,8 +70,11 @@ export function GroupsPage() {
       delete next[profileId]
       return next
     })
-    const value = localizeResultValue(result?.value ?? 'Not connected', tc)
-    setMessage(t('feedback.testFinished', { name, value }), result && result.tone !== 'bad' ? 'good' : 'bad')
+    if (!result) {
+      setMessage(t('feedback.testFailed', { name }), 'bad')
+      return
+    }
+    setMessage(t('feedback.testFinished', { name, value: localizeResultValue(result.value, tc) }), result.tone === 'bad' ? 'bad' : 'good')
   }
 
   const runAll = () => {

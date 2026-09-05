@@ -31,7 +31,8 @@
     "resultsCleared": "Test results cleared for {{group}}.",
     "nothingUnavailable": "No unavailable VPNs in {{group}}.",
     "deletedUnavailable": "{{count}} unavailable VPNs deleted from {{group}}.",
-    "activeKept": "The selected VPN was kept."
+    "activeKept": "The selected VPN was kept.",
+    "testFailed": "Could not test {{name}}."
   },
   "group": {
     "defaultName": "Default",

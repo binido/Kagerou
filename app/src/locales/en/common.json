@@ -47,7 +47,6 @@
     "timeout": "Timeout",
     "noResponse": "No response",
     "ok": "200 OK",
-    "notConnected": "Not connected",
     "notApplicable": "n/a"
   },
   "counts": {

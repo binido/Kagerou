@@ -31,7 +31,8 @@
     "resultsCleared": "Результаты проверок очищены для «{{group}}».",
     "nothingUnavailable": "В «{{group}}» нет недоступных VPN.",
     "deletedUnavailable": "Удалено недоступных VPN из «{{group}}»: {{count}}.",
-    "activeKept": "Выбранный VPN оставлен."
+    "activeKept": "Выбранный VPN оставлен.",
+    "testFailed": "Не удалось проверить {{name}}."
   },
   "group": {
     "defaultName": "Default",
