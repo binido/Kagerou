@@ -92,6 +92,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     logs: [],
     trafficSample: { download: 0, upload: 0 },
     sessionTraffic: { download: 0, upload: 0 },
+    updateAvailable: null,
     settings: {
       theme: getInitialThemeId(),
       language: 'en',
@@ -109,6 +110,9 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       subscribeToBackendEvents()
       const snapshot = await kagerouApi.getAppState()
       set({ ...applySnapshot(snapshot), hydrated: true })
+      // Deliberately not awaited: a slow or unreachable GitHub must not hold
+      // up the first paint, and the command never rejects.
+      void kagerouApi.checkForUpdate().then((updateAvailable) => set({ updateAvailable }))
     },
 
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),

@@ -5,6 +5,7 @@ import type { Profile, RoutingRule, Source } from '@/types/kagerou'
 
 const api = vi.hoisted(() => ({
   getAppState: vi.fn(),
+  checkForUpdate: vi.fn(),
   connect: vi.fn(),
   disconnect: vi.fn(),
   selectProfile: vi.fn(),
@@ -82,6 +83,7 @@ beforeEach(() => {
   __resetBackendEventSubscriptionForTests()
   Object.values(api).forEach((fn) => fn.mockReset())
   api.getAppState.mockResolvedValue(emptySnapshot)
+  api.checkForUpdate.mockResolvedValue(null)
   api.onConnectionChanged.mockResolvedValue(() => {})
   api.onTraffic.mockResolvedValue(() => {})
   api.onLog.mockResolvedValue(() => {})
@@ -128,6 +130,31 @@ describe('toggleSidebar', () => {
     useKagerouStore.getState().toggleSidebar()
     expect(useKagerouStore.getState().sidebarCollapsed).toBe(true)
     expect(api.connect).not.toHaveBeenCalled()
+  })
+})
+
+describe('update check', () => {
+  it('stores a release the backend reports as newer', async () => {
+    const update = { version: '0.3.0', url: 'https://github.com/binido/Kagerou/releases/tag/v0.3.0' }
+    api.checkForUpdate.mockResolvedValue(update)
+
+    await useKagerouStore.getState().hydrate()
+    await vi.waitFor(() => expect(useKagerouStore.getState().updateAvailable).toEqual(update))
+  })
+
+  it('leaves updateAvailable null when there is nothing newer', async () => {
+    await useKagerouStore.getState().hydrate()
+    await vi.waitFor(() => expect(api.checkForUpdate).toHaveBeenCalled())
+    expect(useKagerouStore.getState().updateAvailable).toBeNull()
+  })
+
+  it('does not hold up hydration while the check is in flight', async () => {
+    api.checkForUpdate.mockReturnValue(new Promise(() => {}))
+
+    await useKagerouStore.getState().hydrate()
+
+    expect(useKagerouStore.getState().hydrated).toBe(true)
+    expect(useKagerouStore.getState().updateAvailable).toBeNull()
   })
 })
 

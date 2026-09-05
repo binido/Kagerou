@@ -12,7 +12,7 @@
     "settings": "Settings",
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
-    "updateAvailable": "New version available",
+    "updateAvailable": "Version {{version}} available",
     "viewReleases": "View Kagerou releases"
   },
   "actions": {

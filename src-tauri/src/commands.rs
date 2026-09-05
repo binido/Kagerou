@@ -13,6 +13,7 @@ use crate::storage::models::{
 };
 use crate::storage::{groups, profiles, routing, settings, sources};
 use crate::subscription;
+use crate::updates;
 
 fn to_err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -792,6 +793,13 @@ pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), String>
         },
     )
     .map_err(to_err)
+}
+
+/// Silent by design: a failed check is not something to surface, and before
+/// the first release GitHub answers 404, which simply means "nothing newer".
+#[tauri::command]
+pub async fn check_for_update(app: AppHandle) -> Option<updates::UpdateInfo> {
+    updates::check(&app.package_info().version).await
 }
 
 #[derive(Debug, Deserialize, Default)]

@@ -2,16 +2,17 @@ import { CircleArrowUp, ExternalLink } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { KAGEROU_RELEASES_URL } from '@/config/app-meta'
 import { cn } from '@/lib/utils'
+import type { UpdateInfo } from '@/types/kagerou'
 
 interface SidebarUpdateNoticeProps {
   collapsed: boolean
+  update: UpdateInfo
 }
 
-export function SidebarUpdateNotice({ collapsed }: SidebarUpdateNoticeProps) {
+export function SidebarUpdateNotice({ collapsed, update }: SidebarUpdateNoticeProps) {
   const { t } = useTranslation('common')
-  const updateAvailable = t('sidebar.updateAvailable')
+  const updateAvailable = t('sidebar.updateAvailable', { version: update.version })
   const viewReleases = t('sidebar.viewReleases')
   const link = (
     <a
@@ -21,7 +22,7 @@ export function SidebarUpdateNotice({ collapsed }: SidebarUpdateNoticeProps) {
         collapsed && 'size-10 justify-center border-transparent bg-transparent p-0',
         'max-[960px]:size-10 max-[960px]:justify-center max-[960px]:border-transparent max-[960px]:bg-transparent max-[960px]:p-0',
       )}
-      href={KAGEROU_RELEASES_URL}
+      href={update.url}
       rel="noreferrer"
       target="_blank"
     >

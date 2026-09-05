@@ -39,6 +39,7 @@ export function Sidebar() {
   const { t } = useTranslation('common')
   const location = useLocation()
   const collapsed = useKagerouStore((state) => state.sidebarCollapsed)
+  const updateAvailable = useKagerouStore((state) => state.updateAvailable)
   const toggleSidebar = useKagerouStore((state) => state.toggleSidebar)
 
   return (
@@ -102,7 +103,7 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto space-y-3 pt-8">
-        <SidebarUpdateNotice collapsed={collapsed} />
+        {updateAvailable ? <SidebarUpdateNotice collapsed={collapsed} update={updateAvailable} /> : null}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

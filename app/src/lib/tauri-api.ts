@@ -12,6 +12,7 @@ import type {
   Source,
   TestMethod,
   TestResult,
+  UpdateInfo,
 } from '@/types/kagerou'
 
 export interface AppSnapshot {
@@ -37,6 +38,7 @@ export type TrafficEvent =
  * tests) can depend on this instead of scattering string literals. */
 export const kagerouApi = {
   getAppState: () => invoke<AppSnapshot>('get_app_state'),
+  checkForUpdate: () => invoke<UpdateInfo | null>('check_for_update'),
   connect: () => invoke<void>('connect'),
   disconnect: () => invoke<void>('disconnect'),
 

@@ -12,7 +12,7 @@
     "settings": "Настройки",
     "collapse": "Свернуть боковую панель",
     "expand": "Развернуть боковую панель",
-    "updateAvailable": "Доступна новая версия",
+    "updateAvailable": "Доступна версия {{version}}",
     "viewReleases": "Открыть релизы Kagerou"
   },
   "actions": {

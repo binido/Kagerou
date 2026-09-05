@@ -5,6 +5,7 @@ pub mod privilege;
 pub mod singbox;
 pub mod storage;
 pub mod subscription;
+pub mod updates;
 
 use tauri::Manager;
 
@@ -33,6 +34,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_app_state,
+            commands::check_for_update,
             commands::connect,
             commands::disconnect,
             commands::select_profile,

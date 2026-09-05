@@ -119,7 +119,8 @@ row.
 | Continuous integration | ✅ | `.github/workflows/ci.yml` runs `cargo fmt --check` / `clippy -D warnings` / `test` (including the ignored smoke test against the real core) and `pnpm lint` / `test` / `build` on every pull request and push to `main`. |
 | Release builds | 📋 | No published binaries. Cross-platform bundles via `tauri-action`, triggered on tags. |
 | Code signing and notarisation | 📋 | Unsigned builds mean a Gatekeeper warning on macOS and a SmartScreen warning on Windows. Needs certificates and secrets before it's worth automating. |
-| In-app updates | 📋 | `tauri-plugin-updater` against the release feed. Depends on signed releases. |
+| Update notification | ✅ | On launch the app asks GitHub for the latest release and, if it is newer than the running build, the sidebar links straight to it. Silent when the check fails or there are no releases. |
+| In-app updates | 📋 | Downloading and applying the update in place, via `tauri-plugin-updater`. Depends on signed releases; today the notification just sends you to the release page. |
 | End-to-end connection verification | 📋 | `connect()` has never been run against a live server — only the generated config has been validated with `sing-box check`. Until someone does this, TUN mode and system proxy are unproven. |
 | Version number | 🟡 | `tauri.conf.json` is the single source of truth — Vite injects it into the frontend, and both package.json files no longer carry one. Still `0.0.0`: bump it there when the first release is cut. |
 

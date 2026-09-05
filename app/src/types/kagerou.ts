@@ -103,6 +103,12 @@ export interface LogEntry {
   message: string
 }
 
+/** A GitHub release newer than the running build. */
+export interface UpdateInfo {
+  version: string
+  url: string
+}
+
 /** The most recent per-second speed sample from sing-box, in bytes/s. */
 export interface TrafficSample {
   download: number
@@ -140,6 +146,7 @@ export interface KagerouStore {
   routingRules: RoutingRule[]
   logs: LogEntry[]
   trafficSample: TrafficSample
+  updateAvailable: UpdateInfo | null
   sessionTraffic: SessionTraffic
   settings: SettingsState
   hydrate: () => Promise<void>
