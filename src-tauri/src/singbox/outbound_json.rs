@@ -20,11 +20,21 @@ fn tls_block(enabled: bool, sni: Option<&str>, insecure: bool) -> Option<Value> 
     Some(tls)
 }
 
-fn transport_block(network: &str, ws_path: Option<&str>, ws_host: Option<&str>) -> Option<Value> {
+fn transport_block(
+    network: &str,
+    ws_path: Option<&str>,
+    ws_host: Option<&str>,
+    grpc_service_name: Option<&str>,
+) -> Option<Value> {
     if network == "tcp" || network.is_empty() {
         return None;
     }
     let mut transport = json!({ "type": network });
+    if network == "grpc" {
+        if let Some(service) = grpc_service_name {
+            transport["service_name"] = json!(service);
+        }
+    }
     if network == "ws" {
         if let Some(path) = ws_path {
             transport["path"] = json!(path);
@@ -68,9 +78,12 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
             if let Some(flow) = &o.flow {
                 value["flow"] = json!(flow);
             }
-            if let Some(transport) =
-                transport_block(&o.network, o.ws_path.as_deref(), o.ws_host.as_deref())
-            {
+            if let Some(transport) = transport_block(
+                &o.network,
+                o.ws_path.as_deref(),
+                o.ws_host.as_deref(),
+                o.grpc_service_name.as_deref(),
+            ) {
                 value["transport"] = transport;
             }
             value
@@ -84,7 +97,7 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
                 value["tls"] = tls;
             }
             if let Some(transport) =
-                transport_block(&o.network, o.ws_path.as_deref(), o.ws_host.as_deref())
+                transport_block(&o.network, o.ws_path.as_deref(), o.ws_host.as_deref(), None)
             {
                 value["transport"] = transport;
             }
@@ -95,7 +108,7 @@ pub fn to_singbox_outbound(parsed: &ParsedOutbound, tag: &str) -> Value {
                 "type": "trojan", "tag": tag, "server": o.server, "server_port": o.port,
                 "password": o.password, "tls": tls_block(true, o.sni.as_deref(), false).unwrap(),
             });
-            if let Some(transport) = transport_block(&o.network, None, None) {
+            if let Some(transport) = transport_block(&o.network, None, None, None) {
                 value["transport"] = transport;
             }
             value
@@ -149,6 +162,7 @@ mod tests {
             sni: Some("cdn.example.com".into()),
             ws_path: None,
             ws_host: None,
+            grpc_service_name: None,
             reality_public_key: Some("pbk".into()),
             reality_short_id: Some("sid".into()),
             fingerprint: None,
@@ -179,6 +193,7 @@ mod tests {
             sni: None,
             ws_path: None,
             ws_host: None,
+            grpc_service_name: None,
             reality_public_key: None,
             reality_short_id: None,
             fingerprint: None,
@@ -188,6 +203,19 @@ mod tests {
             json.get("tls").is_none(),
             "sing-box panics on a disabled-but-present tls block: {json}"
         );
+    }
+
+    #[test]
+    fn a_grpc_service_name_reaches_the_transport_block() {
+        let with_service = transport_block("grpc", None, None, Some("svc")).unwrap();
+        assert_eq!(with_service["type"], "grpc");
+        assert_eq!(with_service["service_name"], "svc");
+
+        // Links without one are common and valid: the key must be absent
+        // rather than an empty string.
+        let without = transport_block("grpc", None, None, None).unwrap();
+        assert_eq!(without["type"], "grpc");
+        assert!(without.get("service_name").is_none());
     }
 
     #[test]

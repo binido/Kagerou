@@ -129,9 +129,18 @@ fn parse_vless(line: &str) -> Result<VlessOutbound, SubscriptionError> {
             params.get("security").map(String::as_str),
             Some("tls") | Some("reality")
         ),
-        sni: params.get("sni").cloned(),
+        // `host` is the fallback SNI, as it already is for VMess above:
+        // a link that carries only `host=` still expects that name in the
+        // TLS handshake, and without it sing-box sends the server address —
+        // an IP, usually — which the server rejects.
+        sni: params
+            .get("sni")
+            .or_else(|| params.get("host"))
+            .cloned()
+            .filter(|s| !s.is_empty()),
         ws_path: params.get("path").cloned(),
         ws_host: params.get("host").cloned(),
+        grpc_service_name: params.get("serviceName").cloned().filter(|s| !s.is_empty()),
         reality_public_key: params.get("pbk").cloned(),
         reality_short_id: params.get("sid").cloned(),
         fingerprint: params.get("fp").cloned(),
@@ -156,7 +165,11 @@ fn parse_trojan(line: &str) -> Result<TrojanOutbound, SubscriptionError> {
         server,
         port,
         password: urlencoding_decode(password),
-        sni: params.get("sni").cloned(),
+        sni: params
+            .get("sni")
+            .or_else(|| params.get("host"))
+            .cloned()
+            .filter(|s| !s.is_empty()),
         network: params
             .get("type")
             .cloned()
@@ -249,7 +262,11 @@ fn parse_hysteria2(line: &str) -> Result<Hysteria2Outbound, SubscriptionError> {
         server,
         port,
         password: urlencoding_decode(password),
-        sni: params.get("sni").cloned(),
+        sni: params
+            .get("sni")
+            .or_else(|| params.get("host"))
+            .cloned()
+            .filter(|s| !s.is_empty()),
         insecure: matches!(
             params.get("insecure").map(String::as_str),
             Some("1") | Some("true")
@@ -279,7 +296,11 @@ fn parse_tuic(line: &str) -> Result<TuicOutbound, SubscriptionError> {
         port,
         uuid: urlencoding_decode(uuid),
         password: urlencoding_decode(password),
-        sni: params.get("sni").cloned(),
+        sni: params
+            .get("sni")
+            .or_else(|| params.get("host"))
+            .cloned()
+            .filter(|s| !s.is_empty()),
         congestion_control: params.get("congestion_control").cloned(),
         alpn: params
             .get("alpn")
@@ -458,6 +479,70 @@ pub fn to_uri(outbound: &ParsedOutbound) -> String {
 
 #[cfg(test)]
 mod tests {
+
+    /// A link that carries only `host=` still expects that name in the TLS
+    /// handshake. Losing it makes sing-box offer the server address instead,
+    /// which is usually a bare IP and gets the connection rejected.
+    #[test]
+    fn vless_falls_back_to_host_when_there_is_no_sni() {
+        let out =
+            parse_uri("vless://uuid@1.2.3.4:443?security=tls&type=ws&host=example.com&path=/p#n")
+                .unwrap();
+        match out {
+            ParsedOutbound::Vless(o) => {
+                assert_eq!(o.sni.as_deref(), Some("example.com"));
+                assert_eq!(o.ws_host.as_deref(), Some("example.com"));
+            }
+            other => panic!("expected vless, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_explicit_sni_wins_over_host() {
+        let out = parse_uri(
+            "vless://uuid@1.2.3.4:443?security=tls&sni=real.example&host=other.example#n",
+        )
+        .unwrap();
+        match out {
+            ParsedOutbound::Vless(o) => assert_eq!(o.sni.as_deref(), Some("real.example")),
+            other => panic!("expected vless, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn trojan_takes_the_same_fallback() {
+        let out = parse_uri("trojan://pass@1.2.3.4:443?type=ws&host=example.com#n").unwrap();
+        match out {
+            ParsedOutbound::Trojan(o) => assert_eq!(o.sni.as_deref(), Some("example.com")),
+            other => panic!("expected trojan, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn vless_keeps_the_grpc_service_name() {
+        let out =
+            parse_uri("vless://uuid@1.2.3.4:443?security=tls&type=grpc&serviceName=grpc-svc#n")
+                .unwrap();
+        match out {
+            ParsedOutbound::Vless(o) => {
+                assert_eq!(o.grpc_service_name.as_deref(), Some("grpc-svc"))
+            }
+            other => panic!("expected vless, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_empty_sni_or_service_name_is_treated_as_absent() {
+        let out = parse_uri("vless://uuid@1.2.3.4:443?security=tls&type=grpc&sni=&serviceName=#n")
+            .unwrap();
+        match out {
+            ParsedOutbound::Vless(o) => {
+                assert_eq!(o.sni, None);
+                assert_eq!(o.grpc_service_name, None);
+            }
+            other => panic!("expected vless, got {other:?}"),
+        }
+    }
     use super::*;
 
     #[test]
