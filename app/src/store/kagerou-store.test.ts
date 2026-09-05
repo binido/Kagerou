@@ -51,6 +51,8 @@ const emptySnapshot: AppSnapshot = {
     theme: 'catppuccin-mocha',
     language: 'en',
     startup: true,
+    tunMode: false,
+    systemProxy: false,
     tunInterface: 'utun / tun0',
     autoUpdateSubscriptions: false,
     subscriptionUpdateInterval: '30',
@@ -129,26 +131,24 @@ describe('toggleSidebar', () => {
   })
 })
 
-describe('toggleMode', () => {
-  it('tun only flips tunMode, proxy only flips systemProxy, with no backend call', () => {
-    const before = useKagerouStore.getState()
-    useKagerouStore.getState().toggleMode('tun')
-    expect(useKagerouStore.getState().tunMode).toBe(!before.tunMode)
-    expect(useKagerouStore.getState().systemProxy).toBe(before.systemProxy)
+describe('connection modes', () => {
+  it('are persisted settings, not runtime state: the backend decides TUN at connect time', async () => {
+    api.updateSettings.mockResolvedValue(undefined)
+    useKagerouStore.getState().updateSettings({ tunMode: true })
 
-    useKagerouStore.getState().toggleMode('proxy')
-    expect(useKagerouStore.getState().systemProxy).toBe(!before.systemProxy)
+    expect(useKagerouStore.getState().settings.tunMode).toBe(true)
+    expect(api.updateSettings).toHaveBeenCalledWith({ tunMode: true })
     expect(api.connect).not.toHaveBeenCalled()
     expect(api.disconnect).not.toHaveBeenCalled()
   })
 })
 
 describe('toggleConnection', () => {
-  it('calls connect with the current tunMode when disconnected', async () => {
-    useKagerouStore.setState({ connected: false, tunMode: true })
+  it('calls connect without arguments when disconnected', async () => {
+    useKagerouStore.setState({ connected: false })
     api.connect.mockResolvedValue(undefined)
     await useKagerouStore.getState().toggleConnection()
-    expect(api.connect).toHaveBeenCalledWith(true)
+    expect(api.connect).toHaveBeenCalledWith()
     expect(api.disconnect).not.toHaveBeenCalled()
   })
 
@@ -325,16 +325,15 @@ describe('backend event handling', () => {
     expect(useKagerouStore.getState().connected).toBe(false)
   })
 
-  it('a traffic sample event appends a telemetry point, capped at 60', async () => {
+  it('a traffic sample event replaces the latest speed sample', async () => {
     let handler: (event: TrafficEvent) => void = () => {}
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
 
     await useKagerouStore.getState().hydrate()
-    for (let i = 0; i < 65; i++) handler({ kind: 'sample', up: i, down: i * 2, uploadTotal: null, downloadTotal: null })
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null })
+    handler({ kind: 'sample', up: 64, down: 128, uploadTotal: null, downloadTotal: null })
 
-    const telemetry = useKagerouStore.getState().telemetry
-    expect(telemetry.length).toBe(60)
-    expect(telemetry.at(-1)).toEqual({ label: 'now', download: 128, upload: 64 })
+    expect(useKagerouStore.getState().trafficSample).toEqual({ download: 128, upload: 64 })
   })
 
   it('a traffic sample event replaces sessionTraffic with the backend-reported totals', async () => {
@@ -359,16 +358,16 @@ describe('backend event handling', () => {
     expect(useKagerouStore.getState().sessionTraffic).toEqual({ download: 500, upload: 100 })
   })
 
-  it('a non-sample traffic event (disconnected/reconnecting) does not touch telemetry', async () => {
+  it('a non-sample traffic event (disconnected/reconnecting) leaves the last sample alone', async () => {
     let handler: (event: TrafficEvent) => void = () => {}
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
-    useKagerouStore.setState({ telemetry: [] })
+    useKagerouStore.setState({ trafficSample: { download: 7, upload: 3 } })
 
     await useKagerouStore.getState().hydrate()
     handler({ kind: 'disconnected' })
     handler({ kind: 'reconnecting' })
 
-    expect(useKagerouStore.getState().telemetry).toEqual([])
+    expect(useKagerouStore.getState().trafficSample).toEqual({ download: 7, upload: 3 })
   })
 
   it('a log event is appended and level-detected from the message text', async () => {

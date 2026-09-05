@@ -16,7 +16,10 @@ pub use error::StorageError;
 /// Schema migrations, applied in order starting from `PRAGMA user_version`.
 /// Each entry is run inside its own transaction; on failure the transaction
 /// is rolled back and `user_version` is left at the last successful step.
-const MIGRATIONS: &[&str] = &[include_str!("migrations/0001_init.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("migrations/0001_init.sql"),
+    include_str!("migrations/0002_connection_modes.sql"),
+];
 
 /// A handle to the application's SQLite database.
 ///

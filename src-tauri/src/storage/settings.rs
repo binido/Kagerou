@@ -6,7 +6,7 @@ use super::{Db, StorageError};
 pub fn get(db: &Db) -> Result<Settings, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT theme, language, startup, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort
+        "SELECT theme, language, startup, tun_mode, system_proxy, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort
          FROM settings WHERE id = 1",
         [],
         |row| {
@@ -14,6 +14,8 @@ pub fn get(db: &Db) -> Result<Settings, StorageError> {
                 theme: row.get("theme")?,
                 language: row.get("language")?,
                 startup: row.get::<_, i64>("startup")? != 0,
+                tun_mode: row.get::<_, i64>("tun_mode")? != 0,
+                system_proxy: row.get::<_, i64>("system_proxy")? != 0,
                 tun_interface: row.get("tun_interface")?,
                 auto_update_subscriptions: row.get::<_, i64>("auto_update_subscriptions")? != 0,
                 subscription_update_interval: row.get("subscription_update_interval")?,
@@ -30,6 +32,8 @@ pub struct SettingsPatch<'a> {
     pub theme: Option<&'a str>,
     pub language: Option<&'a str>,
     pub startup: Option<bool>,
+    pub tun_mode: Option<bool>,
+    pub system_proxy: Option<bool>,
     pub tun_interface: Option<&'a str>,
     pub auto_update_subscriptions: Option<bool>,
     pub subscription_update_interval: Option<&'a str>,
@@ -44,16 +48,20 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             theme = COALESCE(?1, theme),
             language = COALESCE(?2, language),
             startup = COALESCE(?3, startup),
-            tun_interface = COALESCE(?4, tun_interface),
-            auto_update_subscriptions = COALESCE(?5, auto_update_subscriptions),
-            subscription_update_interval = COALESCE(?6, subscription_update_interval),
-            custom_subscription_update_minutes = COALESCE(?7, custom_subscription_update_minutes),
-            group_sort = COALESCE(?8, group_sort)
+            tun_mode = COALESCE(?4, tun_mode),
+            system_proxy = COALESCE(?5, system_proxy),
+            tun_interface = COALESCE(?6, tun_interface),
+            auto_update_subscriptions = COALESCE(?7, auto_update_subscriptions),
+            subscription_update_interval = COALESCE(?8, subscription_update_interval),
+            custom_subscription_update_minutes = COALESCE(?9, custom_subscription_update_minutes),
+            group_sort = COALESCE(?10, group_sort)
          WHERE id = 1",
         params![
             patch.theme,
             patch.language,
             patch.startup.map(|v| v as i64),
+            patch.tun_mode.map(|v| v as i64),
+            patch.system_proxy.map(|v| v as i64),
             patch.tun_interface,
             patch.auto_update_subscriptions.map(|v| v as i64),
             patch.subscription_update_interval,
@@ -99,6 +107,39 @@ mod tests {
         assert_eq!(settings.language, "en");
         assert!(settings.startup);
         assert_eq!(settings.subscription_update_interval, "30");
+        assert!(
+            !settings.tun_mode && !settings.system_proxy,
+            "connection modes default to off on a fresh install"
+        );
+    }
+
+    #[test]
+    fn connection_modes_round_trip() {
+        let db = Db::open_in_memory().unwrap();
+        update(
+            &db,
+            &SettingsPatch {
+                tun_mode: Some(true),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let settings = get(&db).unwrap();
+        assert!(settings.tun_mode);
+        assert!(!settings.system_proxy, "the two modes patch independently");
+
+        update(
+            &db,
+            &SettingsPatch {
+                tun_mode: Some(false),
+                system_proxy: Some(true),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let settings = get(&db).unwrap();
+        assert!(!settings.tun_mode);
+        assert!(settings.system_proxy);
     }
 
     #[test]

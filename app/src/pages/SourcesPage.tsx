@@ -7,6 +7,7 @@ import { AddSourceMenu } from '@/components/sources/AddSourceMenu'
 import { RemoveSourceDialog } from '@/components/sources/RemoveSourceDialog'
 import { SourceCard } from '@/components/sources/SourceCard'
 import { SourceDialog } from '@/components/sources/SourceDialog'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { deriveSubscriptionName } from '@/lib/formatters'
 import { useKagerouStore } from '@/store/kagerou-store'
@@ -89,19 +90,17 @@ export function SourcesPage() {
   const profileCount = profiles.length
 
   return (
-    <div className="min-h-screen min-w-0 bg-canvas px-6 pb-12 pt-8 lg:px-12 lg:pt-10">
-      <div className="mx-auto w-full max-w-[1040px]">
+    <PageContainer>
         <PageHeader actions={<AddSourceMenu onChoose={openAdd} />} description={t('page.description')} eyebrow={t('page.eyebrow')} title={t('page.title')} />
         <div className="mt-8 flex items-center justify-between border-b border-hairline pb-3 max-[720px]:items-start max-[720px]:gap-4">
           <p className="type-data text-body">{t('page.summary', { sources: sources.length, vpns: profileCount })}</p>
           <p className="flex items-center gap-2 text-[11px] text-muted-copy max-[720px]:text-right"><Info aria-hidden="true" className="size-3.5 shrink-0" />{t('page.info')}</p>
         </div>
-        <section aria-label={t('page.ariaLabel')} className="mt-4 space-y-3">
+        <section aria-label={t('page.ariaLabel')} className="mt-4 grid gap-3 lg:grid-cols-2">
           {sources.map((source) => <SourceCard key={source.id} onEdit={() => openEdit(source)} onRefresh={() => void refresh(source)} onRemove={() => setRemovingSource(source)} profileCount={profileCountBySourceId[source.id] ?? 0} refreshing={Boolean(refreshingIds[source.id])} source={source} />)}
         </section>
-      </div>
       <SourceDialog key={`${editingSource?.id ?? 'new'}-${dialogType}-${dialogOpen}`} initialType={dialogType} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingSource(null) }} onSubmit={handleSourceSubmit} open={dialogOpen} source={editingSource} />
       <RemoveSourceDialog onConfirm={confirmRemove} onOpenChange={(open) => { if (!open) setRemovingSource(null) }} source={removingSource} />
-    </div>
+    </PageContainer>
   )
 }

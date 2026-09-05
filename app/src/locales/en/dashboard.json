@@ -1,6 +1,6 @@
 {
   "page": {
-    "eyebrow": "Connection",
+    "eyebrow": "Kagerou  /  Connection",
     "title": "Dashboard"
   },
   "connection": {
@@ -13,19 +13,13 @@
     "connected": "Connected",
     "disconnected": "Disconnected",
     "connect": "Connect",
-    "disconnect": "Disconnect"
-  },
-  "modes": {
-    "tun": "TUN mode",
-    "systemProxy": "System proxy"
-  },
-  "telemetry": {
-    "title": "Live telemetry",
-    "window": "60 SEC",
-    "download": "Download",
-    "upload": "Upload",
-    "lastSeconds": "Last 60 seconds",
-    "unit": "Mbps",
-    "sessionTraffic": "Session traffic"
+    "disconnect": "Disconnect",
+    "traffic": {
+      "ariaLabel": "Current traffic",
+      "download": "Download speed",
+      "upload": "Upload speed",
+      "session": "Session traffic",
+      "unit": "Mbps"
+    }
   }
 }

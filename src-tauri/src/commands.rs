@@ -128,7 +128,10 @@ fn to_dashboard_event(
 }
 
 #[tauri::command]
-pub async fn connect(tun: bool, app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    // TUN is a stored preference, not a per-call argument: the frontend
+    // toggles it in settings, and it takes effect on the next connection.
+    let tun = settings::get(&state.db).map_err(to_err)?.tun_mode;
     let all_profiles = profiles::list_all(&state.db).map_err(to_err)?;
     let routing_rules = routing::list_rules(&state.db).map_err(to_err)?;
     let active_profile_id = settings::get_active_profile_id(&state.db)
@@ -796,6 +799,8 @@ pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), String>
 pub struct SettingsPatchInput {
     pub language: Option<String>,
     pub startup: Option<bool>,
+    pub tun_mode: Option<bool>,
+    pub system_proxy: Option<bool>,
     pub tun_interface: Option<String>,
     pub auto_update_subscriptions: Option<bool>,
     pub subscription_update_interval: Option<String>,
@@ -811,6 +816,8 @@ pub fn update_settings(patch: SettingsPatchInput, state: State<AppState>) -> Res
             theme: None,
             language: patch.language.as_deref(),
             startup: patch.startup,
+            tun_mode: patch.tun_mode,
+            system_proxy: patch.system_proxy,
             tun_interface: patch.tun_interface.as_deref(),
             auto_update_subscriptions: patch.auto_update_subscriptions,
             subscription_update_interval: patch.subscription_update_interval.as_deref(),

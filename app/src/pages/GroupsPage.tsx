@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
@@ -137,56 +138,54 @@ export function GroupsPage() {
   const sortedGroupProfiles = (group: ProfileGroup) => sortProfiles(visibleGroupProfiles(group), groupSort)
 
   return (
-    <div className="min-h-screen min-w-0 bg-canvas px-6 pb-10 pt-8 lg:px-12 lg:pt-10">
-      <div className="mx-auto w-full max-w-[1040px]">
-        <PageHeader
-          actions={(
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" onClick={() => { setGroupDialogTarget(null); setGroupDialogOpen(true) }} type="button" variant="outline"><FolderPlus aria-hidden="true" className="size-4" />{t('actions.addGroup')}</Button>
-              <Button className="h-10 gap-2 bg-lavender px-3.5 text-[12px] font-semibold text-ink hover:bg-lavender-hi" onClick={() => setAddOpen(true)} type="button"><Plus aria-hidden="true" className="size-4" />{t('actions.addSingleKey')}</Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" type="button" variant="outline"><Radar aria-hidden="true" className="size-4" />{t('actions.runTest')}<ChevronDown aria-hidden="true" className="size-3 text-muted-copy" /></Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 border-hairline bg-popover text-[11px]">
-                  <DropdownMenuLabel className="font-mono text-[9px] uppercase tracking-[0.08em] text-muted-copy">{t('test.allVpns')}</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={() => runAll('tcp')}><Loader2 aria-hidden="true" className="size-3.5" />{t('test.tcp')}</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => runAll('url')}><Radar aria-hidden="true" className="size-3.5" />{t('test.url')}</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => { setMessage(t('test.aboutText')) }}>{t('test.about')}</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-          description={t('page.description')}
-          eyebrow={t('page.eyebrow')}
-          title={t('page.title')}
-        />
+    <PageContainer>
+      <PageHeader
+        actions={(
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" onClick={() => { setGroupDialogTarget(null); setGroupDialogOpen(true) }} type="button" variant="outline"><FolderPlus aria-hidden="true" className="size-4" />{t('actions.addGroup')}</Button>
+            <Button className="h-10 gap-2 bg-lavender px-3.5 text-[12px] font-semibold text-ink hover:bg-lavender-hi" onClick={() => setAddOpen(true)} type="button"><Plus aria-hidden="true" className="size-4" />{t('actions.addSingleKey')}</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary" type="button" variant="outline"><Radar aria-hidden="true" className="size-4" />{t('actions.runTest')}<ChevronDown aria-hidden="true" className="size-3 text-muted-copy" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 border-hairline bg-popover text-[11px]">
+                <DropdownMenuLabel className="font-mono text-[9px] uppercase tracking-[0.08em] text-muted-copy">{t('test.allVpns')}</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={() => runAll('tcp')}><Loader2 aria-hidden="true" className="size-3.5" />{t('test.tcp')}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => runAll('url')}><Radar aria-hidden="true" className="size-3.5" />{t('test.url')}</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => { setMessage(t('test.aboutText')) }}>{t('test.about')}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        description={t('page.description')}
+        eyebrow={t('page.eyebrow')}
+        title={t('page.title')}
+      />
 
-        <div className="mt-7 flex flex-col gap-4">
-          {groupsForRender.map((group) => (
-            <ProfileGroupCard
-              group={group}
-              key={group.id}
-              movableGroups={movableGroups}
-              onDelete={setDeleteTarget}
-              onMoveToGroup={(profileId, targetGroupId) => {
-                const target = groups.find((candidate) => candidate.id === targetGroupId)
-                void moveProfileToGroup(profileId, targetGroupId).then((moved) => {
-                  setMessage(moved ? t('feedback.moved', { group: groupLabel(target) }) : t('feedback.moveSubscription'), moved ? 'good' : 'bad')
-                })
-              }}
-              onRename={(profile) => { setRenameTarget(profile); setRenameValue(profile.name) }}
-              onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}
-              onSelect={(id) => { selectProfile(id); const selected = profilesById.get(id); if (selected) setMessage(t('feedback.selected', { name: selected.name }), 'good') }}
-              onTest={runTest}
-              onToggle={() => setProfileGroupOpen(group.id, !group.open)}
-              profiles={sortedGroupProfiles(group)}
-              runningTests={runningTests}
-            />
-          ))}
-        </div>
-        <p aria-live="polite" className={`mt-4 min-h-[17px] text-[11px] ${feedbackTone === 'good' ? 'text-good' : feedbackTone === 'bad' ? 'text-bad' : 'text-muted-copy'}`}>{feedback}</p>
-        <p className="sr-only">{t('table.available', { count: profiles.length })}</p>
+      <div className="mt-7 flex flex-col gap-4">
+        {groupsForRender.map((group) => (
+          <ProfileGroupCard
+            group={group}
+            key={group.id}
+            movableGroups={movableGroups}
+            onDelete={setDeleteTarget}
+            onMoveToGroup={(profileId, targetGroupId) => {
+              const target = groups.find((candidate) => candidate.id === targetGroupId)
+              void moveProfileToGroup(profileId, targetGroupId).then((moved) => {
+                setMessage(moved ? t('feedback.moved', { group: groupLabel(target) }) : t('feedback.moveSubscription'), moved ? 'good' : 'bad')
+              })
+            }}
+            onRename={(profile) => { setRenameTarget(profile); setRenameValue(profile.name) }}
+            onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}
+            onSelect={(id) => { selectProfile(id); const selected = profilesById.get(id); if (selected) setMessage(t('feedback.selected', { name: selected.name }), 'good') }}
+            onTest={runTest}
+            onToggle={() => setProfileGroupOpen(group.id, !group.open)}
+            profiles={sortedGroupProfiles(group)}
+            runningTests={runningTests}
+          />
+        ))}
       </div>
+      <p aria-live="polite" className={`mt-4 min-h-[17px] text-[11px] ${feedbackTone === 'good' ? 'text-good' : feedbackTone === 'bad' ? 'text-bad' : 'text-muted-copy'}`}>{feedback}</p>
+      <p className="sr-only">{t('table.available', { count: profiles.length })}</p>
 
       <ProfileGroupDialog key={`${groupDialogTarget?.id ?? 'new'}-${groupDialogOpen}`} group={groupDialogTarget} onOpenChange={(open) => { setGroupDialogOpen(open); if (!open) setGroupDialogTarget(null) }} onSubmit={handleGroupSubmit} open={groupDialogOpen} />
 
@@ -232,6 +231,6 @@ export function GroupsPage() {
           <AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteTarget(null)}>{t('dialogs.delete.cancel')}</AlertDialogCancel><AlertDialogAction className="bg-bad text-primary hover:bg-bad/85" onClick={() => { if (!deleteTarget) return; const nameToDelete = deleteTarget.name; deleteProfile(deleteTarget.id); setDeleteTarget(null); setMessage(t('feedback.deleted', { name: nameToDelete }), 'good') }}>{t('dialogs.delete.submit')}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }

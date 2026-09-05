@@ -1,9 +1,11 @@
 {
   "page": {
+    "eyebrow": "Kagerou  /  Настройки",
     "title": "Настройки",
     "instant": "Изменения применяются сразу"
   },
   "sections": {
+    "connection": "Соединение",
     "appearance": "Внешний вид",
     "startup": "Запуск",
     "subscriptions": "Подписки",
@@ -13,6 +15,8 @@
   "fields": {
     "theme": "Тема",
     "language": "Язык",
+    "tunMode": "Режим TUN",
+    "systemProxy": "Системный прокси",
     "startAutomatically": "Запускать автоматически",
     "autoUpdateSubscriptions": "Автообновление подписок",
     "updateInterval": "Интервал обновления",
@@ -23,7 +27,9 @@
   "descriptions": {
     "autoUpdateSubscriptions": "Автоматически поддерживать группы URL-подписок актуальными.",
     "customInterval": "Выберите, как часто Kagerou проверяет удалённые подписки.",
-    "customIntervalA11y": "Количество минут между автоматическими обновлениями подписок."
+    "customIntervalA11y": "Количество минут между автоматическими обновлениями подписок.",
+    "tunMode": "Применится при следующем подключении.",
+    "systemProxyUnavailable": "Пока не реализовано — Kagerou не меняет системный прокси."
   },
   "options": {
     "interval5": "5 минут",

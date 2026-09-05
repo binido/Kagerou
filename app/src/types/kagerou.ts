@@ -103,8 +103,8 @@ export interface LogEntry {
   message: string
 }
 
-export interface TelemetryPoint {
-  label: string
+/** The most recent per-second speed sample from sing-box, in bytes/s. */
+export interface TrafficSample {
   download: number
   upload: number
 }
@@ -119,6 +119,8 @@ export interface SettingsState {
   theme: ThemeId
   language: Language
   startup: boolean
+  tunMode: boolean
+  systemProxy: boolean
   tunInterface: TunInterface
   autoUpdateSubscriptions: boolean
   subscriptionUpdateInterval: SubscriptionUpdateInterval
@@ -130,8 +132,6 @@ export interface KagerouStore {
   hydrated: boolean
   sidebarCollapsed: boolean
   connected: boolean
-  tunMode: boolean
-  systemProxy: boolean
   activeProfileId: string
   profiles: Profile[]
   profileGroups: ProfileGroup[]
@@ -139,13 +139,12 @@ export interface KagerouStore {
   routingPresets: RoutingPreset[]
   routingRules: RoutingRule[]
   logs: LogEntry[]
-  telemetry: TelemetryPoint[]
+  trafficSample: TrafficSample
   sessionTraffic: SessionTraffic
   settings: SettingsState
   hydrate: () => Promise<void>
   toggleSidebar: () => void
   toggleConnection: () => Promise<void>
-  toggleMode: (mode: 'tun' | 'proxy') => void
   setProfileGroupOpen: (id: string, open: boolean) => void
   addProfileGroup: (label: string) => Promise<string | null>
   renameProfileGroup: (id: string, label: string) => Promise<boolean>

@@ -1,5 +1,6 @@
 {
   "page": {
+    "eyebrow": "Kagerou  /  Logs",
     "title": "Logs",
     "description": "Connection events and service output",
     "connected": "Connected"

@@ -1,9 +1,11 @@
 {
   "page": {
+    "eyebrow": "Kagerou  /  Settings",
     "title": "Settings",
     "instant": "Changes apply instantly"
   },
   "sections": {
+    "connection": "Connection",
     "appearance": "Appearance",
     "startup": "Startup",
     "subscriptions": "Subscriptions",
@@ -13,6 +15,8 @@
   "fields": {
     "theme": "Theme",
     "language": "Language",
+    "tunMode": "TUN mode",
+    "systemProxy": "System proxy",
     "startAutomatically": "Start automatically",
     "autoUpdateSubscriptions": "Auto-update subscriptions",
     "updateInterval": "Update interval",
@@ -23,7 +27,9 @@
   "descriptions": {
     "autoUpdateSubscriptions": "Keep URL subscription groups fresh automatically.",
     "customInterval": "Choose how often Kagerou checks remote subscriptions.",
-    "customIntervalA11y": "Minutes between automatic subscription updates."
+    "customIntervalA11y": "Minutes between automatic subscription updates.",
+    "tunMode": "Applies the next time you connect.",
+    "systemProxyUnavailable": "Not implemented yet — Kagerou does not change your system proxy."
   },
   "options": {
     "interval5": "5 minutes",
