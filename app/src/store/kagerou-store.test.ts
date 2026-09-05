@@ -16,6 +16,8 @@ const api = vi.hoisted(() => ({
   moveProfile: vi.fn(),
   reorderProfiles: vi.fn(),
   runProfileTest: vi.fn(),
+  clearGroupTestResults: vi.fn(),
+  deleteUnavailableProfiles: vi.fn(),
   setProfileGroupOpen: vi.fn(),
   addProfileGroup: vi.fn(),
   renameProfileGroup: vi.fn(),
@@ -291,6 +293,53 @@ describe('runProfileTest', () => {
 
     expect(result).toBeNull()
     expect(useKagerouStore.getState().profiles[0]).toEqual(original)
+  })
+})
+
+describe('clearGroupTestResults', () => {
+  it('calls the backend for the group and refreshes from the snapshot', async () => {
+    const refreshed = [profile({ id: 'p1' })]
+    api.clearGroupTestResults.mockResolvedValue(undefined)
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, profiles: refreshed })
+
+    await useKagerouStore.getState().clearGroupTestResults('g1')
+
+    expect(api.clearGroupTestResults).toHaveBeenCalledWith('g1')
+    expect(useKagerouStore.getState().profiles).toEqual(refreshed)
+  })
+
+  it('keeps state when the backend call fails', async () => {
+    const original = [profile({ id: 'p1' })]
+    useKagerouStore.setState({ profiles: original })
+    api.clearGroupTestResults.mockRejectedValue(new Error('boom'))
+
+    await useKagerouStore.getState().clearGroupTestResults('g1')
+
+    expect(useKagerouStore.getState().profiles).toEqual(original)
+  })
+})
+
+describe('deleteUnavailableProfiles', () => {
+  it('returns the deleted count and refreshes from the snapshot', async () => {
+    api.deleteUnavailableProfiles.mockResolvedValue(3)
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, profiles: [profile({ id: 'p1' })] })
+
+    const deleted = await useKagerouStore.getState().deleteUnavailableProfiles('g1', 'tcp')
+
+    expect(deleted).toBe(3)
+    expect(api.deleteUnavailableProfiles).toHaveBeenCalledWith('g1', 'tcp')
+    expect(useKagerouStore.getState().profiles.map((p) => p.id)).toEqual(['p1'])
+  })
+
+  it('returns 0 and keeps state when the backend call fails', async () => {
+    const original = [profile({ id: 'p1' })]
+    useKagerouStore.setState({ profiles: original })
+    api.deleteUnavailableProfiles.mockRejectedValue(new Error('boom'))
+
+    const deleted = await useKagerouStore.getState().deleteUnavailableProfiles('g1', 'url')
+
+    expect(deleted).toBe(0)
+    expect(useKagerouStore.getState().profiles).toEqual(original)
   })
 })
 

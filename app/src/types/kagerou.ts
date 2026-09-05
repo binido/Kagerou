@@ -163,6 +163,8 @@ export interface KagerouStore {
   moveProfile: (id: string, direction: 'up' | 'down') => Promise<boolean>
   reorderProfiles: (fromId: string, toId: string) => Promise<boolean>
   runProfileTest: (id: string, method: TestMethod) => Promise<TestResult | null>
+  clearGroupTestResults: (groupId: string) => Promise<void>
+  deleteUnavailableProfiles: (groupId: string, method: TestMethod) => Promise<number>
   addSource: (input: AddSourceInput) => Promise<string | null>
   updateSource: (id: string, patch: Partial<Pick<Source, 'name' | 'value'>>) => Promise<boolean>
   refreshSource: (id: string) => Promise<void>
