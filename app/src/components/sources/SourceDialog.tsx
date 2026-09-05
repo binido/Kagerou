@@ -20,12 +20,25 @@ interface SourceDialogProps {
 
 export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit }: SourceDialogProps) {
   const { t } = useTranslation('sources')
-  const [type, setType] = useState<SourceType>(source?.type ?? initialType)
-  const [name, setName] = useState(source?.name ?? '')
-  const [value, setValue] = useState(source?.type === 'url' ? '' : source?.value ?? '')
+  const [type, setType] = useState<SourceType>(initialType)
+  const [name, setName] = useState('')
+  const [value, setValue] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [prevOpen, setPrevOpen] = useState(open)
   const editing = Boolean(source)
+
+  // reset when open flips: the parent batches source/initialType with open, so the dialog never paints the previous target's values
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) {
+      setType(source?.type ?? initialType)
+      setName(source?.name ?? '')
+      setValue(source?.type === 'url' ? '' : source?.value ?? '')
+      setError('')
+      setSubmitting(false)
+    }
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
