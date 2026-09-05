@@ -364,11 +364,12 @@ pub async fn run_profile_test(
         });
     };
 
+    // Both methods hit the same Clash delay endpoint; the branch only
+    // changes how the result is displayed, so one URL serves both.
+    let test_url = settings::get(&state.db).map_err(to_err)?.test_url;
+
     match method.as_str() {
-        "tcp" => match clash
-            .test_delay(&profile_id, "http://www.gstatic.com/generate_204", 5000)
-            .await
-        {
+        "tcp" => match clash.test_delay(&profile_id, &test_url, 5000).await {
             Ok(delay_ms) => {
                 let tone = if delay_ms < 150 {
                     Tone::Good
@@ -403,10 +404,7 @@ pub async fn run_profile_test(
                 Ok(result)
             }
         },
-        "url" => match clash
-            .test_delay(&profile_id, "http://www.gstatic.com/generate_204", 5000)
-            .await
-        {
+        "url" => match clash.test_delay(&profile_id, &test_url, 5000).await {
             Ok(_) => {
                 let result = TestResult {
                     value: "200 OK".to_string(),
@@ -817,6 +815,7 @@ pub struct SettingsPatchInput {
     pub custom_subscription_update_minutes: Option<i64>,
     pub group_sort: Option<String>,
     pub log_level: Option<String>,
+    pub test_url: Option<String>,
 }
 
 #[tauri::command]
@@ -835,6 +834,7 @@ pub fn update_settings(patch: SettingsPatchInput, state: State<AppState>) -> Res
             custom_subscription_update_minutes: patch.custom_subscription_update_minutes,
             group_sort: patch.group_sort.as_deref(),
             log_level: patch.log_level.as_deref(),
+            test_url: patch.test_url.as_deref(),
         },
     )
     .map_err(to_err)

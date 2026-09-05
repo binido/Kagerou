@@ -105,6 +105,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       customSubscriptionUpdateMinutes: 60,
       groupSort: 'ping',
       logLevel: 'info',
+      testUrl: 'http://www.gstatic.com/generate_204',
     },
 
     hydrate: async () => {

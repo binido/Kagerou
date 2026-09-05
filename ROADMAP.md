@@ -53,7 +53,7 @@ row.
 | System proxy | 🟡 | The settings row is present but disabled, and says so. Nothing sets the OS proxy: no `networksetup` (macOS), registry write (Windows), or GSettings/environment handling (Linux). The preference persists; only the effect is missing. **Discuss first.** |
 | Inbound listen address and port | 📋 | The mixed inbound is hardcoded to `127.0.0.1:2080` and the Clash API to `127.0.0.1:9090`. Both should be settings, along with an "allow LAN access" toggle that binds `0.0.0.0`. **Good first issue.** |
 | Configurable log level | ✅ | sing-box's log level is a stored setting in a Diagnostics section of the settings page; like TUN mode, it applies on the next connection. |
-| Configurable connection-test URL | 📋 | Delay tests hardcode `http://www.gstatic.com/generate_204`. **Good first issue.** |
+| Configurable connection-test URL | ✅ | The delay-test URL is a stored setting in Diagnostics, used by both the TCP and URL tests; blank values are rejected. |
 | TUN tuning: MTU, stack, IPv6 mode | 📋 | Hardcoded to `stack: system`, `172.19.0.1/30`, no MTU or IPv6 handling. The existing `tunInterface` setting is stored but never read by the config generator — either wire it up or drop it. **Discuss first.** |
 | Auto-connect on launch | 📋 | Connect to the last active profile on startup, gated by a setting. **Good first issue.** |
 | Reset connections on network change / wake | 📋 | sing-box holds stale connections after a network switch or a laptop resume. NekoBox has both as toggles. **Discuss first.** |

@@ -135,6 +135,7 @@ export interface SettingsState {
   customSubscriptionUpdateMinutes: number
   groupSort: GroupSortMode
   logLevel: SingBoxLogLevel
+  testUrl: string
 }
 
 export interface KagerouStore {
