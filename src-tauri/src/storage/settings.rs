@@ -120,7 +120,10 @@ mod tests {
         let settings = get(&db).unwrap();
         assert_eq!(settings.theme, "catppuccin-mocha");
         assert_eq!(settings.language, "en");
-        assert!(settings.startup);
+        assert!(
+            !settings.startup,
+            "a fresh install must not add itself to login items unasked"
+        );
         assert_eq!(settings.subscription_update_interval, "30");
         assert!(
             !settings.tun_mode && !settings.system_proxy,

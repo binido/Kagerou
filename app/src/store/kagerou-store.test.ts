@@ -51,7 +51,7 @@ const emptySnapshot: AppSnapshot = {
   settings: {
     theme: 'catppuccin-mocha',
     language: 'en',
-    startup: true,
+    startup: false,
     tunMode: false,
     systemProxy: false,
     tunInterface: 'utun / tun0',

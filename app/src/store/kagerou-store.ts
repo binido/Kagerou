@@ -96,7 +96,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     settings: {
       theme: getInitialThemeId(),
       language: 'en',
-      startup: true,
+      startup: false,
       tunMode: false,
       systemProxy: false,
       tunInterface: 'utun / tun0',
