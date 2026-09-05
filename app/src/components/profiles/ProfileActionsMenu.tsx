@@ -3,10 +3,8 @@ import {
   ExternalLink,
   MoreHorizontal,
   Pencil,
-  Plug,
   Trash2,
   Waypoints,
-  Wifi,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -21,7 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { Profile, ProfileGroup, TestMethod } from '@/types/kagerou'
+import type { Profile, ProfileGroup } from '@/types/kagerou'
 
 interface ProfileActionsMenuProps {
   profile: Profile
@@ -29,7 +27,7 @@ interface ProfileActionsMenuProps {
   onRename: () => void
   onMoveToGroup: (groupId: string) => void
   onDelete: () => void
-  onTest: (method: TestMethod) => void
+  onTest: () => void
 }
 
 export function ProfileActionsMenu({ profile, movableGroups, onRename, onMoveToGroup, onDelete, onTest }: ProfileActionsMenuProps) {
@@ -69,23 +67,10 @@ export function ProfileActionsMenu({ profile, movableGroups, onRename, onMoveToG
           <span>{t('menu.delete')}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Waypoints aria-hidden="true" className="size-3.5" />
-            <span>{t('menu.test')}</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-48 border-hairline bg-popover p-1.5 text-[11px]">
-            <div className="px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.08em] text-muted-copy">{profile.name}</div>
-            <DropdownMenuItem onSelect={() => onTest('tcp')}>
-              <Plug aria-hidden="true" className="size-3.5" />
-              <span>{t('test.tcp')}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onTest('url')}>
-              <Wifi aria-hidden="true" className="size-3.5" />
-              <span>{t('test.url')}</span>
-            </DropdownMenuItem>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+        <DropdownMenuItem onSelect={onTest}>
+          <Waypoints aria-hidden="true" className="size-3.5" />
+          <span>{t('menu.test')}</span>
+        </DropdownMenuItem>
         {!local ? (
           <>
             <DropdownMenuSeparator />

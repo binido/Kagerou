@@ -229,11 +229,11 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       }
     },
 
-    runProfileTest: async (id, method) => {
+    runProfileTest: async (id) => {
       try {
-        const result = await kagerouApi.runProfileTest(id, method)
+        const result = await kagerouApi.runProfileTest(id)
         set((state) => ({
-          profiles: state.profiles.map((profile) => (profile.id === id ? { ...profile, [method]: result } : profile)),
+          profiles: state.profiles.map((profile) => (profile.id === id ? { ...profile, url: result } : profile)),
         }))
         return result
       } catch (error) {
@@ -251,9 +251,9 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       }
     },
 
-    deleteUnavailableProfiles: async (groupId, method) => {
+    deleteUnavailableProfiles: async (groupId) => {
       try {
-        const deleted = await kagerouApi.deleteUnavailableProfiles(groupId, method)
+        const deleted = await kagerouApi.deleteUnavailableProfiles(groupId)
         await refresh()
         return deleted
       } catch (error) {

@@ -1,18 +1,11 @@
-import type { GroupSortMode, Profile, TestResult } from '@/types/kagerou'
+import type { GroupSortMode, Profile } from '@/types/kagerou'
 
 const latencyPattern = /^(\d+)\s*ms$/i
 
-const latencyOf = (result: TestResult) => {
-  const match = result.value.match(latencyPattern)
-  return match ? Number(match[1]) : Number.POSITIVE_INFINITY
-}
-
-/** Sorts on the latency through the proxy, since that is what the connection
- * will actually feel like, and falls back to the reachability ping for
- * profiles the URL test has not reached yet. */
+/** Untested and failed profiles sort last: neither yields a latency. */
 const pingValue = (profile: Profile) => {
-  const url = latencyOf(profile.url)
-  return Number.isFinite(url) ? url : latencyOf(profile.tcp)
+  const match = profile.url.value.match(latencyPattern)
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY
 }
 
 export const sortProfiles = (profiles: Profile[], mode: GroupSortMode) => profiles

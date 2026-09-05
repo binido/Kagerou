@@ -74,7 +74,6 @@ const profile = (overrides: Partial<Profile> = {}): Profile => ({
   origin: 'local',
   groupId: 'default',
   selected: false,
-  tcp: { value: 'Not tested', tone: 'muted' },
   url: { value: 'Not tested', tone: 'muted' },
   key: 'vless://p1',
   ...overrides,
@@ -280,10 +279,10 @@ describe('runProfileTest', () => {
     useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
     api.runProfileTest.mockResolvedValue({ value: '42 ms', tone: 'good' })
 
-    const result = await useKagerouStore.getState().runProfileTest('p1', 'tcp')
+    const result = await useKagerouStore.getState().runProfileTest('p1')
 
     expect(result).toEqual({ value: '42 ms', tone: 'good' })
-    expect(useKagerouStore.getState().profiles[0].tcp).toEqual({ value: '42 ms', tone: 'good' })
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({ value: '42 ms', tone: 'good' })
   })
 
   it('returns null and leaves the profile untouched when the backend call fails', async () => {
@@ -291,7 +290,7 @@ describe('runProfileTest', () => {
     useKagerouStore.setState({ profiles: [original] })
     api.runProfileTest.mockRejectedValue(new Error('not connected'))
 
-    const result = await useKagerouStore.getState().runProfileTest('p1', 'tcp')
+    const result = await useKagerouStore.getState().runProfileTest('p1')
 
     expect(result).toBeNull()
     expect(useKagerouStore.getState().profiles[0]).toEqual(original)
@@ -326,10 +325,10 @@ describe('deleteUnavailableProfiles', () => {
     api.deleteUnavailableProfiles.mockResolvedValue(3)
     api.getAppState.mockResolvedValue({ ...emptySnapshot, profiles: [profile({ id: 'p1' })] })
 
-    const deleted = await useKagerouStore.getState().deleteUnavailableProfiles('g1', 'tcp')
+    const deleted = await useKagerouStore.getState().deleteUnavailableProfiles('g1')
 
     expect(deleted).toBe(3)
-    expect(api.deleteUnavailableProfiles).toHaveBeenCalledWith('g1', 'tcp')
+    expect(api.deleteUnavailableProfiles).toHaveBeenCalledWith('g1')
     expect(useKagerouStore.getState().profiles.map((p) => p.id)).toEqual(['p1'])
   })
 
@@ -338,7 +337,7 @@ describe('deleteUnavailableProfiles', () => {
     useKagerouStore.setState({ profiles: original })
     api.deleteUnavailableProfiles.mockRejectedValue(new Error('boom'))
 
-    const deleted = await useKagerouStore.getState().deleteUnavailableProfiles('g1', 'url')
+    const deleted = await useKagerouStore.getState().deleteUnavailableProfiles('g1')
 
     expect(deleted).toBe(0)
     expect(useKagerouStore.getState().profiles).toEqual(original)

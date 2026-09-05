@@ -6,7 +6,6 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::app_state::AppState;
 use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
-use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
     NewProfile, NewProfileGroup, NewRoutingRule, NewSource, Profile, ProfileGroup, Protocol,
@@ -305,19 +304,13 @@ pub fn clear_test_results(group_id: String, state: State<AppState>) -> Result<()
 #[tauri::command]
 pub fn delete_unavailable_profiles(
     group_id: String,
-    method: String,
     state: State<AppState>,
 ) -> Result<usize, String> {
-    let method = match method.as_str() {
-        "tcp" => profiles::TestMethod::Tcp,
-        "url" => profiles::TestMethod::Url,
-        other => return Err(format!("unknown test method: {other}")),
-    };
     // The active profile is skipped at the command layer: storage stays
     // ignorant of settings, and generate()'s silent fallback to the first
     // profile never gets a chance to happen.
     let active = settings::get_active_profile_id(&state.db).map_err(to_err)?;
-    profiles::delete_unavailable(&state.db, &group_id, method, active.as_deref()).map_err(to_err)
+    profiles::delete_unavailable(&state.db, &group_id, active.as_deref()).map_err(to_err)
 }
 
 #[tauri::command]
@@ -378,24 +371,13 @@ pub fn reorder_profiles(
 #[tauri::command]
 pub async fn run_profile_test(
     profile_id: String,
-    method: String,
     state: State<'_, AppState>,
 ) -> Result<TestResult, String> {
-    let result = match method.as_str() {
-        "tcp" => ping_profile(&profile_id, &state).await?,
-        "url" => url_test_profile(&profile_id, &state).await?,
-        other => return Err(format!("unknown test method: {other}")),
-    };
-
-    let stored_as = if method == "tcp" {
-        profiles::TestMethod::Tcp
-    } else {
-        profiles::TestMethod::Url
-    };
-    // "Not connected" and "n/a" describe the attempt, not the server, so they
-    // are reported without overwriting whatever the last real test found.
+    let result = url_test_profile(&profile_id, &state).await?;
+    // "Not connected" describes the attempt, not the server, so it is reported
+    // without overwriting whatever the last real test found.
     if result.tone != Tone::Muted {
-        let _ = profiles::set_test_result(&state.db, &profile_id, stored_as, &result);
+        let _ = profiles::set_test_result(&state.db, &profile_id, &result);
     }
     Ok(result)
 }
@@ -407,30 +389,6 @@ fn latency_tone(delay_ms: u32) -> Tone {
         Tone::Warn
     } else {
         Tone::Bad
-    }
-}
-
-/// Round trip to the proxy server itself. Needs no running core, so it works
-/// while disconnected — the point of having it alongside the URL test.
-async fn ping_profile(profile_id: &str, state: &State<'_, AppState>) -> Result<TestResult, String> {
-    let profile = profiles::get(&state.db, profile_id).map_err(to_err)?;
-    let outbound = subscription::parse_uri(&profile.key).map_err(to_err)?;
-    if !outbound.answers_tcp() {
-        return Ok(TestResult {
-            value: "n/a".to_string(),
-            tone: Tone::Muted,
-        });
-    }
-
-    match probe::tcp_ping(outbound.server(), outbound.port(), Duration::from_secs(5)).await {
-        Some(delay_ms) => Ok(TestResult {
-            value: format!("{delay_ms} ms"),
-            tone: latency_tone(delay_ms),
-        }),
-        None => Ok(TestResult {
-            value: "No response".to_string(),
-            tone: Tone::Bad,
-        }),
     }
 }
 

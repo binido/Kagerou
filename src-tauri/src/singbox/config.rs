@@ -162,10 +162,6 @@ mod tests {
             group_id: "g".into(),
             source_id: None,
             selected: false,
-            tcp: TestResult {
-                value: "".into(),
-                tone: Tone::Muted,
-            },
             url: TestResult {
                 value: "".into(),
                 tone: Tone::Muted,

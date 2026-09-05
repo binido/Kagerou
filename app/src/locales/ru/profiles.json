@@ -9,23 +9,14 @@
     "addSingleKey": "Добавить ключ",
     "runTest": "Запустить проверку"
   },
-  "test": {
-    "allVpns": "Все VPN",
-    "tcp": "TCP-соединение",
-    "tcpShort": "TCP",
-    "url": "Проверка URL",
-    "urlShort": "URL",
-    "about": "О диагностике",
-    "aboutText": "В этом прототипе диагностика использует данные тестового сервиса."
-  },
   "fallback": {
     "vpn": "VPN",
     "group": "группа"
   },
   "feedback": {
-    "testRunning": "Запущена {{method}} для {{name}}…",
-    "testRunningAll": "Запущена {{method}} для всех VPN…",
-    "testFinished": "{{method}} завершена для {{name}}: {{value}}.",
+    "testRunning": "Проверяем {{name}}…",
+    "testRunningAll": "Проверяем все VPN…",
+    "testFinished": "{{name}}: {{value}}.",
     "added": "{{name}} добавлен в группу «Default».",
     "vpnNameEmpty": "Имя VPN не может быть пустым.",
     "renameLocalOnly": "Переименовывать можно только локальные VPN.",
@@ -36,7 +27,7 @@
     "moveSubscription": "VPN подписки нельзя переместить в другую группу.",
     "selected": "{{name}} готов к следующему подключению.",
     "deleted": "{{name}} удалён из локальных VPN.",
-    "testRunningGroup": "Запущена {{method}} для группы «{{group}}»…",
+    "testRunningGroup": "Проверяем {{group}}…",
     "resultsCleared": "Результаты проверок очищены для «{{group}}».",
     "nothingUnavailable": "В «{{group}}» нет недоступных VPN.",
     "deletedUnavailable": "Удалено недоступных VPN из «{{group}}»: {{count}}.",
@@ -56,7 +47,6 @@
     "vpn": "VPN",
     "protocol": "Протокол",
     "ping": "Пинг",
-    "url": "URL",
     "use": "Использовать",
     "selected": "Выбрано",
     "actions": "Действия",
@@ -65,7 +55,6 @@
     "localVpn": "Локальный VPN",
     "managedBySubscription": "Управляется подпиской",
     "available": "Доступно VPN: {{count}}.",
-    "checking": "Проверка…",
     "running": "Выполняется…"
   },
   "menu": {

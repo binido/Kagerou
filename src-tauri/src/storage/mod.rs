@@ -22,6 +22,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0003_settings_log_level.sql"),
     include_str!("migrations/0004_settings_test_url.sql"),
     include_str!("migrations/0005_startup_defaults_off.sql"),
+    include_str!("migrations/0006_drop_tcp_test.sql"),
 ];
 
 /// A handle to the application's SQLite database.
@@ -195,10 +196,10 @@ mod tests {
             let conn = db.lock();
             conn.execute_batch(
                 "INSERT INTO profile_groups (id, label, kind, source_id, is_open, position) VALUES ('g', 'Default', 'default', NULL, 1, 0);
-                 INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, tcp_value, tcp_tone, url_value, url_tone, key, position) VALUES
-                   ('p1','P1','r','VLESS','local','g',NULL,1,'','muted','','muted','k1',0),
-                   ('p2','P2','r','VLESS','local','g',NULL,0,'','muted','','muted','k2',1),
-                   ('p3','P3','r','VLESS','local','g',NULL,0,'','muted','','muted','k3',2);",
+                 INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key, position) VALUES
+                   ('p1','P1','r','VLESS','local','g',NULL,1,'','muted','k1',0),
+                   ('p2','P2','r','VLESS','local','g',NULL,0,'','muted','k2',1),
+                   ('p3','P3','r','VLESS','local','g',NULL,0,'','muted','k3',2);",
             )
             .unwrap();
         }

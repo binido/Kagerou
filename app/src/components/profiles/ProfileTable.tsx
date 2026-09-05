@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProfileActionsMenu } from '@/components/profiles/ProfileActionsMenu'
 import { ResultBadge } from '@/components/common/ResultBadge'
 import { cn } from '@/lib/utils'
-import type { Profile, ProfileGroup, TestMethod, TestResult } from '@/types/kagerou'
+import type { Profile, ProfileGroup, TestResult } from '@/types/kagerou'
 
 interface ProfileTableProps {
   profiles: Profile[]
@@ -18,13 +18,9 @@ interface ProfileTableProps {
   onRename: (profile: Profile) => void
   onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
-  onTest: (id: string, method: TestMethod) => void
+  onTest: (id: string) => void
 }
 
-interface ProfileResultState {
-  ping: TestResult
-  url: TestResult
-}
 
 // Tailwind's max-[1220px] compiles to `width < 1220px`; max-width: 1220px would disagree with it at exactly 1220
 const NARROW_QUERY = '(max-width: 1219.98px)'
@@ -39,17 +35,8 @@ function useNarrowViewport() {
   return useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches)
 }
 
-function getProfileResultState(profile: Profile, runningTests: Record<string, boolean>, labels: { checking: string; running: string }): ProfileResultState {
-  const runningTcp = runningTests[`${profile.id}:tcp`]
-  const runningUrl = runningTests[`${profile.id}:url`]
-
-  // Each column reports its own measurement. They answer different questions
-  // — the ping reaches the server directly, the URL test goes through the
-  // proxy — so neither stands in for the other.
-  return {
-    ping: runningTcp ? { value: labels.running, tone: 'warn' } : profile.tcp,
-    url: runningUrl ? { value: labels.running, tone: 'warn' } : profile.url,
-  }
+function getProfileResult(profile: Profile, runningTests: Record<string, boolean>, runningLabel: string): TestResult {
+  return runningTests[profile.id] ? { value: runningLabel, tone: 'warn' } : profile.url
 }
 
 function ProfileSelectButton({ profile, compact = false, onSelect }: { profile: Profile; compact?: boolean; onSelect: (id: string) => void }) {
@@ -77,12 +64,12 @@ function ProfileCompactRow({
   profile: Profile
   index: number
   movableGroups: ProfileGroup[]
-  result: ProfileResultState
+  result: TestResult
   onSelect: (id: string) => void
   onRename: (profile: Profile) => void
   onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
-  onTest: (id: string, method: TestMethod) => void
+  onTest: (id: string) => void
 }) {
   const { t } = useTranslation('profiles')
 
@@ -101,15 +88,11 @@ function ProfileCompactRow({
           <span className="rounded-md bg-raised px-2 py-1 font-mono text-body">{profile.protocol}</span>
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <span>{t('table.ping')}</span>
-            <ResultBadge tone={result.ping.tone} value={result.ping.value} />
-          </span>
-          <span className="inline-flex min-w-0 items-center gap-1.5">
-            <span>{t('table.url')}</span>
-            <ResultBadge tone={result.url.tone} value={result.url.value} />
+            <ResultBadge tone={result.tone} value={result.value} />
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-1.5">
             <ProfileSelectButton compact onSelect={onSelect} profile={profile} />
-            <ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} />
+            <ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={() => onTest(profile.id)} profile={profile} />
           </span>
         </div>
       </div>
@@ -119,7 +102,7 @@ function ProfileCompactRow({
 
 export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileTableProps) {
   const { t } = useTranslation('profiles')
-  const testLabels = { checking: t('table.checking'), running: t('table.running') }
+  const runningLabel = t('table.running')
   const narrow = useNarrowViewport()
 
   return (
@@ -136,7 +119,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
             onSelect={onSelect}
             onTest={onTest}
             profile={profile}
-            result={getProfileResultState(profile, runningTests, testLabels)}
+            result={getProfileResult(profile, runningTests, runningLabel)}
           />
         ))
       ) : (
@@ -146,15 +129,14 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
               <TableHead className="w-[58px] px-5 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.order')}</TableHead>
               <TableHead className="w-[30%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.vpn')}</TableHead>
               <TableHead className="w-[12%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.protocol')}</TableHead>
-              <TableHead className="w-[13%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.ping')}</TableHead>
-              <TableHead className="w-[14%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.url')}</TableHead>
+              <TableHead className="w-[27%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.ping')}</TableHead>
               <TableHead className="w-[13%] whitespace-nowrap px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.use')}</TableHead>
               <TableHead className="w-[54px] px-3 py-3 text-right text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy"><span className="sr-only">{t('table.actions')}</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {profiles.map((profile, index) => {
-              const result = getProfileResultState(profile, runningTests, testLabels)
+              const result = getProfileResult(profile, runningTests, runningLabel)
               return (
                 <TableRow className={cn('min-h-[75px] border-b border-hairline/55 text-body hover:bg-row-hover focus-within:bg-row-hover', profile.selected && 'bg-selected hover:bg-selected')} data-profile-id={profile.id} key={profile.id}>
                   <TableCell className="px-5 py-4 align-middle"><div className="font-mono text-[12px] tabular-nums text-muted-copy"><span className="w-3 text-center">{index + 1}</span></div></TableCell>
@@ -165,10 +147,9 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
                     </div>
                   </TableCell>
                   <TableCell className="px-3 py-4 align-middle"><span className="inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[10px] text-body">{profile.protocol}</span></TableCell>
-                  <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.ping.tone} value={result.ping.value} /></TableCell>
-                  <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.url.tone} value={result.url.value} /></TableCell>
+                  <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.tone} value={result.value} /></TableCell>
                   <TableCell className="px-3 py-4 align-middle"><ProfileSelectButton onSelect={onSelect} profile={profile} /></TableCell>
-                  <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={(method) => onTest(profile.id, method)} profile={profile} /></TableCell>
+                  <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={() => onTest(profile.id)} profile={profile} /></TableCell>
                 </TableRow>
               )
             })}
