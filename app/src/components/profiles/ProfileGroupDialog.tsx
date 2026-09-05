@@ -21,12 +21,16 @@ export function ProfileGroupDialog({ open, group, onOpenChange, onSubmit }: Prof
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [prevOpen, setPrevOpen] = useState(open)
-  const isRename = Boolean(group)
+  // Snapshot rather than read live: the parent clears `group` on close, and the
+  // dialog stays mounted through its exit animation. Deriving from the prop
+  // would retitle it "new group" for those 100ms on the way out.
+  const [isRename, setIsRename] = useState(Boolean(group))
 
   // reset when open flips: the parent batches group with open, so the dialog never paints the previous target's values
   if (open !== prevOpen) {
     setPrevOpen(open)
     if (open) {
+      setIsRename(Boolean(group))
       setLabel(group?.label ?? '')
       setError('')
       setSubmitting(false)

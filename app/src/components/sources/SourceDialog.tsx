@@ -26,12 +26,16 @@ export function SourceDialog({ open, initialType, source, onOpenChange, onSubmit
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [prevOpen, setPrevOpen] = useState(open)
-  const editing = Boolean(source)
+  // Snapshot rather than read live: the parent clears `source` on close, and
+  // the dialog stays mounted through its exit animation. Deriving from the
+  // prop would retitle it "add" for those 100ms on the way out.
+  const [editing, setEditing] = useState(Boolean(source))
 
   // reset when open flips: the parent batches source/initialType with open, so the dialog never paints the previous target's values
   if (open !== prevOpen) {
     setPrevOpen(open)
     if (open) {
+      setEditing(Boolean(source))
       setType(source?.type ?? initialType)
       setName(source?.name ?? '')
       setValue(source?.type === 'url' ? '' : source?.value ?? '')
