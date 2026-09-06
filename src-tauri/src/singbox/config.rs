@@ -77,8 +77,11 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
         // platform (macOS only accepts `utunN`). Set it explicitly only if
         // users ever need to pin the device name.
         inbounds.push(json!({
+            // gvisor, not the default mixed: mixed keeps TCP on the system
+            // stack, whose kernel TCP path hung every TCP connection through
+            // the tunnel on CachyOS (7.2.2) while UDP and DNS kept working.
             "type": "tun", "tag": "tun-in",
-            "address": ["172.19.0.1/30"], "auto_route": true, "strict_route": true, "stack": "system",
+            "address": ["172.19.0.1/30"], "auto_route": true, "strict_route": true, "stack": "gvisor",
         }));
     }
 
