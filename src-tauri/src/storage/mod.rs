@@ -23,6 +23,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0004_settings_test_url.sql"),
     include_str!("migrations/0005_startup_defaults_off.sql"),
     include_str!("migrations/0006_drop_tcp_test.sql"),
+    include_str!("migrations/0007_profile_last_selected.sql"),
 ];
 
 /// A handle to the application's SQLite database.

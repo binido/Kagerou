@@ -93,7 +93,7 @@ pub fn select_profile(db: &Db, id: &str) -> Result<(), StorageError> {
 
     tx.execute("UPDATE profiles SET selected = 0 WHERE selected = 1", [])?;
     tx.execute(
-        "UPDATE profiles SET selected = 1 WHERE id = ?1",
+        "UPDATE profiles SET selected = 1, last_selected_at = unixepoch() WHERE id = ?1",
         params![id],
     )?;
     tx.commit()?;
@@ -137,6 +137,24 @@ pub fn set_test_result(db: &Db, id: &str, result: &TestResult) -> Result<(), Sto
         return Err(StorageError::NotFound);
     }
     Ok(())
+}
+
+/// The profiles most recently switched to, newest first, capped at `limit`.
+/// Profiles never selected are left out: they are not "recent", and padding
+/// the list with arbitrary ones would make the tray menu lie about what it
+/// is.
+pub fn recently_selected(db: &Db, limit: usize) -> Result<Vec<Profile>, StorageError> {
+    let conn = db.lock();
+    let mut stmt = conn.prepare(
+        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key
+         FROM profiles
+         WHERE last_selected_at IS NOT NULL
+         ORDER BY last_selected_at DESC, name ASC
+         LIMIT ?1",
+    )?;
+    let rows = stmt.query_map(params![limit as i64], row_to_profile)?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(StorageError::from)
 }
 
 /// Resets the stored test result of every profile in `group_id` back to its
@@ -409,6 +427,70 @@ mod tests {
             .map(|p| p.id)
             .collect();
         assert_eq!(ids, vec!["p1", "p2"]);
+    }
+
+    #[test]
+    fn recently_selected_is_newest_first_and_skips_the_never_chosen() {
+        let db = seeded_db();
+        for id in ["p1", "p2", "p3"] {
+            insert(&db, &new_profile(id, "default")).unwrap();
+        }
+        // unixepoch() has one-second resolution, so order is forced by hand
+        // rather than by racing the clock.
+        select_profile(&db, "p1").unwrap();
+        stamp(&db, "p1", 100);
+        select_profile(&db, "p2").unwrap();
+        stamp(&db, "p2", 300);
+
+        let recent = recently_selected(&db, 5).unwrap();
+
+        let ids: Vec<_> = recent.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(
+            ids,
+            vec!["p2", "p1"],
+            "newest first, and p3 was never selected"
+        );
+    }
+
+    #[test]
+    fn recently_selected_honours_its_limit() {
+        let db = seeded_db();
+        for (n, id) in ["p1", "p2", "p3"].iter().enumerate() {
+            insert(&db, &new_profile(id, "default")).unwrap();
+            select_profile(&db, id).unwrap();
+            stamp(&db, id, 100 + n as i64);
+        }
+        assert_eq!(recently_selected(&db, 2).unwrap().len(), 2);
+        assert!(recently_selected(&db, 0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn selecting_again_moves_a_profile_back_to_the_front() {
+        let db = seeded_db();
+        for id in ["p1", "p2"] {
+            insert(&db, &new_profile(id, "default")).unwrap();
+            select_profile(&db, id).unwrap();
+        }
+        stamp(&db, "p1", 100);
+        stamp(&db, "p2", 200);
+        assert_eq!(recently_selected(&db, 2).unwrap()[0].id, "p2");
+
+        select_profile(&db, "p1").unwrap();
+
+        assert_eq!(
+            recently_selected(&db, 2).unwrap()[0].id,
+            "p1",
+            "reselecting has to restamp, or the list freezes"
+        );
+    }
+
+    fn stamp(db: &Db, id: &str, at: i64) {
+        db.lock()
+            .execute(
+                "UPDATE profiles SET last_selected_at = ?1 WHERE id = ?2",
+                params![at, id],
+            )
+            .unwrap();
     }
 
     #[test]
