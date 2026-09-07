@@ -83,7 +83,7 @@ row.
 | Routing rules | 🟡 | A rule is a single match string plus an outbound, classified into `domain` / `domain_suffix` / `ip_cidr` by shape. NekoBox's rules also carry port, source, source port, network, and protocol; sing-box supports all of them. The storage schema needs to grow before the UI can. **Discuss first.** |
 | Routing presets | 🟡 | `Bypass LAN` and `Block ads` are stored, toggle in the UI, and are then ignored — the config generator never reads them. Bypass LAN is a handful of private CIDRs and can be wired up on its own, though it is still routing and the CIDR list wants checking. Block ads cannot: it needs the `geosite` rule sets below, so it stays dark until those exist, and shipping the toggle meanwhile is the dishonest option. |
 | DNS | 📋 | The generated config has no `dns` section at all, so sing-box falls back to its defaults. NekoBox exposes remote and direct DNS servers, per-scope domain strategies, DNS routing, and FakeDNS. Leaks live here; this is the highest-priority row in this section. **Discuss first.** |
-| Traffic sniffing | 📋 | No `sniff` on the inbounds, so domain-based rules can't match TLS/HTTP traffic arriving as an IP. Small change, large effect on whether routing rules work at all. **Discuss first.** |
+| Traffic sniffing | ✅ | A `sniff` rule runs before the routing rules, so a domain rule has a name to match on instead of the address the connection arrived as. Without it, `domain` and `domain_suffix` rules matched nothing while sitting in the UI looking configured. Written as a rule action, not an inbound field: those were removed in sing-box 1.13 and 1.14 rejects a config carrying them. |
 | geoip / geosite rule sets | 📋 | Rules can't reference `geosite:category-ads` or `geoip:cn`. Needs rule-set support plus asset download and update, which NekoBox has as a separate "route assets" screen. **Discuss first.** |
 | Per-process routing | 📋 | The desktop equivalent of NekoBox's per-app proxy: route by process name or path. sing-box supports `process_name` and `process_path` on Windows, macOS, and Linux. **Discuss first.** |
 | Rule import / export | 📋 | Share rule sets as files, and ship a few sane defaults. |
@@ -177,7 +177,7 @@ Kagerou do X yet".
 | geoip / geosite assets with update management | 📋 |
 | Bypass LAN | 🟡 Preset exists but is never applied. |
 | DNS: remote/direct servers, domain strategy, DNS routing, FakeDNS | 📋 None of it. |
-| Traffic sniffing, resolve destination | 📋 |
+| Traffic sniffing, resolve destination | 🟡 | Sniffing done. Resolving a sniffed domain back to an address, so `ip_cidr` rules can match it, still missing and tied to the DNS row. |
 | TUN implementation choice, MTU, IPv6 mode | 📋 Hardcoded. |
 | Mixed port, append HTTP proxy, allow LAN access | 🟡 Mixed inbound runs, but on a hardcoded loopback port. |
 | Clash API + bundled web dashboard (Yacd) | 🟡 API is used internally; no dashboard is exposed. |
