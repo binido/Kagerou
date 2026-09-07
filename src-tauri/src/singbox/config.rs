@@ -38,6 +38,56 @@ pub struct ConfigInput<'a> {
 /// otherwise corrupted key is caught with a specific error naming the
 /// offending profile instead of producing a config sing-box would reject
 /// opaquely at startup.
+/// Resolvers, and which queries reach which one.
+///
+/// Without a `dns` block sing-box falls back to the system resolver, so every
+/// name the user visits goes to their ISP in the clear while the traffic
+/// itself is tunnelled. That is the leak this closes: queries go to a DoH
+/// resolver reached *through* the proxy, so the ISP sees an encrypted
+/// connection to the proxy and nothing else.
+///
+/// Two things deliberately stay local. The proxy servers' own hostnames,
+/// which cannot be resolved through a tunnel that does not exist yet — that
+/// is what `route.default_domain_resolver` is for, and 1.14 refuses to start
+/// without it. And any domain the routing rules send Direct: resolving those
+/// remotely would hand back a CDN address near the proxy rather than near the
+/// user, sending traffic that was meant to skip the VPN across the world to
+/// come back.
+///
+/// IPv4 only, to match the tunnel actually built: the TUN inbound is given a
+/// v4 address and nothing else, so an AAAA answer routes a connection into a
+/// tunnel that cannot carry it and it hangs.
+fn dns_block(rules: &[RoutingRule]) -> Value {
+    let mut dns_rules: Vec<Value> = Vec::new();
+    for rule in rules {
+        if outbound_tag_for(&rule.outbound) != "direct" {
+            continue;
+        }
+        // An ip_cidr rule has no name to resolve, so there is nothing to
+        // point at a resolver.
+        let mut value = match classify_match(&rule.match_value) {
+            Matcher::Domain(d) => json!({ "domain": [d] }),
+            Matcher::DomainSuffix(d) => json!({ "domain_suffix": [d] }),
+            Matcher::IpCidr(_) => continue,
+        };
+        value["server"] = json!("local");
+        dns_rules.push(value);
+    }
+
+    json!({
+        "servers": [
+            // Addressed by IP on purpose: a resolver named by domain would
+            // itself need resolving, and the only thing available to do that
+            // is the system resolver we are trying not to leak to.
+            { "tag": "remote", "type": "https", "server": "1.1.1.1", "detour": "proxy" },
+            { "tag": "local", "type": "local" },
+        ],
+        "rules": dns_rules,
+        "final": "remote",
+        "strategy": "ipv4_only",
+    })
+}
+
 /// The routing rules, preceded by the sniff rule they depend on.
 ///
 /// Without sniffing, a connection reaches the rules as an address and a port,
@@ -104,6 +154,7 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
 
     Ok(json!({
         "log": { "level": input.log_level, "timestamp": true },
+        "dns": dns_block(input.routing_rules),
         "inbounds": inbounds,
         "outbounds": outbounds,
         "route": {
@@ -115,6 +166,10 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
             // thousands of connections and moves zero bytes. Binding
             // outbounds to the default NIC breaks it.
             "auto_detect_interface": true,
+            // Mandatory since 1.14 once anything resolves a name, and the
+            // proxy servers' own hostnames do. Local, necessarily: their
+            // addresses cannot come through a tunnel that is not up yet.
+            "default_domain_resolver": "local",
         },
         "experimental": {
             "clash_api": { "external_controller": input.clash_api_listen },
@@ -372,6 +427,60 @@ mod tests {
         let rules_json = config["route"]["rules"].as_array().unwrap();
 
         assert_eq!(rules_json, &[json!({ "action": "sniff" })]);
+    }
+
+    #[test]
+    fn queries_go_to_a_resolver_behind_the_proxy_by_default() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let config = generate(&base_input(&profiles, &[])).unwrap();
+        let dns = &config["dns"];
+
+        assert_eq!(dns["final"], "remote");
+        assert_eq!(dns["strategy"], "ipv4_only");
+        let remote = &dns["servers"][0];
+        assert_eq!(remote["tag"], "remote");
+        assert_eq!(remote["type"], "https");
+        assert_eq!(
+            remote["detour"], "proxy",
+            "a resolver reached outside the tunnel is the leak this exists to close"
+        );
+        assert_eq!(dns["servers"][1]["type"], "local");
+    }
+
+    /// The proxy's own hostname cannot be resolved through the proxy, and
+    /// 1.14 refuses to start without somewhere to send that query.
+    #[test]
+    fn the_proxy_servers_own_names_resolve_locally() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let config = generate(&base_input(&profiles, &[])).unwrap();
+        assert_eq!(config["route"]["default_domain_resolver"], "local");
+    }
+
+    /// A domain routed around the VPN must be resolved around it too, or the
+    /// answer describes the network near the proxy instead of the one the
+    /// traffic will actually take.
+    #[test]
+    fn direct_domains_are_resolved_locally_and_nothing_else_is() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let rules = vec![
+            rule("direct-domain", "intranet.example", "Direct"),
+            rule("direct-host", "localhost", "Direct"),
+            rule("proxied", "example.com", "Proxy"),
+            rule("blocked", "ads.example.net", "Block"),
+            rule("direct-cidr", "192.168.0.0/16", "Direct"),
+        ];
+        let config = generate(&base_input(&profiles, &rules)).unwrap();
+        let dns_rules = config["dns"]["rules"].as_array().unwrap();
+
+        assert_eq!(
+            dns_rules.len(),
+            2,
+            "only the two Direct rules carrying a name: {dns_rules:?}"
+        );
+        assert_eq!(dns_rules[0]["domain_suffix"], json!(["intranet.example"]));
+        assert_eq!(dns_rules[0]["server"], "local");
+        assert_eq!(dns_rules[1]["domain"], json!(["localhost"]));
+        assert_eq!(dns_rules[1]["server"], "local");
     }
 
     /// The whole import path in miniature: a subscription line goes through
