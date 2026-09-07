@@ -6,12 +6,20 @@ pub mod probe;
 pub mod singbox;
 pub mod storage;
 pub mod subscription;
+pub mod tray;
 pub mod updates;
 
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 use tauri_plugin_autostart::MacosLauncher;
 
 use app_state::AppState;
+
+/// Passed to the app by its own login item, and by nothing else.
+const AUTOSTART_FLAG: &str = "--from-autostart";
+
+fn launched_by_autostart() -> bool {
+    std::env::args().any(|arg| arg == AUTOSTART_FLAG)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -32,7 +40,10 @@ pub fn run() {
         // the AppleScript route it competes with is unreliable on modern macOS.
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
-            Some(vec![]),
+            // The flag is how a login-item launch tells itself apart from
+            // the user double-clicking the app: one should come up silently
+            // in the tray, the other should show its window.
+            Some(vec![AUTOSTART_FLAG]),
         ))
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
@@ -50,6 +61,16 @@ pub fn run() {
 
             app.manage(AppState::new(db, sing_box_binary, config_path));
 
+            tray::create(app.handle())?;
+            // Started by the login item: the point of that is to connect
+            // without being noticed, so the window stays out of the way until
+            // it is asked for.
+            if launched_by_autostart() {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            }
+
             // The DB is the truth for launch-at-login; make the OS agree once
             // per run, so a manually removed login item or a failed toggle
             // last session self-heals here. Best-effort: the next launch or
@@ -58,6 +79,14 @@ pub fn run() {
                 let _ = commands::apply_startup_flag(app.handle(), settings.startup);
             }
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Closing the window must not take the tunnel down with it: this
+            // is the whole reason the tray exists. Quit lives in its menu.
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_app_state,

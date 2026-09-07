@@ -82,6 +82,16 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
 
     void kagerouApi.onTestFinished(() => set({ testRun: null }))
 
+    // The tray asks for the same two actions the UI offers, and goes through
+    // the same code: a second path would be a second set of bugs.
+    void kagerouApi.onTrayToggleConnection(() => {
+      void get().toggleConnection()
+    })
+
+    void kagerouApi.onTraySelectProfile((profileId) => {
+      void get().selectProfile(profileId)
+    })
+
     void kagerouApi.onLog((line) => {
       set((state) => ({ logs: [...state.logs.slice(-(MAX_LOG_ENTRIES - 1)), toLogEntry(line)] }))
     })

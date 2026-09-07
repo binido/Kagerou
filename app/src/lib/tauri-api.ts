@@ -88,6 +88,8 @@ export const kagerouApi = {
   onTraffic: (handler: (event: TrafficEvent) => void) => listen<TrafficEvent>('kagerou://traffic', (event) => handler(event.payload)),
   onTestProgress: (handler: (event: TestProgressEvent) => void) => listen<TestProgressEvent>('kagerou://test-progress', (event) => handler(event.payload)),
   onTestFinished: (handler: (event: TestFinishedEvent) => void) => listen<TestFinishedEvent>('kagerou://test-finished', (event) => handler(event.payload)),
+  onTrayToggleConnection: (handler: () => void) => listen<null>('kagerou://tray-toggle-connection', () => handler()),
+  onTraySelectProfile: (handler: (profileId: string) => void) => listen<string>('kagerou://tray-select-profile', (event) => handler(event.payload)),
   onLog: (handler: (line: string) => void) => listen<string>('kagerou://log', (event) => handler(event.payload)),
   onCrashed: (handler: (exitCode: number | null) => void) => listen<number | null>('kagerou://crashed', (event) => handler(event.payload)),
 }
