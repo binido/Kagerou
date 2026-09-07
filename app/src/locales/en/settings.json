@@ -16,6 +16,7 @@
   "fields": {
     "theme": "Theme",
     "language": "Language",
+    "autoConnect": "Auto-connect on launch",
     "tunMode": "TUN mode",
     "systemProxy": "System proxy",
     "startAutomatically": "Start automatically",
@@ -31,6 +32,7 @@
     "autoUpdateSubscriptions": "Keep URL subscription groups fresh automatically.",
     "customInterval": "Choose how often Kagerou checks remote subscriptions.",
     "customIntervalA11y": "Minutes between automatic subscription updates.",
+    "autoConnect": "Connects to the last active profile when Kagerou starts.",
     "tunMode": "Applies the next time you connect.",
     "systemProxyUnavailable": "Not implemented yet — Kagerou does not change your system proxy.",
     "logLevel": "Applies the next time you connect.",

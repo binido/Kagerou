@@ -55,7 +55,7 @@ row.
 | Configurable log level | ✅ | sing-box's log level is a stored setting in a Diagnostics section of the settings page; like TUN mode, it applies on the next connection. |
 | Configurable connection-test URL | ✅ | The delay-test URL is a stored setting in Diagnostics, used by both the TCP and URL tests; blank values are rejected. |
 | TUN tuning: MTU, stack, IPv6 mode | 📋 | Hardcoded to `stack: gvisor`, `172.19.0.1/30`, no MTU or IPv6 handling. gvisor rather than the kernel's own stack because the system one hung every TCP connection through the tunnel on CachyOS while UDP and DNS kept flowing; it costs throughput, since TCP is then reassembled in userspace, so making it a setting is worth more than it looks. The existing `tunInterface` setting is stored but never read by the config generator — either wire it up or drop it. **Discuss first.** |
-| Auto-connect on launch | 📋 | Connect to the last active profile on startup, gated by a setting. **Good first issue.** |
+| Auto-connect on launch | ✅ | Connect to the last active profile on startup, gated by a setting. The connect is spawned so the window is never delayed, and the snapshot carries the supervisor status so the UI learns about a pre-WebView connect. |
 | Reset connections on network change / wake | 📋 | sing-box holds stale connections after a network switch or a laptop resume. NekoBox has both as toggles. **Discuss first.** |
 | Custom config override | 📋 | Let a user append or override parts of the generated sing-box JSON, globally and per profile. Escape hatch for anything the UI doesn't expose. **Discuss first.** |
 
@@ -185,7 +185,7 @@ Kagerou do X yet".
 | Per-profile traffic statistics | 📋 |
 | Speed display and traffic notification | ✅ On the dashboard. Android notification behaviour (`speedInterval`, `showDirectSpeed`, `showGroupInNotification`) ❌ — desktop equivalent is the tray 📋. |
 | Log viewer with configurable level | 🟡 Viewer done, level hardcoded. |
-| Auto-connect on start | 📋 |
+| Auto-connect on start | ✅ |
 | Reset connections on network change / device wake | 📋 |
 | Themes, dark mode | ✅ |
 | Wake lock, metered network handling, Quick Settings tile, app shortcuts | ❌ Android platform features with no desktop counterpart. |

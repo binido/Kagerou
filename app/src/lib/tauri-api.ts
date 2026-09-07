@@ -28,6 +28,7 @@ export interface TestFinishedEvent {
 }
 
 export interface AppSnapshot {
+  connected: boolean
   activeProfileId: string
   profiles: Profile[]
   profileGroups: ProfileGroup[]

@@ -25,6 +25,7 @@ export const __resetBackendEventSubscriptionForTests = () => {
 }
 
 const applySnapshot = (snapshot: AppSnapshot) => ({
+  connected: snapshot.connected,
   activeProfileId: snapshot.activeProfileId,
   profiles: snapshot.profiles,
   profileGroups: snapshot.profileGroups,
@@ -110,6 +111,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       startup: false,
       tunMode: false,
       systemProxy: false,
+      autoConnect: false,
       tunInterface: 'utun / tun0',
       autoUpdateSubscriptions: false,
       subscriptionUpdateInterval: '30',

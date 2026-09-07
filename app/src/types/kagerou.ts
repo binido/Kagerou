@@ -134,6 +134,7 @@ export interface SettingsState {
   startup: boolean
   tunMode: boolean
   systemProxy: boolean
+  autoConnect: boolean
   tunInterface: TunInterface
   autoUpdateSubscriptions: boolean
   subscriptionUpdateInterval: SubscriptionUpdateInterval
