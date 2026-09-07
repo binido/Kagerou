@@ -65,6 +65,7 @@ fn detect_protocol(key: &str) -> Protocol {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSnapshot {
+    pub connected: bool,
     pub active_profile_id: String,
     pub profiles: Vec<Profile>,
     pub profile_groups: Vec<ProfileGroup>,
@@ -76,7 +77,16 @@ pub struct AppSnapshot {
 
 #[tauri::command]
 pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
+    // The connection-changed event fires before the WebView is listening
+    // when the startup auto-connect wins the race (and on a mid-session
+    // reload), so the snapshot carries the supervisor's own status as the
+    // baseline and the events take over from there.
+    let connected = matches!(
+        *state.supervisor.lock().unwrap().status(),
+        singbox::Status::Running
+    );
     Ok(AppSnapshot {
+        connected,
         active_profile_id: settings::get_active_profile_id(&state.db)
             .map_err(to_err)?
             .unwrap_or_default(),
@@ -130,10 +140,11 @@ fn to_dashboard_event(
     }
 }
 
-#[tauri::command]
-pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    // TUN and the log level are stored preferences, not per-call arguments:
-    // they are toggled in settings, and take effect on the next connection.
+/// The body of the `connect` command, shared with the startup auto-connect
+/// so the two can never drift. TUN and the log level are stored preferences,
+/// not per-call arguments: they are toggled in settings, and take effect on
+/// the next connection.
+pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Result<(), String> {
     let stored = settings::get(&state.db).map_err(to_err)?;
     let tun = stored.tun_mode;
     let all_profiles = profiles::list_all(&state.db).map_err(to_err)?;
@@ -224,8 +235,29 @@ pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), S
     });
 
     let _ = app.emit("kagerou://connection-changed", true);
-    crate::tray::refresh(&app, true);
+    crate::tray::refresh(app, true);
     Ok(())
+}
+
+#[tauri::command]
+pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    connect_internal(&app, state.inner()).await
+}
+
+/// The startup side of auto-connect: `.setup()` reads the setting and only
+/// spawns this when it is on, so the remaining job is to skip quietly when
+/// there is nothing to connect to and otherwise go through the exact path
+/// the connect command uses. No profiles, or no last-active profile, is not
+/// an error — the app just stays disconnected.
+pub(crate) async fn auto_connect(app: &AppHandle) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let active_profile_id = settings::get_active_profile_id(&state.db)
+        .map_err(to_err)?
+        .unwrap_or_default();
+    if active_profile_id.is_empty() || profiles::list_all(&state.db).map_err(to_err)?.is_empty() {
+        return Ok(());
+    }
+    connect_internal(app, state.inner()).await
 }
 
 #[tauri::command]
@@ -1047,6 +1079,7 @@ pub struct SettingsPatchInput {
     pub startup: Option<bool>,
     pub tun_mode: Option<bool>,
     pub system_proxy: Option<bool>,
+    pub auto_connect: Option<bool>,
     pub tun_interface: Option<String>,
     pub auto_update_subscriptions: Option<bool>,
     pub subscription_update_interval: Option<String>,
@@ -1088,6 +1121,7 @@ pub fn update_settings(
             startup: patch.startup,
             tun_mode: patch.tun_mode,
             system_proxy: patch.system_proxy,
+            auto_connect: patch.auto_connect,
             tun_interface: patch.tun_interface.as_deref(),
             auto_update_subscriptions: patch.auto_update_subscriptions,
             subscription_update_interval: patch.subscription_update_interval.as_deref(),

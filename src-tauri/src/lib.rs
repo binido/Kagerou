@@ -77,6 +77,19 @@ pub fn run() {
             // toggle retries.
             if let Ok(settings) = storage::settings::get(&app.state::<AppState>().db) {
                 let _ = commands::apply_startup_flag(app.handle(), settings.startup);
+
+                // Spawned, not awaited: connecting can take seconds or ask
+                // for an admin password, and a slow setup means a late
+                // window. A failed connect is logged and otherwise ignored —
+                // the app still starts, just disconnected.
+                if settings.auto_connect {
+                    let handle = app.handle().clone();
+                    tauri::async_runtime::spawn(async move {
+                        if let Err(error) = commands::auto_connect(&handle).await {
+                            eprintln!("auto-connect failed: {error}");
+                        }
+                    });
+                }
             }
             Ok(())
         })

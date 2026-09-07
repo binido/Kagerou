@@ -39,6 +39,7 @@ export function SettingsPage() {
         <PageHeader actions={<p className="mb-0.5 text-[12px] leading-4 text-muted-copy">{t('page.instant')}</p>} eyebrow={t('page.eyebrow')} title={t('page.title')} />
         <div className="mt-12 flex flex-1 flex-col">
           <SettingsSection title={t('sections.connection')}>
+            <SettingSwitchRow checked={settings.autoConnect} description={t('descriptions.autoConnect')} label={t('fields.autoConnect')} onChange={(autoConnect) => updateSettings({ autoConnect })} />
             <SettingSwitchRow checked={settings.tunMode} description={t('descriptions.tunMode')} label={t('fields.tunMode')} onChange={(tunMode) => updateSettings({ tunMode })} />
             <SettingSwitchRow checked={settings.systemProxy} description={t('descriptions.systemProxyUnavailable')} disabled label={t('fields.systemProxy')} onChange={(systemProxy) => updateSettings({ systemProxy })} />
           </SettingsSection>

@@ -50,6 +50,7 @@ vi.mock('@/themes/runtime', () => ({ persistThemeId: vi.fn() }))
 const { useKagerouStore, __resetBackendEventSubscriptionForTests } = await import('@/store/kagerou-store')
 
 const emptySnapshot: AppSnapshot = {
+  connected: false,
   activeProfileId: '',
   profiles: [],
   profileGroups: [],
@@ -62,6 +63,7 @@ const emptySnapshot: AppSnapshot = {
     startup: false,
     tunMode: false,
     systemProxy: false,
+    autoConnect: false,
     tunInterface: 'utun / tun0',
     autoUpdateSubscriptions: false,
     subscriptionUpdateInterval: '30',
@@ -125,6 +127,15 @@ describe('hydrate', () => {
     expect(state.hydrated).toBe(true)
     expect(state.activeProfileId).toBe('p1')
     expect(state.profiles).toEqual(snapshot.profiles)
+  })
+
+  it('takes connected from the snapshot: the startup auto-connect event fires before anyone is listening', async () => {
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, connected: true })
+
+    expect(useKagerouStore.getState().connected).toBe(false)
+    await useKagerouStore.getState().hydrate()
+
+    expect(useKagerouStore.getState().connected).toBe(true)
   })
 
   it('subscribes to backend events exactly once even across repeated hydrate calls', async () => {
