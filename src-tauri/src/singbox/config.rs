@@ -38,6 +38,23 @@ pub struct ConfigInput<'a> {
 /// otherwise corrupted key is caught with a specific error naming the
 /// offending profile instead of producing a config sing-box would reject
 /// opaquely at startup.
+/// The routing rules, preceded by the sniff rule they depend on.
+///
+/// Without sniffing, a connection reaches the rules as an address and a port,
+/// so a `domain` or `domain_suffix` rule can never match anything a browser
+/// sends: the name is inside the request, and nobody has looked. The rule sits
+/// there looking configured and routes nothing.
+///
+/// It has to come first — rules are evaluated in order and sniffing is what
+/// gives the later ones a domain to match on. Rule actions are how sing-box
+/// has done this since 1.11; the inbound-level `sniff` fields were removed in
+/// 1.13 and 1.14 refuses a config carrying them.
+fn sniff_first(rules: &[RoutingRule]) -> Vec<Value> {
+    let mut out = vec![json!({ "action": "sniff" })];
+    out.extend(rules.iter().map(routing_rule_to_json));
+    out
+}
+
 pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
     if input.profiles.is_empty() {
         return Err(ConfigError::NoProfiles);
@@ -90,7 +107,7 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
         "inbounds": inbounds,
         "outbounds": outbounds,
         "route": {
-            "rules": input.routing_rules.iter().map(routing_rule_to_json).collect::<Vec<_>>(),
+            "rules": sniff_first(input.routing_rules),
             "final": "proxy",
             // Without this, TUN's auto_route captures sing-box's own
             // connections to the proxy server and feeds them back into the
@@ -308,7 +325,8 @@ mod tests {
             rule("single-ip", "10.0.0.5", "Direct"),
         ];
         let config = generate(&base_input(&profiles, &rules)).unwrap();
-        let rules_json = config["route"]["rules"].as_array().unwrap();
+        // Past the sniff rule, which is not one of the user's.
+        let rules_json = &config["route"]["rules"].as_array().unwrap()[1..];
 
         assert_eq!(rules_json[0]["ip_cidr"], json!(["192.168.0.0/16"]));
         assert_eq!(rules_json[0]["outbound"], "direct");
@@ -323,6 +341,37 @@ mod tests {
         assert_eq!(rules_json[3]["outbound"], "block");
 
         assert_eq!(rules_json[4]["ip_cidr"], json!(["10.0.0.5/32"]));
+    }
+
+    /// Domain rules match on a name nobody has read out of the request until
+    /// something sniffs for it, so the sniff rule has to be there and has to be
+    /// first — rules run in order.
+    #[test]
+    fn sniffing_comes_before_the_rules_that_depend_on_it() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let rules = vec![rule("example", "example.com", "Proxy")];
+        let config = generate(&base_input(&profiles, &rules)).unwrap();
+        let rules_json = config["route"]["rules"].as_array().unwrap();
+
+        assert_eq!(rules_json[0], json!({ "action": "sniff" }));
+        assert_eq!(rules_json[1]["domain_suffix"], json!(["example.com"]));
+        assert_eq!(
+            rules_json.len(),
+            2,
+            "no rule beyond the sniff and the user's"
+        );
+    }
+
+    /// Sniffing is not conditional on the user having written any rules: the
+    /// default outbound is a proxy either way, and a config without it hides
+    /// every domain from the log.
+    #[test]
+    fn sniffing_happens_even_with_no_rules_configured() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let config = generate(&base_input(&profiles, &[])).unwrap();
+        let rules_json = config["route"]["rules"].as_array().unwrap();
+
+        assert_eq!(rules_json, &[json!({ "action": "sniff" })]);
     }
 
     /// The whole import path in miniature: a subscription line goes through
