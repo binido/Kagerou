@@ -178,7 +178,7 @@ Kagerou do X yet".
 | Route by app / package | ❌ As-is: Android's per-app VpnService has no desktop counterpart. Desktop equivalent tracked as per-process routing 📋. |
 | geoip / geosite assets with update management | 📋 |
 | Bypass LAN | 🟡 Preset exists but is never applied. |
-| DNS: remote/direct servers, domain strategy, DNS routing, FakeDNS | 📋 None of it. |
+| DNS: remote/direct servers, domain strategy, DNS routing, FakeDNS | 🟡 Resolving works and does not leak, and DNS routing mirrors the Direct rules. Choosing the resolvers is not exposed yet; FakeDNS is deliberately off. |
 | Traffic sniffing, resolve destination | 🟡 | Sniffing done. Resolving a sniffed domain back to an address, so `ip_cidr` rules can match it, still missing and tied to the DNS row. |
 | TUN implementation choice, MTU, IPv6 mode | 📋 Hardcoded. |
 | Mixed port, append HTTP proxy, allow LAN access | 🟡 Mixed inbound runs, but on a hardcoded loopback port. |
