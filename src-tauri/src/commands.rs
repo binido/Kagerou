@@ -213,6 +213,7 @@ pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), S
             forwarded = logs.len();
             if let singbox::Status::Crashed { exit_code } = status {
                 let _ = log_app.emit("kagerou://connection-changed", false);
+                crate::tray::refresh(&log_app, false);
                 let _ = log_app.emit("kagerou://crashed", exit_code);
                 break;
             }
@@ -223,6 +224,7 @@ pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), S
     });
 
     let _ = app.emit("kagerou://connection-changed", true);
+    crate::tray::refresh(&app, true);
     Ok(())
 }
 
@@ -234,6 +236,7 @@ pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<()
     *state.clash.lock().unwrap() = None;
     state.supervisor.lock().unwrap().stop().map_err(to_err)?;
     let _ = app.emit("kagerou://connection-changed", false);
+    crate::tray::refresh(&app, false);
     Ok(())
 }
 
@@ -242,9 +245,15 @@ pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<()
 // ---------------------------------------------------------------------
 
 #[tauri::command]
-pub async fn select_profile(id: String, state: State<'_, AppState>) -> Result<(), String> {
+pub async fn select_profile(
+    id: String,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     profiles::select_profile(&state.db, &id).map_err(to_err)?;
     settings::set_active_profile_id(&state.db, Some(&id)).map_err(to_err)?;
+    // The recent list and which entry is greyed out both just changed.
+    crate::tray::refresh(&app, state.clash_client().is_some());
 
     // Hot-switch the running sing-box instance without a restart when
     // already connected, instead of leaving it pointed at the old outbound

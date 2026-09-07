@@ -36,6 +36,8 @@ const api = vi.hoisted(() => ({
   onLog: vi.fn(),
   onTestProgress: vi.fn(),
   onTestFinished: vi.fn(),
+  onTrayToggleConnection: vi.fn(),
+  onTraySelectProfile: vi.fn(),
   startGroupTest: vi.fn(),
   cancelGroupTest: vi.fn(),
   onCrashed: vi.fn(),
@@ -95,6 +97,8 @@ beforeEach(() => {
   api.onTraffic.mockResolvedValue(() => {})
   api.onTestProgress.mockResolvedValue(() => {})
   api.onTestFinished.mockResolvedValue(() => {})
+  api.onTrayToggleConnection.mockResolvedValue(() => {})
+  api.onTraySelectProfile.mockResolvedValue(() => {})
   api.onLog.mockResolvedValue(() => {})
   api.onCrashed.mockResolvedValue(() => {})
   // Fire-and-forget mutations call `.catch()` on the invoke promise, so
@@ -277,6 +281,42 @@ describe('setProfileGroupOpen', () => {
 
     expect(useKagerouStore.getState().profileGroups[0].open).toBe(true)
     expect(api.setProfileGroupOpen).toHaveBeenCalledWith('g1', true)
+  })
+})
+
+describe('tray intents', () => {
+  it('the tray connect item goes through the same toggle the button does', async () => {
+    let fire: () => void = () => {}
+    api.onTrayToggleConnection.mockImplementation((h: () => void) => { fire = h; return Promise.resolve(() => {}) })
+    api.connect.mockResolvedValue(undefined)
+
+    await useKagerouStore.getState().hydrate()
+    useKagerouStore.setState({ connected: false })
+    fire()
+    await vi.waitFor(() => expect(api.connect).toHaveBeenCalled())
+  })
+
+  it('the tray profile item goes through the same select the list does', async () => {
+    let fire: (id: string) => void = () => {}
+    api.onTraySelectProfile.mockImplementation((h: (id: string) => void) => { fire = h; return Promise.resolve(() => {}) })
+    api.selectProfile.mockResolvedValue(undefined)
+
+    await useKagerouStore.getState().hydrate()
+    useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
+    fire('p1')
+    await vi.waitFor(() => expect(api.selectProfile).toHaveBeenCalledWith('p1'))
+  })
+
+  it('a tray entry for a profile that is gone does nothing', async () => {
+    let fire: (id: string) => void = () => {}
+    api.onTraySelectProfile.mockImplementation((h: (id: string) => void) => { fire = h; return Promise.resolve(() => {}) })
+
+    await useKagerouStore.getState().hydrate()
+    useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
+    fire('deleted-while-the-menu-was-open')
+
+    expect(api.selectProfile).not.toHaveBeenCalled()
+    expect(useKagerouStore.getState().activeProfileId).not.toBe('deleted-while-the-menu-was-open')
   })
 })
 
