@@ -77,8 +77,11 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
         // platform (macOS only accepts `utunN`). Set it explicitly only if
         // users ever need to pin the device name.
         inbounds.push(json!({
+            // gvisor, not the default mixed: mixed keeps TCP on the system
+            // stack, whose kernel TCP path hung every TCP connection through
+            // the tunnel on CachyOS (7.2.2) while UDP and DNS kept working.
             "type": "tun", "tag": "tun-in",
-            "address": ["172.19.0.1/30"], "auto_route": true, "strict_route": true, "stack": "system",
+            "address": ["172.19.0.1/30"], "auto_route": true, "strict_route": true, "stack": "gvisor",
         }));
     }
 
@@ -395,22 +398,35 @@ mod tests {
             "vless://b831381d-6324-4d53-ad4f-8cda48b30811@a.example.com:443?encryption=none&security=reality&sni=cdn.example.com&type=tcp&flow=xtls-rprx-vision&pbk=jNXHt1yRo0vDuchQlIP6Z0ZvjT3KtzVI-T4E7RoLJS0&sid=de&fp=chrome#Node",
         )];
         let rules = vec![rule("r1", "example.com", "proxy")];
-        let config = generate(&base_input(&profiles, &rules)).unwrap();
-
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("config.json");
-        std::fs::write(&path, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
 
-        let output = std::process::Command::new(&binary)
-            .arg("check")
-            .arg("-c")
-            .arg(&path)
-            .output()
-            .unwrap_or_else(|e| panic!("could not run {}: {e}", binary.display()));
-        assert!(
-            output.status.success(),
-            "sing-box rejected the generated config:\n{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
+        // Both branches: the TUN inbound is only built for `tun: true`, so
+        // checking the other shape alone leaves it unvalidated entirely.
+        //
+        // What this does not check is the stack name: `sing-box check`
+        // accepts any string there, including nonsense, because the value is
+        // only read when the interface is actually created. Verified by
+        // feeding it one. Field names and the rest of the shape are covered;
+        // a typo in "gvisor" would only show up on a real connection.
+        for tun in [false, true] {
+            let mut input = base_input(&profiles, &rules);
+            input.tun = tun;
+            let config = generate(&input).unwrap();
+
+            let path = dir.path().join(format!("config-tun-{tun}.json"));
+            std::fs::write(&path, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+
+            let output = std::process::Command::new(&binary)
+                .arg("check")
+                .arg("-c")
+                .arg(&path)
+                .output()
+                .unwrap_or_else(|e| panic!("could not run {}: {e}", binary.display()));
+            assert!(
+                output.status.success(),
+                "sing-box rejected the generated config with tun={tun}:\n{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
     }
 }
