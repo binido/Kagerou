@@ -11,6 +11,7 @@ import type {
   LogLevel,
   Source,
 } from '@/types/kagerou'
+import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
 
 const DEFAULT_PROFILE_GROUP_ID = 'default'
 const MAX_LOG_ENTRIES = 500
@@ -26,6 +27,7 @@ export const __resetBackendEventSubscriptionForTests = () => {
 
 const applySnapshot = (snapshot: AppSnapshot) => ({
   connected: snapshot.connected,
+  connectedSince: snapshot.connectedSince,
   activeProfileId: snapshot.activeProfileId,
   profiles: snapshot.profiles,
   profileGroups: snapshot.profileGroups,
@@ -58,12 +60,25 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     if (backendEventsSubscribed) return
     backendEventsSubscribed = true
 
-    void kagerouApi.onConnectionChanged((connected) => set({ connected }))
+    // The event fires in the same breath as the backend's own stamp, so
+    // `Date.now()` here and `connectedSince` in the snapshot agree to within
+    // a millisecond — and the snapshot is what a reload reads, which is the
+    // case the frontend clock cannot serve on its own. Going down clears the
+    // history so the sparkline stops drawing the previous session's shape.
+    void kagerouApi.onConnectionChanged((connected) =>
+      set(connected
+        ? { connected, connectedSince: Date.now() }
+        : { connected, connectedSince: null, trafficHistory: [], activeConnections: null }))
 
     void kagerouApi.onTraffic((event) => {
       if (event.kind !== 'sample') return
+      const sample = { download: event.down, upload: event.up }
       set((state) => ({
-        trafficSample: { download: event.down, upload: event.up },
+        trafficSample: sample,
+        trafficHistory: [...state.trafficHistory.slice(-(TRAFFIC_HISTORY_LIMIT - 1)), sample],
+        // Same rule as the totals below: a failed `/connections` fetch keeps
+        // the previous count rather than blanking the readout.
+        activeConnections: event.activeConnections ?? state.activeConnections,
         // A null total means the backend's `/connections` fetch failed for
         // this sample — keep the previous value rather than blanking it.
         sessionTraffic:
@@ -97,7 +112,8 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       set((state) => ({ logs: [...state.logs.slice(-(MAX_LOG_ENTRIES - 1)), toLogEntry(line)] }))
     })
 
-    void kagerouApi.onCrashed(() => set({ connected: false }))
+    void kagerouApi.onCrashed(() =>
+      set({ connected: false, connectedSince: null, trafficHistory: [], activeConnections: null }))
   }
 
   return {
@@ -112,6 +128,9 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     routingRules: [],
     logs: [],
     trafficSample: { download: 0, upload: 0 },
+    trafficHistory: [],
+    activeConnections: null,
+    connectedSince: null,
     sessionTraffic: { download: 0, upload: 0 },
     updateAvailable: null,
     testRun: null,
