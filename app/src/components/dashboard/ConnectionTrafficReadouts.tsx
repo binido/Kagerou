@@ -1,4 +1,4 @@
-import { Activity, ArrowDown, ArrowUp, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowDown, ArrowUp, Share2, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { ResultBadge } from '@/components/common/ResultBadge'
@@ -30,14 +30,15 @@ interface ConnectionTrafficReadoutsProps {
   latestUpload: number
   ping: TestResult
   sessionTraffic: SessionTraffic
+  activeConnections: number | null
 }
 
-export function ConnectionTrafficReadouts({ latestDownload, latestUpload, ping, sessionTraffic }: ConnectionTrafficReadoutsProps) {
+export function ConnectionTrafficReadouts({ latestDownload, latestUpload, ping, sessionTraffic, activeConnections }: ConnectionTrafficReadoutsProps) {
   const { t } = useTranslation('dashboard')
   const sessionTotal = formatBytes(sessionTraffic.download + sessionTraffic.upload)
 
   return (
-    <div aria-label={t('connection.traffic.ariaLabel')} className="flex min-w-0 shrink-0 items-center justify-end whitespace-nowrap text-[11px]" role="group">
+    <div aria-label={t('connection.traffic.ariaLabel')} className="flex min-w-0 flex-wrap items-center gap-y-2 text-[11px]" role="group">
       <TrafficReadout
         icon={ArrowDown}
         iconClassName="text-lavender"
@@ -60,6 +61,14 @@ export function ConnectionTrafficReadouts({ latestDownload, latestUpload, ping, 
         label={t('connection.traffic.session')}
         unit={sessionTotal.unit}
         value={sessionTotal.value}
+      />
+      <span aria-hidden="true" className="h-5 w-px shrink-0 bg-hairline/80" />
+      <TrafficReadout
+        icon={Share2}
+        iconClassName="text-body"
+        label={t('connection.traffic.connections')}
+        unit={t('connection.traffic.connectionsUnit')}
+        value={activeConnections === null ? '—' : String(activeConnections)}
       />
       <span aria-hidden="true" className="h-5 w-px shrink-0 bg-hairline/80" />
       <div aria-label={`${t('connection.ping')}: ${ping.value}`} className="flex shrink-0 items-center gap-2 px-3 pr-0 max-[980px]:gap-1.5 max-[980px]:px-2 max-[760px]:px-1.5 max-[760px]:pr-0" role="status">
