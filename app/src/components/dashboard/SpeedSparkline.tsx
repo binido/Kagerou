@@ -28,12 +28,6 @@ const toPath = (values: number[], peak: number) => {
     .join(' ')
 }
 
-/** Two points is the least that makes a line. Exported because the card
- * around it has to know whether it is holding a chart or just a heading, and
- * a card that grows to fit a chart it is not drawing is the empty half-screen
- * this dashboard was rebuilt to get rid of. */
-export const hasShape = (history: TrafficSample[]) => history.length >= 2
-
 interface SpeedSparklineProps {
   history: TrafficSample[]
   className?: string
@@ -41,44 +35,48 @@ interface SpeedSparklineProps {
 
 export function SpeedSparkline({ history, className }: SpeedSparklineProps) {
   const { t } = useTranslation('dashboard')
-  // Nothing to plot means no box at all. A framed rectangle explaining that it
-  // is empty is more conspicuous than the gap it was holding open, and after
-  // any session there is a shape here anyway — the history outlives the
-  // connection that drew it.
-  if (!hasShape(history)) return null
+  // A flat line at zero would read as "no traffic" when the truth is "not
+  // connected", so an empty window says so in words and keeps its height.
+  const hasShape = history.length >= 2
   const peak = Math.max(SCALE_FLOOR, ...history.map((point) => Math.max(point.download, point.upload)))
 
   return (
     <div className={cn('relative min-h-[56px] overflow-hidden rounded-md border border-hairline bg-canvas', className)}>
-      <svg
-        aria-label={t('sparkline.ariaLabel')}
-        className="size-full"
-        preserveAspectRatio="none"
-        role="img"
-        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-      >
-        <path
-          className="text-lavender"
-          d={toPath(history.map((point) => point.download), peak)}
-          fill="none"
-          stroke="currentColor"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          vectorEffect="non-scaling-stroke"
-        />
-        <path
-          className="text-upload-line"
-          d={toPath(history.map((point) => point.upload), peak)}
-          fill="none"
-          stroke="currentColor"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-      <p className="type-data absolute right-2 top-1.5 text-muted-copy">
-        {t('sparkline.peak', { value: formatSpeedMbps(peak), unit: t('connection.traffic.unit') })}
-      </p>
+      {hasShape ? (
+        <svg
+          aria-label={t('sparkline.ariaLabel')}
+          className="size-full"
+          preserveAspectRatio="none"
+          role="img"
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        >
+          <path
+            className="text-lavender"
+            d={toPath(history.map((point) => point.download), peak)}
+            fill="none"
+            stroke="currentColor"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            className="text-upload-line"
+            d={toPath(history.map((point) => point.upload), peak)}
+            fill="none"
+            stroke="currentColor"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      ) : (
+        <p className="type-meta flex size-full items-center justify-center">{t('sparkline.empty')}</p>
+      )}
+      {hasShape ? (
+        <p className="type-data absolute right-2 top-1.5 text-muted-copy">
+          {t('sparkline.peak', { value: formatSpeedMbps(peak), unit: t('connection.traffic.unit') })}
+        </p>
+      ) : null}
     </div>
   )
 }

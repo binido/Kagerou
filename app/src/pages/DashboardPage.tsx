@@ -6,14 +6,13 @@ import { QuickProfiles } from '@/components/dashboard/QuickProfiles'
 import { StatusFooter } from '@/components/dashboard/StatusFooter'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { regionToCountry } from '@/lib/formatters'
 import { latencyOf, sortProfiles } from '@/lib/profile-sorting'
 import { useKagerouStore } from '@/store/kagerou-store'
 
 const QUICK_PROFILE_COUNT = 4
 
 export function DashboardPage() {
-  const { t, i18n } = useTranslation('dashboard')
+  const { t } = useTranslation('dashboard')
   const { t: tp } = useTranslation('profiles')
   const connected = useKagerouStore((state) => state.connected)
   const connectedSince = useKagerouStore((state) => state.connectedSince)
@@ -46,7 +45,6 @@ export function DashboardPage() {
       : activeProfile.name
     : t('connection.fallbackProfile')
   const ping = activeProfile ? activeProfile.url : { value: 'Not tested', tone: 'muted' as const }
-  const location = regionToCountry(activeProfile?.region ?? '', i18n.resolvedLanguage ?? 'en') ?? t('connection.fallbackLocation')
 
   // The quick list ranks the active profile's own group. Without a single
   // measured latency the ranking is meaningless — every profile ties at
@@ -66,7 +64,6 @@ export function DashboardPage() {
           exitLocationPending={exitLocationPending}
           latestDownload={trafficSample.download}
           latestUpload={trafficSample.upload}
-          location={location}
           onRefreshLocation={() => void refreshExitLocation()}
           onToggleConnection={toggleConnection}
           ping={ping}

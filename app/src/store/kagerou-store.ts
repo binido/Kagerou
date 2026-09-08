@@ -66,11 +66,9 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     // case the frontend clock cannot serve on its own. Going down clears the
     // history so the sparkline stops drawing the previous session's shape.
     void kagerouApi.onConnectionChanged((connected) => {
-      // A new session starts with a clean history; ending one leaves the
-      // last minute on screen, the way the session totals stay up.
       set(connected
-        ? { connected, connectedSince: Date.now(), trafficHistory: [] }
-        : { connected, connectedSince: null, activeConnections: null, exitLocation: null })
+        ? { connected, connectedSince: Date.now() }
+        : { connected, connectedSince: null, trafficHistory: [], activeConnections: null })
       // The exit only exists while the core does, so this is one of the two
       // moments worth asking — the other is a profile switch.
       if (connected) void get().refreshExitLocation()
@@ -119,7 +117,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     })
 
     void kagerouApi.onCrashed(() =>
-      set({ connected: false, connectedSince: null, activeConnections: null }))
+      set({ connected: false, connectedSince: null, trafficHistory: [], activeConnections: null }))
   }
 
   return {

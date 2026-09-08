@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/card'
 import { ConnectionDial } from '@/components/dashboard/ConnectionDial'
 import { ConnectionTrafficReadouts } from '@/components/dashboard/ConnectionTrafficReadouts'
-import { hasShape, SpeedSparkline } from '@/components/dashboard/SpeedSparkline'
+import { SpeedSparkline } from '@/components/dashboard/SpeedSparkline'
 import { Button } from '@/components/ui/button'
 import { formatExitLocation, formatUptime } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
@@ -28,9 +28,6 @@ function useUptime(connectedSince: number | null) {
 
 interface ConnectionStageProps {
   profileName: string
-  /** The profile's own flag-derived guess, used whenever there is no lookup:
-   * disconnected, still in flight, turned off, or failed. */
-  location: string
   exitLocation: ExitLocation | null
   exitLocationPending: boolean
   onRefreshLocation: () => void
@@ -47,7 +44,6 @@ interface ConnectionStageProps {
 
 export function ConnectionStage({
   profileName,
-  location,
   exitLocation,
   exitLocationPending,
   onRefreshLocation,
@@ -64,17 +60,17 @@ export function ConnectionStage({
   const { t, i18n } = useTranslation('dashboard')
   const uptime = useUptime(connectedSince)
   const language = i18n.resolvedLanguage ?? 'en'
-  // Without a chart the card has nothing to spend height on, so it stops
-  // asking for any.
-  const plotted = hasShape(trafficHistory)
+  // No line at all rather than a flag repeated from the profile name above
+  // it: the guess it stood for is what the lookup replaced. A location from a
+  // finished session stays, unhighlighted, the way the session totals do.
   const place = exitLocation
     ? formatExitLocation(exitLocation, language)
     : exitLocationPending
       ? t('connection.locating')
-      : location
+      : null
 
   return (
-    <Card className={cn('flex flex-col overflow-hidden rounded-[10px] border border-hairline bg-surface p-0 shadow-none', plotted ? 'min-h-0 flex-1' : 'shrink-0')}>
+    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
       <div className="grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-stretch gap-7 p-7 max-[860px]:grid-cols-1 max-[860px]:justify-items-center max-[860px]:gap-5 max-[860px]:p-5">
         <div className="flex flex-col items-center justify-center gap-2.5">
           <ConnectionDial connected={connected} onToggle={onToggleConnection} />
@@ -88,7 +84,8 @@ export function ConnectionStage({
           <h2 className="type-display mt-2 min-w-0 truncate text-[22px] leading-tight tracking-[-0.01em] text-primary" id="connection-stage-title">
             {profileName}
           </h2>
-          <div className="mt-2 flex min-w-0 items-center gap-2 text-[14px] text-body max-[860px]:justify-center">
+          {place === null ? null : (
+          <div className={cn('mt-2 flex min-w-0 items-center gap-2 text-[14px] max-[860px]:justify-center', connected ? 'text-body' : 'text-muted-copy')}>
             <MapPin aria-hidden="true" className="size-4 shrink-0 text-muted-copy" strokeWidth={1.7} />
             <span className="truncate">{place}</span>
             {exitLocation ? (
@@ -108,6 +105,7 @@ export function ConnectionStage({
               </Button>
             ) : null}
           </div>
+          )}
 
           <div className="mt-5 border-t border-hairline pt-4">
             <ConnectionTrafficReadouts

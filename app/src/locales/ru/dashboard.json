@@ -7,7 +7,6 @@
     "activeVpn": "Активный VPN",
     "fallbackProfile": "Профиль не выбран",
     "profile": "{{group}} / {{name}}",
-    "fallbackLocation": "Локация неизвестна",
     "ping": "Пинг",
     "control": "Управление соединением: {{state}}",
     "connected": "Подключено",
@@ -31,6 +30,7 @@
   },
   "sparkline": {
     "ariaLabel": "Скорость загрузки и отдачи за последнюю минуту",
+    "empty": "Трафика пока нет",
     "peak": "пик {{value}} {{unit}}"
   },
   "modes": {
