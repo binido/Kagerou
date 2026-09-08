@@ -28,6 +28,11 @@ Two markers cut across the statuses:
 
 Anything unmarked sits in between: a clear task that touches more than one layer.
 
+One section does not use this legend at all. [Accessibility & UX
+audit](#accessibility--ux-audit) is a checklist rather than a status table,
+because its rows are defects in shipped features rather than features — a
+defect is outstanding or fixed, and there is no useful middle.
+
 ## Keeping this file honest
 
 A pull request that changes behaviour updates its row in the same commit. A
@@ -95,10 +100,10 @@ row.
 | Feature | Status | Notes |
 |---|---|---|
 | Dashboard, groups, sources, routing, logs, settings | ✅ | Six pages, all driven by the real backend. |
-| Themes | ✅ | Catppuccin and Kanagawa flavours. |
-| Localisation | ✅ | English and Russian. |
+| Themes | 🟡 | Catppuccin and Kanagawa flavours. The four dark ones are clean; both light ones fail WCAG AA on every page, because the surface ramp is derived for a dark background and inverted when it is reused for a light one — see [the light theme row](#accessibility--ux-audit) in the audit. |
+| Localisation | 🟡 | English and Russian. One hole: source refresh timestamps are stored as English prose by the backend and parsed back into translation keys by a regular expression, so anything the pattern misses reaches the screen untranslated — see [the timestamp row](#accessibility--ux-audit) in the audit. |
 | Live traffic telemetry | ✅ | Download and upload speed plus session totals, read from sing-box's own traffic and connections endpoints so they survive a frontend reload. Deliberately just the numbers — there is no traffic chart and none is planned. |
-| Log viewer | ✅ | Streams the core's output live, with level detection. |
+| Log viewer | 🟡 | Streams the core's output live, with level detection. Three defects found by the audit: the timestamp column prints a raw ISO string, the INFO level uses a hardcoded hex that ignores the theme, and 500 rows render unvirtualised on every incoming line. |
 | Connection list | 📋 | The Clash API already reports every live connection (host, rule, upload, download, duration); nothing displays them. Include "close connection" and "close all". |
 | Embedded sing-box dashboard | 📋 | NekoBox bundles Yacd. The Clash API is already running and reachable, so this is mostly a window and a bundled static build. |
 | App icon | ✅ | `assets/icon-source.svg` is the source: the mark on a Catppuccin Mocha plate, drawn on Apple's macOS grid (an 824×824 rounded square inset in a 1024 canvas) so it sits the same size as its neighbours in the dock. Regenerate the platform icons with `pnpm tauri icon assets/icon-source.png`. The mark loses its detail below about 48px, which would need separate small-size artwork inside the `.ico` and `.icns` — `tauri icon` scales a single source, so that is a manual job nobody has judged worth doing. |
@@ -127,7 +132,7 @@ row.
 | Continuous integration | ✅ | `.github/workflows/ci.yml` runs `cargo fmt --check` / `clippy -D warnings` / `test` (including the ignored smoke test against the real core) and `pnpm lint` / `test` / `build` on every pull request and push to `main`. |
 | Release builds | 🟡 | `.github/workflows/release.yml` builds macOS (both architectures), Linux and Windows bundles from a `v*` tag and attaches them to a draft release, after checking the tag against `tauri.conf.json`. Proven on `v0.1.0`: dmg, deb, rpm, AppImage, msi and exe all built. Nothing is downloadable until that draft is published. Linux ships x86_64 only. |
 | Code signing and notarisation | 🟡 | Release builds are ad-hoc signed, which makes the macOS bundle structurally valid — without it the signature seals no resources and macOS reports the app as damaged rather than merely unverified. They are still not notarised, so a downloaded copy needs its quarantine flag cleared, and Windows still shows SmartScreen. Real signing needs a paid Apple certificate and a Windows one. **Discuss first.** |
-| Update notification | ✅ | On launch the app asks GitHub for the latest release and, if it is newer than the running build, the sidebar links straight to it. Silent when the check fails or there are no releases. |
+| Update notification | 🟡 | On launch the app asks GitHub for the latest release and, if it is newer than the running build, the sidebar links straight to it. Silent when the check fails or there are no releases. The link itself is `target="_blank"` with neither the `opener` plugin nor a `shell:allow-open` permission behind it, so in a real bundle it opens nothing — the notification arrives and then goes nowhere. See [the external links row](#accessibility--ux-audit) in the audit. |
 | AUR package (`kagerou-bin`) | 📋 | Blocked (2026-09-05): AUR registration is not working, and the account plus its SSH key is the one part nobody else can do. Groundwork is known: build the package from the released `.deb`, which carries `usr/bin/kagerou`, `usr/bin/sing-box`, the desktop entry and hicolor icons. **Delete the bundled sing-box and `depends=('sing-box')` instead** — `/usr/bin/sing-box` belongs to `extra/sing-box`, so shipping our own there is a file conflict pacman refuses, and `sidecar_path()` resolves the core as "executable's directory + sing-box", which lands on the packaged one with no code change. Other dependencies, read from the binary: `gtk3`, `webkit2gtk-4.1`, `hicolor-icon-theme`. x86_64 only. A workflow on `release: published` — not on the tag, since our releases start as drafts — can bump `pkgver`, recompute the checksum, regenerate `.SRCINFO` and push. |
 | Linux repositories | 📋 | Today a Linux user downloads a loose `.deb`, `.rpm` or AppImage from the release page and never hears about an update again. Repositories fix that: an apt repository (Debian/Ubuntu, hostable from GitHub Pages), COPR (Fedora), OBS (openSUSE, and it can build for several distros at once). Worth doing in that order — each is independent, and each is a chunk of packaging work rather than app work. |
 | Flatpak | 💡 | The one package that would reach nearly every distro, and integrated into GNOME Software and KDE Discover — but it needs its sandbox question answered before anyone commits. A TUN interface needs `/dev/net/tun` and `CAP_NET_ADMIN`, and a Flatpak cannot simply elevate to get them; VPN clients on Flathub tend to hand the privileged half to something on the host. Establish whether TUN can work at all under Flatpak before packaging anything. |
@@ -143,12 +148,893 @@ Not missing features — things that exist and work, but are built in a way
 worth revisiting. Kept apart from the sections above so "we haven't built it"
 never gets confused with "we built it badly".
 
+Defects found by the frontend audit live in [their own
+section](#accessibility--ux-audit) below, with a fix written out for each.
+
 | Issue | Status | Notes |
 |---|---|---|
 | `ProfileTable` renders every row twice | 📋 | The wide table and the narrow card list are both rendered on every pass, with CSS hiding whichever doesn't apply. Correct, but it doubles the DOM and the render work for every profile in every group. A `matchMedia` hook would render one or the other. **Good first issue.** |
 | Linux desktop entry and icon are malformed | 📋 | The generated `.desktop` has an empty `Categories=`, so the app lands uncategorised in application menus — fixed upstream with `bundle.category` in `tauri.conf.json`. The icon installed at `hicolor/256x256@2/apps/` is a 256×256 image: `@2` is not a hicolor directory, and the size is wrong for the name it was given. Both ship in the `.deb` and `.rpm` today. **Good first issue.** |
 | Dead profile-ordering plumbing | 📋 | `moveProfile` and `reorderProfiles` in the store, and the `move_profile` / `reorder_profiles` Tauri commands behind them, have no UI calling them. Either wire up manual reordering or delete all four; leaving them is a trap for the next person who greps for them. |
 | Dialogs remount via their `key` | 📋 | `SourceDialog` and `ProfileGroupDialog` include the open flag in their React `key`, so every open and close throws the component away to reset its form state. It works, but resetting state on open would be the honest version. **Good first issue.** |
+
+---
+
+## Accessibility & UX audit
+
+A frontend audit run on 2026-09-08 against the Vercel Web Interface Guidelines
+and WCAG 2.2 AA. Every finding below was reproduced in a real browser — the
+frontend served by Vite with the Tauri IPC stubbed out, driven through Chrome
+DevTools Protocol — rather than read off the source, so each row names the
+symptom that was observed and not the rule that was broken.
+
+This section uses checkboxes instead of the status column the rest of the file
+uses. The rows above describe features, which are done or not done; the rows
+here describe defects in features that already ship, and a defect is either
+outstanding or fixed. The same honesty rule applies: a pull request that fixes
+one of these ticks its box in the same commit, and a box is ticked only when
+the verification step under it passes — not when the code looks right.
+
+Four rows above were downgraded from ✅ to 🟡 by this audit: **Themes**,
+**Localisation**, **Log viewer** and **Update notification**. Each names the
+audit item that put it there, and goes back to ✅ when that item is ticked.
+
+### Reproducing the measurements
+
+The contrast numbers quoted below come from this snippet, pasted into the
+DevTools console of a running `pnpm --dir app dev` with the theme under test
+selected. It walks every element that owns a text node, resolves the nearest
+opaque background, blends the foreground alpha into it, and reports anything
+under the AA threshold for its size. An empty `fails` array is the pass
+condition:
+
+```js
+const srgb = (c) => (c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+const lum = (g) => 0.2126 * srgb(g[0]) + 0.7152 * srgb(g[1]) + 0.0722 * srgb(g[2])
+const parse = (s) => (s.match(/[\d.]+/g) ?? []).map(Number)
+const blend = (f, b) => f.length < 4 ? f : f.map((v, i) => i < 3 ? v * f[3] + b[i] * (1 - f[3]) : 1)
+const bgOf = (el) => {
+  for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+    const c = parse(getComputedStyle(n).backgroundColor)
+    if (c.length && (c[3] ?? 1) > 0.95) return c
+  }
+  return parse(getComputedStyle(document.documentElement).backgroundColor)
+}
+const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05)
+const fails = []
+for (const el of document.querySelectorAll('*')) {
+  const text = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(' ').trim()
+  if (!text) continue
+  const cs = getComputedStyle(el)
+  if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) === 0) continue
+  if (!el.getBoundingClientRect().width) continue
+  const bg = bgOf(el)
+  const r = ratio(blend(parse(cs.color), bg), bg)
+  const size = parseFloat(cs.fontSize)
+  const need = size >= 24 || (size >= 18.66 && Number(cs.fontWeight) >= 700) ? 3 : 4.5
+  if (r < need) fails.push({ text: text.slice(0, 40), color: cs.color, size: cs.fontSize, ratio: +r.toFixed(2), need })
+}
+console.table(fails)
+```
+
+Run it on all six routes, in all eight themes. The keyboard checks are manual:
+Tab from the top of each page to the bottom, then Escape out of every dialog,
+dropdown and popover.
+
+### Critical
+
+Defects that make the app unusable for someone, or that hide a failure the
+user needs to know about.
+
+- [ ] **Modals and popovers cannot be dismissed by keyboard or by clicking away.**
+  `app/src/components/ui/dialog.tsx:64`, `app/src/components/ui/popover.tsx`,
+  `app/src/components/ui/alert-dialog.tsx:59`.
+
+  Reproduced four times, by two independent routes: a real key event through
+  the debugging protocol, and a synthetic `KeyboardEvent` dispatched at the
+  focused element. Escape reaches `document` and comes back with
+  `defaultPrevented: true`, so Radix sees it — but `data-state` stays `open`.
+  A real mouse click on the overlay at (150, 440) does not close it either.
+  The theme picker's `Popover` behaves the same way, so the whole
+  `DismissableLayer` mechanism is dead, not one component. The only way out of
+  a dialog is a mouse click on Cancel or the × button, which is a keyboard
+  trap.
+
+  Establish the cause before writing a fix, because there are two very
+  different ones. `radix-ui@1.6.7` against `react@19.2.8` under
+  `React.StrictMode` is the first suspect: the doubled effect can leave the
+  layer's listener detached. Test it by dropping StrictMode for one run:
+
+  ```tsx
+  // app/src/main.tsx:10 — temporary, revert either way
+  createRoot(document.getElementById('root')!).render(<App />)
+  ```
+
+  If Escape starts working, the fix is upgrading `radix-ui` and keeping
+  StrictMode. If it does not, drive the dismissal explicitly from the
+  primitive, so that all six call sites are covered by one change:
+
+  ```tsx
+  // app/src/components/ui/dialog.tsx:64
+  <DialogPrimitive.Content
+    data-slot="dialog-content"
+    onEscapeKeyDown={(event) => { event.preventDefault(); onOpenChange?.(false) }}
+    onPointerDownOutside={() => onOpenChange?.(false)}
+    ...
+  ```
+
+  Repeat in `alert-dialog.tsx` and `popover.tsx`. Note that `AlertDialog`
+  deliberately ignores outside clicks — that is correct for a destructive
+  confirmation — so it needs the Escape half only.
+
+  Verify: open every dialog in the app (add group, rename group, add key,
+  rename profile, delete profile, add source, edit source, remove source,
+  remove unavailable, edit rule) plus the theme picker, and close each one
+  with Escape. **Discuss first** — the StrictMode question decides whether
+  this is a dependency bump or a permanent local override.
+
+- [ ] **The light themes fail WCAG AA across every page.**
+  `app/src/themes/catppuccin.ts:12-23`, `app/src/themes/kanagawa.ts:150-165`.
+
+  The surface ramp is inverted for light flavours. In Catppuccin,
+  `surface0/1/2` sit *darker* than `base`, which reads as elevation on a dark
+  background and as mud on a light one: in Latte every card becomes a grey
+  slab and the text on it loses most of its contrast. Measured on `/groups`
+  in Latte — 22 failures on that page alone, 22 more on `/sources`, 20 on
+  `/routing-rules`:
+
+  | Text | Colour | Measured | Needs |
+  |---|---|---|---|
+  | `Tokyo Premium Gateway 01` — primary text | `#4c4f69` | 3.69 | 4.5 |
+  | `Managed by subscription` | `#6c6f85` | 2.28 | 4.5 |
+  | `Imported` badge | `#40a02b` | 1.55 | 4.5 |
+  | `180 ms` warning result | `#df8e1d` | 1.70 | 4.5 |
+  | `Local` badge | `#7287fd` | 2.06 | 4.5 |
+  | Preset description copy | `#9ca0b0` | 1.69 | 4.5 |
+
+  Kanagawa Lotus is hand-mapped rather than derived, so it fares better, but
+  `lotusGray2` (`#716e61`) still lands at 3.15–4.26 in every secondary label,
+  and the semantic colours fail the same way.
+
+  Invert the ramp for light flavours instead of patching call sites:
+
+  ```ts
+  // app/src/themes/catppuccin.ts:12
+  const toTokens = (flavor: CatppuccinFlavor): ThemeTokens => {
+    const { colors } = flavor
+    const dark = flavor.dark
+
+    return {
+      // In a light flavour "higher" has to mean lighter, not darker.
+      canvas: dark ? colors.base.hex : colors.mantle.hex,
+      sidebar: dark ? colors.mantle.hex : colors.crust.hex,
+      surface: dark ? colors.surface0.hex : colors.base.hex,
+      surfaceElevated: dark ? colors.surface1.hex : colors.base.hex,
+      surfaceSelected: dark ? colors.surface2.hex : colors.surface0.hex,
+      surfaceHover: dark ? colors.surface1.hex : colors.mantle.hex,
+      viewport: dark ? colors.crust.hex : colors.base.hex,
+      ...
+      textMuted: dark ? colors.subtext0.hex : colors.subtext1.hex,
+      textQuiet: dark ? colors.overlay0.hex : colors.subtext0.hex,
+    }
+  }
+  ```
+
+  For Lotus, `textMuted: kanagawaPalette.lotusInk2` and
+  `textQuiet: kanagawaPalette.lotusGray2`.
+
+  The semantic colours need separate handling: Catppuccin's light flavours
+  publish the same saturated `green`/`yellow`/`red` as the dark ones, and
+  those cannot reach 4.5:1 on a near-white surface at any weight. Darken them
+  for light flavours — `color-mix(in srgb, ${colors.green.hex} 65%, ${colors.crust.hex})`
+  keeps the hue and buys the contrast — or hardcode a light-flavour triple.
+  `ResultBadge` is the visible consumer, and a ping result that cannot be
+  read is the one number on that page anybody looks at.
+
+  Verify: the console snippet above returns an empty `fails` array on all six
+  routes in Latte and Lotus, and still does in the four dark themes.
+  **Discuss first** — this changes how every light theme looks, and the call
+  between "darken the accents" and "swap the ramp only" is a design decision.
+
+- [ ] **A backend error leaves a permanently blank window.**
+  `app/src/App.tsx:20-25`, `app/src/store/kagerou-store.ts:134-141`.
+
+  `hydrate()` awaits `get_app_state` with no `catch`, and `App` returns
+  `null` until `hydrated` flips. Any failure on that path — a corrupt
+  database, a migration that throws, a command that panics — and the user
+  gets a window with nothing in it and no text explaining why. The
+  unhandled rejection lands in a console they will never open. This is
+  exactly what happens today when the frontend is served outside Tauri,
+  which is how the audit found it.
+
+  ```ts
+  // app/src/store/kagerou-store.ts:134
+  hydrate: async () => {
+    subscribeToBackendEvents()
+    try {
+      const snapshot = await kagerouApi.getAppState()
+      set({ ...applySnapshot(snapshot), hydrated: true })
+    } catch (error) {
+      set({ hydrated: true, hydrateError: backendErrorMessage(error, 'Failed to load app state') })
+      return
+    }
+    // Deliberately not awaited: a slow or unreachable GitHub must not hold
+    // up the first paint, and the command never rejects.
+    void kagerouApi.checkForUpdate().then((updateAvailable) => set({ updateAvailable }))
+  },
+  ```
+
+  ```tsx
+  // app/src/App.tsx:25
+  if (!hydrated) return null
+  if (hydrateError) {
+    return <p className="p-8 text-[13px] text-bad" role="alert">{hydrateError}</p>
+  }
+  ```
+
+  `hydrateError: string | null` goes into `KagerouStore` in
+  `app/src/types/kagerou.ts` alongside `hydrated`. The message wants a real
+  next step in it, not just the failure — where the database lives, and that
+  deleting it starts fresh — since a corrupt store is the likeliest cause
+  and the user cannot act on "Failed to load app state" alone.
+
+  Verify: point the app at an unreadable app-data directory, or throw from
+  `get_app_state`, and confirm the window says something. **Good first issue.**
+
+- [ ] **Fourteen actions fail silently.**
+  `app/src/store/kagerou-store.ts:151, 159, 191, 221, 263, 276, 285, 294, 304, 348, 355, 362, 370, 375`.
+
+  Every mutating action catches its error into `console.error` and stops
+  there. The worst case is `toggleConnection`: press Connect, have
+  `connect()` reject because the sidecar is missing or the TUN elevation
+  prompt was denied, and nothing happens at all — the dial does not move,
+  no message appears, and the app looks like it ignored the click. The
+  optimistic ones are quietly worse: `updateSettings` and `setPreset` paint
+  the new state, fail to persist it, and leave the UI disagreeing with the
+  database until the next reload.
+
+  `sonner` is already wired up and already used this way in
+  `app/src/pages/SourcesPage.tsx:77`, so this is reporting, not plumbing:
+
+  ```ts
+  // app/src/store/kagerou-store.ts:145
+  toggleConnection: async () => {
+    const { connected } = get()
+    try {
+      if (connected) await kagerouApi.disconnect()
+      else await kagerouApi.connect()
+    } catch (error) {
+      toast.error(backendErrorMessage(error, i18n.t('common:feedback.connectFailed')))
+    }
+  },
+  ```
+
+  The store is outside React, so it needs `i18n` imported directly from
+  `@/i18n` rather than a `useTranslation` hook, and the new copy needs rows
+  in both `app/src/locales/en/common.json` and `.../ru/common.json`.
+
+  Split the fourteen by what the user loses. `toggleConnection`,
+  `selectProfile`, `deleteProfile`, `startGroupTest`, `cancelGroupTest` and
+  `deleteUnavailableProfiles` are direct actions and must report. The
+  optimistic ones — `setProfileGroupOpen`, `setPreset`, `selectRule`,
+  `updateRule`, `setTheme`, `updateSettings` — must report *and* roll back,
+  or they will keep lying about what is stored.
+
+  Verify: stop the sing-box sidecar from resolving and press Connect; a
+  toast appears naming the reason.
+
+- [ ] **No skip link, and `<main>` has no accessible name.**
+  `app/src/components/layout/AppShell.tsx:9`.
+
+  Six sidebar links sit ahead of the content on every page, and a keyboard
+  or screen-reader user walks all six on every navigation.
+
+  ```tsx
+  // app/src/components/layout/AppShell.tsx:6
+  <div className="flex min-h-screen w-full overflow-x-clip bg-canvas text-primary">
+    <a
+      className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-raised focus:px-3 focus:py-2 focus:focus-ring"
+      href="#main"
+    >
+      {t('a11y.skipToContent')}
+    </a>
+    <Sidebar />
+    <main aria-label={t('a11y.mainContent')} className="min-w-0 flex-1" id="main" tabIndex={-1}>
+      <Outlet />
+    </main>
+  </div>
+  ```
+
+  `tabIndex={-1}` is what makes the jump actually move focus rather than
+  only the scroll position. `AppShell` currently takes no translation hook,
+  so it needs `useTranslation('common')` and two new keys in both locales.
+
+  Verify: Tab once from a fresh page load, confirm the link appears, press
+  Enter, then Tab again and land inside the page content rather than back
+  in the sidebar. **Good first issue.**
+
+- [ ] **`aria-selected` on a `<tr>` inside a plain table.**
+  `app/src/components/routing/RoutingRulesTable.tsx:32`.
+
+  `aria-selected` is only defined for the `row` role inside `grid` or
+  `treegrid`. In a `table` it is dropped, so the selected routing rule —
+  which the edit panel below acts on — is announced identically to every
+  other row. Two more problems in the same element: `event.preventDefault()`
+  on Space kills page scrolling while a row has focus, and the row is a
+  focusable element containing another focusable element, the edit button.
+
+  ```tsx
+  // app/src/components/routing/RoutingRulesTable.tsx:28
+  <Table className="min-w-[620px]" role="grid">
+  ```
+
+  ```tsx
+  // app/src/components/routing/RoutingRulesTable.tsx:32 — Enter only
+  onKeyDown={(event) => {
+    if (event.key === 'Enter') { event.preventDefault(); onSelect(rule.id) }
+  }}
+  ```
+
+  Declaring `role="grid"` is a promise about keyboard behaviour that the
+  table does not currently keep — a grid is one tab stop with arrow keys
+  moving the focus inside it, not one tab stop per row. Either implement
+  the roving tabindex, or drop the row interaction entirely and let the
+  match cell hold a real button. The second is less code and loses nothing:
+  the row already has a button in it.
+
+  Verify: with a screen reader on, move between rules and hear the selected
+  one announced as selected.
+
+- [ ] **Fonts are fetched from Google at every launch.**
+  `app/src/index.css:1`.
+
+  ```css
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono...');
+  ```
+
+  A VPN client is offline by definition until it connects, so the first
+  paint of the first launch is the case where this fails. The layout is
+  built on fixed pixel sizes (`text-[13px]`, `h-10`, `w-[104px]`), so a
+  fallback to the system sans-serif does not degrade gracefully — it
+  reflows. There is a second reason to care in this app specifically: a
+  privacy tool that phones a third party on startup, before any tunnel
+  exists, is making a request the user did not agree to.
+
+  ```bash
+  pnpm --dir app add @fontsource/inter @fontsource/inter-tight @fontsource/ibm-plex-mono
+  ```
+
+  ```css
+  /* app/src/index.css:1 */
+  @import "@fontsource/inter/400.css";
+  @import "@fontsource/inter/500.css";
+  @import "@fontsource/inter/600.css";
+  @import "@fontsource/inter-tight/500.css";
+  @import "@fontsource/inter-tight/600.css";
+  @import "@fontsource/inter-tight/700.css";
+  @import "@fontsource/ibm-plex-mono/400.css";
+  @import "@fontsource/ibm-plex-mono/500.css";
+  ```
+
+  Three new dependencies is more than this file usually welcomes, but they
+  are build-time asset packages with no runtime, and the weights listed are
+  exactly the ones `index.css:73-75` declares. Subsetting to `latin` and
+  `cyrillic` matters here — the app ships Russian.
+
+  Verify: launch with networking disabled and confirm the type looks
+  identical to a launch with networking on. **Good first issue.**
+
+### Improvements
+
+Real defects, none of them blocking. Roughly in the order they are worth
+doing.
+
+- [ ] **The focus ring is drawn at 50% alpha.**
+  `app/src/index.css:81-83`.
+
+  ```css
+  * { @apply border-border outline-ring/50; }
+  ```
+
+  This sets `outline-color` on everything and wins over the `focus-ring`
+  utility's own colour, so every focus indicator in the app renders as
+  half-transparent lavender: measured at roughly 1.9:1 against the sidebar,
+  where WCAG 2.4.11 wants 3:1. On the active navigation item, which already
+  has a `bg-selected` background, it is close to invisible — the audit's
+  first tab-through read as "no focus ring at all" until the computed
+  styles were dumped.
+
+  ```css
+  /* app/src/index.css:81 */
+  * {
+    @apply border-border;
+  }
+  ```
+
+  Nothing depends on the global outline colour: every interactive component
+  declares its own `focus-visible:` treatment, and the `focus-ring` utility
+  at `index.css:141` already specifies a full-opacity `var(--lavender)`.
+
+  Verify: Tab through the sidebar and see the ring on every item, including
+  the active one, in all eight themes. **Good first issue.**
+
+- [ ] **Log rows print a raw ISO timestamp.**
+  `app/src/components/logs/LogRow.tsx:28`, `app/src/store/kagerou-store.ts:46`.
+
+  The store stores `new Date().toISOString()` and the row renders it
+  verbatim, so the 186px timestamp column reads
+  `2026-09-08T17:52:46.522Z` on every line.
+
+  ```ts
+  // app/src/lib/formatters.ts
+  const logTime = new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  })
+
+  /** ISO timestamp from the store to the `HH:MM:SS` the log column shows. */
+  export const formatLogTimestamp = (iso: string) => logTime.format(new Date(iso))
+  ```
+
+  Keep the ISO string in the entry — it is the sortable form, and a future
+  "copy logs" wants it — and format only at the point of render. Watch the
+  filter: `app/src/pages/LogsPage.tsx:16` searches
+  `${entry.timestamp} ${entry.level} ${entry.message}`, so unless it
+  searches the formatted string too, typing `17:52` finds nothing while the
+  screen is full of it.
+
+  The column can also narrow considerably once it holds eight characters
+  instead of twenty-four — `app/src/index.css:159` has it at `186px`.
+  **Good first issue.**
+
+- [ ] **A hardcoded hex colour in the log level palette.**
+  `app/src/components/logs/LogRow.tsx:5`.
+
+  ```ts
+  const levelClasses: Record<LogEntry['level'], string> = {
+    INFO: 'text-[#b8b1cf]',
+    ...
+  ```
+
+  A fixed lavender-grey, chosen for a dark background, rendered unchanged on
+  Latte and Lotus. It is the only place in the frontend that bypasses the
+  theme tokens. Replace with `text-body`; `WARN` and `ERROR` on the lines
+  below already use `text-warn` and `text-bad` correctly.
+  **Good first issue.**
+
+- [ ] **Five hundred log rows render unvirtualised.**
+  `app/src/store/kagerou-store.ts:18`, `app/src/components/logs/LogViewer.tsx:18`.
+
+  `MAX_LOG_ENTRIES = 500` and the viewer maps all of them. Each row then
+  runs `HighlightedMessage`, which compiles a fresh `RegExp` per row per
+  render at `LogRow.tsx:13`. While connected, sing-box emits continuously
+  and the whole list re-renders on every entry.
+
+  The cheap fix needs no dependency and no windowing library:
+
+  ```tsx
+  // app/src/components/logs/LogViewer.tsx:17
+  <div
+    className="space-y-0 px-4 py-4"
+    id="log-list"
+    style={{ contentVisibility: 'auto', containIntrinsicSize: '0 21px' }}
+  >
+  ```
+
+  `content-visibility: auto` skips layout and paint for off-screen rows
+  while keeping them in the DOM, so Ctrl+F and text selection still work —
+  which a windowing library would break. Hoist the regex out of the render
+  in the same pass:
+
+  ```tsx
+  // app/src/components/logs/LogRow.tsx:10
+  function HighlightedMessage({ message, query }: { message: string; query: string }) {
+    const needle = query.trim()
+    const pattern = useMemo(
+      () => needle ? new RegExp(`(${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig') : null,
+      [needle],
+    )
+    if (!pattern) return message
+    ...
+  ```
+
+  Note the existing character class at `LogRow.tsx:13` is subtly wrong —
+  `[.*+?^${}()|[\\]\\]` escapes the backslash twice and never closes on
+  `]` — so a query containing `]` throws. Fixing it belongs here.
+
+- [ ] **New log lines are never announced.**
+  `app/src/components/logs/LogViewer.tsx:17`.
+
+  The log viewer is the one place in the app that updates on its own, and
+  it does so silently. `aria-live="polite"` with `aria-relevant="additions"`
+  announces appended rows without re-reading the whole list:
+
+  ```tsx
+  <div aria-live="polite" aria-relevant="additions" className="space-y-0 px-4 py-4" id="log-list">
+  ```
+
+  Worth pairing with the level filter that does not exist yet — announcing
+  every INFO line from a busy core is its own kind of unusable, so consider
+  scoping the live region to WARN and ERROR. **Discuss first.**
+
+- [ ] **Switch labels are not clickable.**
+  `app/src/components/settings/SettingSwitchRow.tsx:15`,
+  `app/src/components/routing/PresetSwitchRow.tsx:21`.
+
+  The label is a `<span>` or `<p>` sitting beside the control with no
+  association, so the hit target is the 32×18px switch rather than the full
+  row. Screen-reader users are fine — the switch carries `aria-label` — but
+  everyone else is aiming at a thumbnail.
+
+  ```tsx
+  // app/src/components/settings/SettingSwitchRow.tsx:11
+  export function SettingSwitchRow({ id, label, description, checked, disabled = false, onChange }: SettingSwitchRowProps) {
+    return (
+      <div className="flex min-h-14 items-center justify-between gap-8 border-b border-hairline/55">
+        <label className="min-w-0 cursor-pointer" htmlFor={id}>
+          <span className="block text-[14px] leading-5 text-body">{label}</span>
+          {description ? <p className="mt-1 text-[11px] leading-4 text-muted-copy">{description}</p> : null}
+        </label>
+        <Switch
+          checked={checked}
+          className="shrink-0 data-checked:bg-lavender data-unchecked:bg-raised"
+          disabled={disabled}
+          id={id}
+          onCheckedChange={onChange}
+        />
+      </div>
+    )
+  }
+  ```
+
+  Drop the `aria-label` when the `<label>` goes in, or the two compete and
+  the visible text loses. `id` becomes a required prop, so every call site in
+  `app/src/pages/SettingsPage.tsx` needs one. Same shape for
+  `PresetSwitchRow`. **Good first issue.**
+
+- [ ] **Preset labels are guessed from a hardcoded id.**
+  `app/src/components/routing/PresetSwitchRow.tsx:9-11`.
+
+  ```ts
+  const presetCopyKeys = (id: string) => id === 'block-ads'
+    ? { label: 'presets.blockAds.label', ... }
+    : { label: 'presets.bypassLan.label', ... }
+  ```
+
+  Anything that is not `block-ads` renders as "Bypass LAN", including a
+  preset that is neither. Confirmed live: two different presets drew
+  identical rows. The backend already sends `label` and `description` on
+  every preset, so the fallback should be those rather than a guess — keep
+  the id lookup for the two known presets that want translating, and fall
+  through to the backend copy for anything else.
+
+  This one is a trap for whoever adds a third preset, and it will look like
+  a backend bug when it lands. **Good first issue.**
+
+- [ ] **The theme list is eight tab stops, and its arrow keys disagree with its grouping.**
+  `app/src/components/settings/ThemeFlavorRow.tsx:36`,
+  `app/src/components/settings/ThemePicker.tsx:55-73, 108`.
+
+  Every flavour row is a native `<button>` carrying `role="radio"`, so each
+  is in the tab order — a radio group should be a single stop with arrows
+  moving inside it. Separately, `ThemePicker` declares one `radiogroup` per
+  pack but `handleRowKeyDown` cycles through `allThemes`, so the arrows walk
+  out of the group that was announced.
+
+  ```tsx
+  // app/src/components/settings/ThemeFlavorRow.tsx:27
+  <Button ref={ref} aria-checked={active} role="radio" tabIndex={active ? 0 : -1} ... />
+  ```
+
+  Then pick one of the two shapes and make the keys match it: one
+  `radiogroup` around the whole list, keeping the existing wrap-around
+  arrows, or per-pack groups with arrows that stop at each pack's edges. The
+  first is less work and matches what the arrows already do — move the
+  `role="radiogroup"` from `ThemePicker.tsx:108` up to the wrapper at line
+  101 and give it a single label.
+
+- [ ] **Dialog validation errors are not tied to their field.**
+  `app/src/components/profiles/ProfileGroupDialog.tsx:71-74`,
+  `app/src/components/sources/SourceDialog.tsx:95`.
+
+  The message renders as a sibling above the footer. The input gets no
+  `aria-invalid`, its `aria-describedby` points only at the helper text, and
+  focus stays wherever it was. `role="alert"` means the text is read once,
+  but a user who tabs back to the field hears nothing about it being wrong.
+
+  ```tsx
+  // app/src/components/profiles/ProfileGroupDialog.tsx:71
+  <Input
+    aria-describedby={error ? 'profile-group-error profile-group-helper' : 'profile-group-helper'}
+    aria-invalid={Boolean(error)}
+    autoFocus
+    id="profile-group-name"
+    ref={inputRef}
+    ...
+  />
+  ...
+  {error ? <FieldError className="text-[11px]" id="profile-group-error">{error}</FieldError> : null}
+  ```
+
+  And return focus to the field on a rejected submit — `handleSubmit:45` and
+  `:51` both `return` without moving it:
+
+  ```tsx
+  if (!trimmed) {
+    setError(t('dialogs.group.empty'))
+    inputRef.current?.focus()
+    return
+  }
+  ```
+
+  The error also belongs directly under the input rather than above the
+  footer, so the eye finds it where the mistake is. **Good first issue.**
+
+- [ ] **URL fields are typed as plain text and spell-checked.**
+  `app/src/components/sources/SourceDialog.tsx:87, 92`,
+  `app/src/components/settings/SettingTextRow.tsx:37`.
+
+  The subscription URL, the pasted protocol key and the connection-test URL
+  are all `type="text"` with spellcheck on, so the browser underlines
+  base64 payloads and hostnames in red.
+
+  ```tsx
+  <Input
+    autoComplete="off"
+    inputMode="url"
+    spellCheck={false}
+    type={type === 'url' ? 'url' : 'text'}
+    ...
+  />
+  ```
+
+  Leave the key field as `type="text"` — `vless://` is not a URL the browser
+  validator recognises — but it still wants `spellCheck={false}`.
+
+  In the same files: `SettingTextRow.tsx:23` and `SettingNumberRow.tsx:26`
+  call `onChange` on every keystroke, which walks through the store to a
+  SQLite write per character — a 40-character test URL is 40 writes. Both
+  already have an `onBlur` doing validation; move the persist there and keep
+  the keystroke handler local. **Good first issue.**
+
+- [ ] **`transition-all` on three primitives.**
+  `app/src/components/ui/button.tsx:8`, `app/src/components/ui/badge.tsx:8`,
+  `app/src/components/ui/switch.tsx:20`.
+
+  Animates every animatable property including `width`, `height` and
+  `background`, none of which are compositor-friendly. Buttons in this app
+  change size — the profile select button swaps "Use" for "Selected" — so
+  this is a real reflow, not a theoretical one. List the properties:
+
+  ```
+  transition-[color,background-color,border-color,box-shadow,transform]
+  ```
+
+  The rest of the `ui/` primitives already use
+  `transition-[color,box-shadow]`, so this is bringing three files in line
+  with the other ten. **Good first issue.**
+
+- [ ] **Relative timestamps never advance, and English leaks through the parser.**
+  `app/src/components/sources/SourceCard.tsx:35-58`,
+  `src-tauri/src/commands.rs:826, 861, 924`,
+  `src-tauri/src/storage/sources.rs:115`.
+
+  The backend writes the literal string `"Updated just now"` into the
+  database, and the frontend parses it back into an i18n key with a regular
+  expression. Two consequences. First, the branches matching
+  `/^Updated (\d+) min ago$/` and `days ago` are dead code — nothing ever
+  writes those strings — so a source refreshed a week ago still reads
+  "Updated just now" forever. Second, `SourceCard.tsx:58` falls through to
+  the raw stored value when the pattern misses, which puts untranslated
+  English on screen.
+
+  Store a timestamp and format it at the edge:
+
+  ```rust
+  // src-tauri/src/commands.rs:924
+  last_refresh: Some(&chrono::Utc::now().to_rfc3339()),
+  ```
+
+  ```ts
+  // app/src/lib/formatters.ts
+  const relative = (language: string) => new Intl.RelativeTimeFormat(language, { numeric: 'auto' })
+
+  /** Stored RFC 3339 timestamp to "5 minutes ago" in the active language. */
+  export const formatLastRefresh = (iso: string, language: string) => {
+    const minutes = Math.round((Date.now() - Date.parse(iso)) / 60_000)
+    if (minutes < 60) return relative(language).format(-minutes, 'minute')
+    if (minutes < 1440) return relative(language).format(-Math.round(minutes / 60), 'hour')
+    return relative(language).format(-Math.round(minutes / 1440), 'day')
+  }
+  ```
+
+  Then delete `sourceTimestampKey` and the five `card.updated*` keys from
+  both locale files. This needs a migration decision: existing rows hold
+  prose, not timestamps, and `Date.parse` returns `NaN` for them. Either
+  migrate them to `NULL` and render an em dash, or add a migration that
+  stamps them with the migration's own time — the first is honest, the
+  second is prettier. **Discuss first**, because it changes the storage
+  schema's meaning and touches both sides at once.
+
+- [ ] **A decorative arrow is read aloud.**
+  `app/src/components/sources/SourceCard.tsx:106`.
+
+  `<span className="text-lavender">→</span>` is announced as "right arrow"
+  in the middle of a sentence. Add `aria-hidden="true"`.
+  **Good first issue.**
+
+- [ ] **A disabled switch looks almost enabled.**
+  `app/src/components/settings/SettingSwitchRow.tsx:18`,
+  `app/src/components/ui/switch.tsx:20`.
+
+  `disabled` gives only `opacity-50`, which on the System proxy row reads as
+  a slightly dimmer version of a working control rather than a disabled one.
+  The explanatory copy beside it carries the whole message. Give the state a
+  shape of its own:
+
+  ```
+  data-disabled:bg-transparent data-disabled:ring-1 data-disabled:ring-hairline
+  ```
+
+  Ties into the System proxy row in
+  [Core & connectivity](#core--connectivity), which is 🟡 for the same
+  reason. **Good first issue.**
+
+- [ ] **Dead `aria-hidden` and an unnamed region on group panels.**
+  `app/src/components/profiles/ProfileGroupCard.tsx:59-60`.
+
+  ```tsx
+  {group.open ? (
+    <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
+  ```
+
+  The node only exists when `group.open` is true, so `aria-hidden` is
+  permanently `false` and can go. `role="region"` without an accessible name
+  is skipped by screen readers entirely, which wastes the `aria-controls`
+  wiring the header button already has:
+
+  ```tsx
+  <div aria-label={groupLabel} id={`${group.id}-panel`} role="region">
+  ```
+
+  **Good first issue.**
+
+### Tauri-specific
+
+Places where the frontend behaves like a web page inside what is meant to be
+a desktop application.
+
+- [ ] **External links cannot open.**
+  `app/src/components/settings/SettingsFooter.tsx:16-25`,
+  `app/src/components/layout/SidebarUpdateNotice.tsx:25`.
+
+  Both use `<a href={...} target="_blank">`. Tauri v2 does not implement
+  `window.open` by default, and
+  `src-tauri/capabilities/default.json` grants only `core:default` and
+  `autostart:default` — no `shell:allow-open`, and the `opener` plugin is
+  not among the four in `src-tauri/Cargo.toml:19-22`. So the click does
+  nothing, or navigates the app window itself to GitHub with no way back.
+  The update notice is the only path a user has to a new release, which
+  makes this the more serious of the two.
+
+  ```bash
+  pnpm --dir app add @tauri-apps/plugin-opener
+  cd src-tauri && cargo add tauri-plugin-opener
+  ```
+
+  ```json
+  // src-tauri/capabilities/default.json
+  "permissions": ["core:default", "autostart:default", "opener:allow-open-url"]
+  ```
+
+  ```tsx
+  // app/src/components/settings/SettingsFooter.tsx:16
+  import { openUrl } from '@tauri-apps/plugin-opener'
+
+  <button
+    className="inline-flex min-w-0 items-center gap-1.5 text-muted-copy transition-colors hover:text-lavender-hi focus-visible:focus-ring"
+    onClick={() => { void openUrl(KAGEROU_REPOSITORY_URL) }}
+    type="button"
+  >
+  ```
+
+  A `<button>` rather than an `<a>` is right here despite the usual rule:
+  this is not navigation within the document, it is a request to the host
+  OS, and an `<a>` that does nothing is worse than a button that works. Both
+  places already carry `aria-label`, so the announcement does not change.
+  Restrict the permission to the two known URLs if the capability schema
+  allows it — `opener:allow-open-url` with a `urls` list is narrower than
+  handing the frontend an arbitrary opener.
+
+  Verify: in a built bundle, not `tauri dev`, click both links and watch the
+  system browser open. **Good first issue.**
+
+- [ ] **The interface selects like a web page.**
+  `app/src/index.css:90-99`.
+
+  `getComputedStyle(document.body).userSelect` returns `auto`, so dragging
+  across the profile list highlights headings, counts and labels. Nothing
+  else about the window says "browser", and this does.
+
+  ```css
+  /* app/src/index.css:90 */
+  body {
+    @apply min-w-0 bg-canvas text-foreground;
+    min-height: 100vh;
+    margin: 0;
+    user-select: none;
+    ...
+  }
+  ```
+
+  Then hand selection back to the things people genuinely copy — the masked
+  subscription value at `app/src/components/sources/SourceCard.tsx:99`, log
+  message text at `app/src/components/logs/LogRow.tsx:30`, and every input:
+
+  ```css
+  /* app/src/index.css:157, @layer components */
+  input,
+  textarea,
+  [data-selectable] {
+    user-select: text;
+  }
+  ```
+
+  Verify: drag across the groups page and select nothing; drag across a log
+  line and select the message. **Good first issue.**
+
+- [ ] **The WebView's own context menu is reachable.**
+
+  No `contextmenu` handler anywhere in the frontend, so right-clicking opens
+  the platform WebView's menu — reload, back, inspect, depending on the
+  platform — none of which belongs in this app.
+
+  ```tsx
+  // app/src/main.tsx:8
+  if (!import.meta.env.DEV) {
+    document.addEventListener('contextmenu', (event) => event.preventDefault())
+  }
+  ```
+
+  The `DEV` guard is not optional: without it, `tauri dev` loses its
+  inspector. Leaving right-click dead is the minimum; a real context menu on
+  a profile row would be better, and is worth a row of its own if anyone
+  wants it. **Good first issue.**
+
+**Window dragging — checked, nothing to do.** Not a checkbox, because there is
+nothing outstanding; it is here so the next audit does not raise it again.
+There are zero
+`data-tauri-drag-region` attributes in the DOM, and
+`src-tauri/tauri.conf.json:14-21` does not set `"decorations": false`, so the
+window keeps its native title bar and drags by it. Adding the attribute now
+would gain nothing.
+
+It becomes required the moment anyone builds a frameless window, and the trap
+is worth writing down in advance: the attribute swallows clicks across its
+whole subtree, so it cannot go on a container that holds buttons. The working
+shape is an absolutely positioned sibling behind the header content:
+
+```tsx
+<header className="relative flex items-start justify-between gap-6">
+  <div aria-hidden="true" className="absolute inset-0" data-tauri-drag-region />
+  <div className="relative">...</div>
+</header>
+```
+
+### Checked and clean
+
+Recorded so the next audit does not re-derive them, and so a regression here
+is visible as a change rather than a discovery.
+
+| Checked | Result |
+|---|---|
+| `-webkit-tap-highlight-color` | Set to transparent on buttons, `app/src/index.css:101-104`. |
+| `color-scheme` and `<meta name="theme-color">` | Both follow the active theme, `app/src/themes/runtime.ts:70, 76`. |
+| `prefers-reduced-motion` | Global duration clamp at `app/src/index.css:185`; `ThemePicker` additionally zeroes its own `motion` animations. |
+| Horizontal overflow and stray scrollbars | None. `scrollWidth === clientWidth` at 1280×800 and at the 860×560 minimum from `tauri.conf.json`; no element overflows its container. |
+| Minimum-window layout | Holds at 860×560. The profile table switches to its compact card list, the sidebar collapses to icons, long names truncate. |
+| Draggable images | None to suppress; the only image is an inline SVG mark. |
+| Icon-only buttons | All carry `aria-label`; decorative icons are `aria-hidden`. Spot-checked across all six pages. |
+| Async status regions | The log search count (`LogToolbar.tsx:45`) and the ping readout (`ConnectionTrafficReadouts.tsx:65`) are `role="status"`. |
 
 ---
 
