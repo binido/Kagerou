@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -66,6 +66,8 @@ fn detect_protocol(key: &str) -> Protocol {
 #[serde(rename_all = "camelCase")]
 pub struct AppSnapshot {
     pub connected: bool,
+    /// Unix milliseconds, or `None` while disconnected.
+    pub connected_since: Option<u64>,
     pub active_profile_id: String,
     pub profiles: Vec<Profile>,
     pub profile_groups: Vec<ProfileGroup>,
@@ -73,6 +75,16 @@ pub struct AppSnapshot {
     pub routing_presets: Vec<RoutingPreset>,
     pub routing_rules: Vec<RoutingRule>,
     pub settings: Settings,
+}
+
+/// The connection's start time as unix milliseconds. A clock set before
+/// 1970 is the only way this fails, and an absent uptime beats a panic.
+fn epoch_millis(state: &AppState) -> Option<u64> {
+    let since = (*state.connected_since.lock().unwrap())?;
+    since
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|d| d.as_millis() as u64)
 }
 
 #[tauri::command]
@@ -87,6 +99,7 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
     );
     Ok(AppSnapshot {
         connected,
+        connected_since: connected.then(|| epoch_millis(&state)).flatten(),
         active_profile_id: settings::get_active_profile_id(&state.db)
             .map_err(to_err)?
             .unwrap_or_default(),
@@ -119,6 +132,7 @@ pub enum DashboardTrafficEvent {
         down: u64,
         upload_total: Option<u64>,
         download_total: Option<u64>,
+        active_connections: Option<usize>,
     },
     Disconnected,
     Reconnecting,
@@ -134,6 +148,7 @@ fn to_dashboard_event(
             down: sample.down,
             upload_total: totals.map(|t| t.upload_total),
             download_total: totals.map(|t| t.download_total),
+            active_connections: totals.map(|t| t.connections.len()),
         },
         TrafficEvent::Disconnected => DashboardTrafficEvent::Disconnected,
         TrafficEvent::Reconnecting => DashboardTrafficEvent::Reconnecting,
@@ -223,6 +238,7 @@ pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Resul
             }
             forwarded = logs.len();
             if let singbox::Status::Crashed { exit_code } = status {
+                *state.connected_since.lock().unwrap() = None;
                 let _ = log_app.emit("kagerou://connection-changed", false);
                 crate::tray::refresh(&log_app, false);
                 let _ = log_app.emit("kagerou://crashed", exit_code);
@@ -234,6 +250,7 @@ pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Resul
         }
     });
 
+    *state.connected_since.lock().unwrap() = Some(SystemTime::now());
     let _ = app.emit("kagerou://connection-changed", true);
     crate::tray::refresh(app, true);
     Ok(())
@@ -266,6 +283,7 @@ pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<()
         let _ = stop.send(true);
     }
     *state.clash.lock().unwrap() = None;
+    *state.connected_since.lock().unwrap() = None;
     state.supervisor.lock().unwrap().stop().map_err(to_err)?;
     let _ = app.emit("kagerou://connection-changed", false);
     crate::tray::refresh(&app, false);
@@ -1141,7 +1159,9 @@ pub fn update_settings(
 #[cfg(test)]
 mod tests {
     use super::{region_from_name, test_core_is_idle, to_dashboard_event, DashboardTrafficEvent};
-    use crate::clash_api::model::{ConnectionsResponse, TrafficSample};
+    use crate::clash_api::model::{
+        ConnectionInfo, ConnectionMetadata, ConnectionsResponse, TrafficSample,
+    };
     use crate::clash_api::TrafficEvent;
     use std::time::{Duration, Instant};
 
@@ -1181,11 +1201,26 @@ mod tests {
         assert_eq!(region_from_name("🇦 Node"), "");
     }
 
+    fn connection(id: &str) -> ConnectionInfo {
+        ConnectionInfo {
+            id: id.to_string(),
+            metadata: ConnectionMetadata {
+                host: String::new(),
+                network: String::new(),
+                destination_port: String::new(),
+            },
+            upload: 0,
+            download: 0,
+            chains: vec![],
+            rule: String::new(),
+        }
+    }
+
     fn totals() -> ConnectionsResponse {
         ConnectionsResponse {
             download_total: 1_900_000_000,
             upload_total: 250_000_000,
-            connections: vec![],
+            connections: vec![connection("a"), connection("b")],
         }
     }
 
@@ -1199,6 +1234,7 @@ mod tests {
                 down: 200,
                 upload_total: Some(250_000_000),
                 download_total: Some(1_900_000_000),
+                active_connections: Some(2),
             }
         );
     }
@@ -1213,6 +1249,7 @@ mod tests {
                 down: 200,
                 upload_total: None,
                 download_total: None,
+                active_connections: None,
             },
             "the sample itself must still reach the dashboard"
         );
@@ -1245,6 +1282,7 @@ mod tests {
                 "down": 2,
                 "uploadTotal": 250_000_000_u64,
                 "downloadTotal": 1_900_000_000_u64,
+                "activeConnections": 2,
             })
         );
     }

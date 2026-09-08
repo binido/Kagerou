@@ -29,6 +29,8 @@ export interface TestFinishedEvent {
 
 export interface AppSnapshot {
   connected: boolean
+  /** Unix milliseconds the current connection came up, or `null` when down. */
+  connectedSince: number | null
   activeProfileId: string
   profiles: Profile[]
   profileGroups: ProfileGroup[]
@@ -42,7 +44,7 @@ export interface AppSnapshot {
  * from the Clash API's `/connections`); `null` when that fetch failed and
  * the UI should keep showing the previous values. */
 export type TrafficEvent =
-  | { kind: 'sample'; up: number; down: number; uploadTotal: number | null; downloadTotal: number | null }
+  | { kind: 'sample'; up: number; down: number; uploadTotal: number | null; downloadTotal: number | null; activeConnections: number | null }
   | { kind: 'disconnected' }
   | { kind: 'reconnecting' }
 

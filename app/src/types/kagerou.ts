@@ -122,6 +122,10 @@ export interface TrafficSample {
   upload: number
 }
 
+/** Speed history behind the dashboard sparkline: one sample per second,
+ * oldest first, capped at a minute. */
+export const TRAFFIC_HISTORY_LIMIT = 60
+
 /** Cumulative bytes moved since sing-box started this session. */
 export interface SessionTraffic {
   download: number
@@ -156,6 +160,12 @@ export interface KagerouStore {
   routingRules: RoutingRule[]
   logs: LogEntry[]
   trafficSample: TrafficSample
+  trafficHistory: TrafficSample[]
+  /** Live connections reported by the last sample; `null` before the first
+   * one arrives or when the Clash API fetch failed. */
+  activeConnections: number | null
+  /** Unix milliseconds the current connection came up, or `null` when down. */
+  connectedSince: number | null
   updateAvailable: UpdateInfo | null
   testRun: TestRun | null
   sessionTraffic: SessionTraffic

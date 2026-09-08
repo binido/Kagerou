@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppSnapshot, TrafficEvent } from '@/lib/tauri-api'
 import type { Profile, RoutingRule, Source, TestResult } from '@/types/kagerou'
+import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
 
 const api = vi.hoisted(() => ({
   getAppState: vi.fn(),
@@ -51,6 +52,7 @@ const { useKagerouStore, __resetBackendEventSubscriptionForTests } = await impor
 
 const emptySnapshot: AppSnapshot = {
   connected: false,
+  connectedSince: null,
   activeProfileId: '',
   profiles: [],
   profileGroups: [],
@@ -525,10 +527,55 @@ describe('backend event handling', () => {
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
 
     await useKagerouStore.getState().hydrate()
-    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null })
-    handler({ kind: 'sample', up: 64, down: 128, uploadTotal: null, downloadTotal: null })
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null, activeConnections: null })
+    handler({ kind: 'sample', up: 64, down: 128, uploadTotal: null, downloadTotal: null, activeConnections: null })
 
     expect(useKagerouStore.getState().trafficSample).toEqual({ download: 128, upload: 64 })
+  })
+
+  it('traffic history keeps the last minute of samples, oldest first', async () => {
+    let handler: (event: TrafficEvent) => void = () => {}
+    api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
+
+    await useKagerouStore.getState().hydrate()
+    for (let i = 0; i < TRAFFIC_HISTORY_LIMIT + 10; i += 1) {
+      handler({ kind: 'sample', up: i, down: i * 2, uploadTotal: null, downloadTotal: null, activeConnections: null })
+    }
+
+    const history = useKagerouStore.getState().trafficHistory
+    expect(history).toHaveLength(TRAFFIC_HISTORY_LIMIT)
+    expect(history[0]).toEqual({ download: 20, upload: 10 })
+    expect(history.at(-1)).toEqual({ download: (TRAFFIC_HISTORY_LIMIT + 9) * 2, upload: TRAFFIC_HISTORY_LIMIT + 9 })
+  })
+
+  it('a sample with a null connection count keeps the previous one', async () => {
+    let handler: (event: TrafficEvent) => void = () => {}
+    api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
+
+    await useKagerouStore.getState().hydrate()
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null, activeConnections: 12 })
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null, activeConnections: null })
+
+    expect(useKagerouStore.getState().activeConnections).toBe(12)
+  })
+
+  it('disconnecting stamps the uptime clock and clears the history', async () => {
+    let traffic: (event: TrafficEvent) => void = () => {}
+    let connection: (connected: boolean) => void = () => {}
+    api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { traffic = h; return Promise.resolve(() => {}) })
+    api.onConnectionChanged.mockImplementation((h: (c: boolean) => void) => { connection = h; return Promise.resolve(() => {}) })
+
+    await useKagerouStore.getState().hydrate()
+    connection(true)
+    traffic({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null, activeConnections: 3 })
+    expect(useKagerouStore.getState().connectedSince).toBeTypeOf('number')
+
+    connection(false)
+    expect(useKagerouStore.getState()).toMatchObject({
+      connectedSince: null,
+      trafficHistory: [],
+      activeConnections: null,
+    })
   })
 
   it('a traffic sample event replaces sessionTraffic with the backend-reported totals', async () => {
@@ -536,8 +583,8 @@ describe('backend event handling', () => {
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { handler = h; return Promise.resolve(() => {}) })
 
     await useKagerouStore.getState().hydrate()
-    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: 250_000_000, downloadTotal: 1_900_000_000 })
-    handler({ kind: 'sample', up: 3, down: 4, uploadTotal: 260_000_000, downloadTotal: 1_950_000_000 })
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: 250_000_000, downloadTotal: 1_900_000_000, activeConnections: null })
+    handler({ kind: 'sample', up: 3, down: 4, uploadTotal: 260_000_000, downloadTotal: 1_950_000_000, activeConnections: null })
 
     expect(useKagerouStore.getState().sessionTraffic).toEqual({ download: 1_950_000_000, upload: 260_000_000 })
   })
@@ -548,7 +595,7 @@ describe('backend event handling', () => {
     useKagerouStore.setState({ sessionTraffic: { download: 500, upload: 100 } })
 
     await useKagerouStore.getState().hydrate()
-    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null })
+    handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null, activeConnections: null })
 
     expect(useKagerouStore.getState().sessionTraffic).toEqual({ download: 500, upload: 100 })
   })

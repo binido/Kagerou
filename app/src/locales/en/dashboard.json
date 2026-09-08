@@ -19,7 +19,35 @@
       "download": "Download speed",
       "upload": "Upload speed",
       "session": "Session traffic",
-      "unit": "Mbps"
-    }
+      "unit": "Mbps",
+      "connections": "Active connections",
+      "connectionsUnit": "conn"
+    },
+    "uptime": "Up {{value}}",
+    "idleHint": "Tap to connect"
+  },
+  "sparkline": {
+    "ariaLabel": "Download and upload speed over the last minute",
+    "empty": "No traffic yet"
+  },
+  "modes": {
+    "title": "Modes",
+    "tun": "TUN mode",
+    "systemProxy": "System proxy",
+    "hint": "Applies on the next connection."
+  },
+  "quickProfiles": {
+    "title": "Fastest in group",
+    "empty": "This group has no profiles.",
+    "untested": "Nothing in this group has been tested, so there is no ranking yet.",
+    "test": "Test group",
+    "testing": "Testing…"
+  },
+  "footer": {
+    "presets": "Presets: {{names}}",
+    "noPresets": "No presets enabled",
+    "rules": "Rules: {{count}}",
+    "sources": "Sources: {{count}}",
+    "sourcesStale": "Sources: {{count}} of {{total}} due for refresh"
   }
 }
