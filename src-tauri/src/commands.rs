@@ -7,6 +7,7 @@ use tokio::sync::watch;
 use crate::app_state::AppState;
 use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
+use crate::geo;
 use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
@@ -275,6 +276,34 @@ pub(crate) async fn auto_connect(app: &AppHandle) -> Result<(), String> {
         return Ok(());
     }
     connect_internal(app, state.inner()).await
+}
+
+/// Asks a public service, through the running tunnel, where the exit node
+/// appears to be. `None` — rather than an error — when there is nothing to
+/// ask through or the user has turned the lookup off: neither is a failure,
+/// and the UI falls back to the profile's own flag in both cases.
+#[tauri::command]
+pub async fn lookup_exit_location(
+    state: State<'_, AppState>,
+) -> Result<Option<geo::ExitLocation>, String> {
+    if !settings::get(&state.db).map_err(to_err)?.geo_lookup {
+        return Ok(None);
+    }
+    let running = matches!(
+        *state.supervisor.lock().unwrap().status(),
+        singbox::Status::Running
+    );
+    if !running {
+        return Ok(None);
+    }
+
+    let socks = format!("127.0.0.1:{}", state.paths.mixed_listen_port);
+    let client = geo::GeoClient::through_socks(&socks).map_err(to_err)?;
+    client
+        .lookup(Duration::from_secs(8))
+        .await
+        .map(Some)
+        .map_err(to_err)
 }
 
 #[tauri::command]
@@ -1098,6 +1127,7 @@ pub struct SettingsPatchInput {
     pub tun_mode: Option<bool>,
     pub system_proxy: Option<bool>,
     pub auto_connect: Option<bool>,
+    pub geo_lookup: Option<bool>,
     pub tun_interface: Option<String>,
     pub auto_update_subscriptions: Option<bool>,
     pub subscription_update_interval: Option<String>,
@@ -1140,6 +1170,7 @@ pub fn update_settings(
             tun_mode: patch.tun_mode,
             system_proxy: patch.system_proxy,
             auto_connect: patch.auto_connect,
+            geo_lookup: patch.geo_lookup,
             tun_interface: patch.tun_interface.as_deref(),
             auto_update_subscriptions: patch.auto_update_subscriptions,
             subscription_update_interval: patch.subscription_update_interval.as_deref(),

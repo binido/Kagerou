@@ -65,10 +65,14 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     // a millisecond — and the snapshot is what a reload reads, which is the
     // case the frontend clock cannot serve on its own. Going down clears the
     // history so the sparkline stops drawing the previous session's shape.
-    void kagerouApi.onConnectionChanged((connected) =>
+    void kagerouApi.onConnectionChanged((connected) => {
       set(connected
         ? { connected, connectedSince: Date.now() }
-        : { connected, connectedSince: null, trafficHistory: [], activeConnections: null }))
+        : { connected, connectedSince: null, trafficHistory: [], activeConnections: null, exitLocation: null })
+      // The exit only exists while the core does, so this is one of the two
+      // moments worth asking — the other is a profile switch.
+      if (connected) void get().refreshExitLocation()
+    })
 
     void kagerouApi.onTraffic((event) => {
       if (event.kind !== 'sample') return
@@ -131,6 +135,8 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     trafficHistory: [],
     activeConnections: null,
     connectedSince: null,
+    exitLocation: null,
+    exitLocationPending: false,
     sessionTraffic: { download: 0, upload: 0 },
     updateAvailable: null,
     testRun: null,
@@ -138,6 +144,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       theme: getInitialThemeId(),
       language: 'en',
       startup: false,
+      geoLookup: true,
       tunMode: false,
       systemProxy: false,
       autoConnect: false,
@@ -157,6 +164,9 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       // Deliberately not awaited: a slow or unreachable GitHub must not hold
       // up the first paint, and the command never rejects.
       void kagerouApi.checkForUpdate().then((updateAvailable) => set({ updateAvailable }))
+      // A reload mid-session lands here with the tunnel already up, and the
+      // connection-changed event that would have asked has long since fired.
+      if (snapshot.connected) void get().refreshExitLocation()
     },
 
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
@@ -206,6 +216,9 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       }))
       try {
         await kagerouApi.selectProfile(id)
+        // A hot switch changes the exit without touching the connection, so
+        // nothing else would invalidate the location.
+        void get().refreshExitLocation()
       } catch (error) {
         console.error('selectProfile failed', error)
         await refresh()
@@ -387,6 +400,20 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       set((state) => ({ settings: { ...state.settings, theme: theme.id } }))
       persistThemeId(theme.id)
       void kagerouApi.setTheme(theme.id).catch((error) => console.error('setTheme failed', error))
+    },
+
+    /** Failure is not worth surfacing: a null location is the signal, and the
+     * dashboard falls back to the profile's own flag. */
+    refreshExitLocation: async () => {
+      set({ exitLocationPending: true })
+      try {
+        set({ exitLocation: await kagerouApi.lookupExitLocation() })
+      } catch (error) {
+        console.error('lookupExitLocation failed', error)
+        set({ exitLocation: null })
+      } finally {
+        set({ exitLocationPending: false })
+      }
     },
 
     updateSettings: (patch) => {

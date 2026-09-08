@@ -1,3 +1,5 @@
+import type { ExitLocation } from '@/types/kagerou'
+
 export const formatSourceTimestamp = (value: string) => value
 
 /** Bytes/sec (what the Clash API reports) → Mbit/s with one decimal,
@@ -29,10 +31,28 @@ export const deriveSubscriptionName = (value: string, fallbackNumber: number, fa
 /** An ISO 3166-1 alpha-2 region code (what the backend's region_from_name
  * emits) → "🇦🇹 Austria"-style display string, localized via Intl.
  * Anything else ("", "Local profile", garbage) → null. */
+export const regionToFlag = (region: string): string | null =>
+  /^[A-Z]{2}$/.test(region)
+    ? String.fromCodePoint(...[...region].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
+    : null
+
 export const regionToCountry = (region: string, language: string): string | null => {
-  if (!/^[A-Z]{2}$/.test(region)) return null
-  const flag = String.fromCodePoint(...[...region].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
+  const flag = regionToFlag(region)
+  if (!flag) return null
   return `${flag} ${new Intl.DisplayNames([language], { type: 'region' }).of(region)}`
+}
+
+/** "🇬🇧 London, United Kingdom" from a looked-up exit. The country name comes
+ * from `Intl` so it follows the app's language; the city is whatever the
+ * lookup service said, since it only speaks English. A lookup with no city
+ * still located the exit, and reads as the country alone. */
+export const formatExitLocation = (exit: ExitLocation, language: string): string => {
+  const flag = regionToFlag(exit.countryCode)
+  const country = flag
+    ? (new Intl.DisplayNames([language], { type: 'region' }).of(exit.countryCode) ?? exit.country)
+    : exit.country
+  const place = exit.city ? `${exit.city}, ${country}` : country
+  return flag ? `${flag} ${place}` : place
 }
 
 const MASK = '••••'

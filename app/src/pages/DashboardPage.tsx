@@ -17,6 +17,8 @@ export function DashboardPage() {
   const { t: tp } = useTranslation('profiles')
   const connected = useKagerouStore((state) => state.connected)
   const connectedSince = useKagerouStore((state) => state.connectedSince)
+  const exitLocation = useKagerouStore((state) => state.exitLocation)
+  const exitLocationPending = useKagerouStore((state) => state.exitLocationPending)
   const profiles = useKagerouStore((state) => state.profiles)
   const profileGroups = useKagerouStore((state) => state.profileGroups)
   const activeProfileId = useKagerouStore((state) => state.activeProfileId)
@@ -33,6 +35,7 @@ export function DashboardPage() {
   const selectProfile = useKagerouStore((state) => state.selectProfile)
   const startGroupTest = useKagerouStore((state) => state.startGroupTest)
   const updateSettings = useKagerouStore((state) => state.updateSettings)
+  const refreshExitLocation = useKagerouStore((state) => state.refreshExitLocation)
 
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0]
   const group = activeProfile ? profileGroups.find((g) => g.id === activeProfile.groupId) : undefined
@@ -59,9 +62,12 @@ export function DashboardPage() {
           activeConnections={activeConnections}
           connected={connected}
           connectedSince={connectedSince}
+          exitLocation={exitLocation}
+          exitLocationPending={exitLocationPending}
           latestDownload={trafficSample.download}
           latestUpload={trafficSample.upload}
           location={location}
+          onRefreshLocation={() => void refreshExitLocation()}
           onToggleConnection={toggleConnection}
           ping={ping}
           profileName={profileName}

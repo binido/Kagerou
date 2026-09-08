@@ -126,6 +126,15 @@ export interface TrafficSample {
  * oldest first, capped at a minute. */
 export const TRAFFIC_HISTORY_LIMIT = 60
 
+/** Where the internet says the tunnel comes out, looked up through the
+ * tunnel itself. `city` can be empty; the country cannot. */
+export interface ExitLocation {
+  ip: string
+  city: string
+  country: string
+  countryCode: string
+}
+
 /** Cumulative bytes moved since sing-box started this session. */
 export interface SessionTraffic {
   download: number
@@ -139,6 +148,7 @@ export interface SettingsState {
   tunMode: boolean
   systemProxy: boolean
   autoConnect: boolean
+  geoLookup: boolean
   tunInterface: TunInterface
   autoUpdateSubscriptions: boolean
   subscriptionUpdateInterval: SubscriptionUpdateInterval
@@ -166,6 +176,8 @@ export interface KagerouStore {
   activeConnections: number | null
   /** Unix milliseconds the current connection came up, or `null` when down. */
   connectedSince: number | null
+  exitLocation: ExitLocation | null
+  exitLocationPending: boolean
   updateAvailable: UpdateInfo | null
   testRun: TestRun | null
   sessionTraffic: SessionTraffic
@@ -197,4 +209,5 @@ export interface KagerouStore {
   updateRule: (id: string, patch: Partial<Pick<RoutingRule, 'match' | 'outbound'>>) => void
   setTheme: (themeId: ThemeId) => void
   updateSettings: (patch: Partial<SettingsState>) => void
+  refreshExitLocation: () => Promise<void>
 }

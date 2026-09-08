@@ -8,6 +8,7 @@ import type {
   ProfileGroup,
   RoutingPreset,
   RoutingRule,
+  ExitLocation,
   SettingsState,
   Source,
   TestResult,
@@ -56,6 +57,7 @@ export const kagerouApi = {
   checkForUpdate: () => invoke<UpdateInfo | null>('check_for_update'),
   connect: () => invoke<void>('connect'),
   disconnect: () => invoke<void>('disconnect'),
+  lookupExitLocation: () => invoke<ExitLocation | null>('lookup_exit_location'),
 
   selectProfile: (id: string) => invoke<void>('select_profile', { id }),
   addLocalProfile: (input: AddLocalProfileInput) => invoke<string>('add_local_profile', { input }),

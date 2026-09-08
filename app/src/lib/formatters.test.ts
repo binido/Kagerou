@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { backendErrorMessage } from './errors'
-import { formatUptime, maskSubscriptionUrl, regionToCountry } from './formatters'
+import { formatExitLocation, formatUptime, maskSubscriptionUrl, regionToCountry } from './formatters'
 
 describe('regionToCountry', () => {
   it('maps a valid ISO code to a localized country with its flag', () => {
@@ -73,5 +73,22 @@ describe('formatUptime', () => {
 
   it('reads a backwards clock as zero rather than as a countdown', () => {
     expect(formatUptime(-5_000)).toBe('0:00')
+  })
+})
+
+describe('formatExitLocation', () => {
+  const exit = { ip: '81.2.69.142', city: 'London', country: 'United Kingdom', countryCode: 'GB' }
+
+  it('reads as flag, city and a country named in the app language', () => {
+    expect(formatExitLocation(exit, 'en')).toBe('🇬🇧 London, United Kingdom')
+    expect(formatExitLocation(exit, 'ru')).toBe('🇬🇧 London, Великобритания')
+  })
+
+  it('a lookup without a city still located the exit', () => {
+    expect(formatExitLocation({ ...exit, city: '' }, 'en')).toBe('🇬🇧 United Kingdom')
+  })
+
+  it('falls back to the service’s own country name when the code is unusable', () => {
+    expect(formatExitLocation({ ...exit, countryCode: '' }, 'en')).toBe('London, United Kingdom')
   })
 })
