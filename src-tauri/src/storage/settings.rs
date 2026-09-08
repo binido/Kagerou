@@ -6,7 +6,7 @@ use super::{Db, StorageError};
 pub fn get(db: &Db) -> Result<Settings, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT theme, language, startup, tun_mode, system_proxy, auto_connect, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level, test_url
+        "SELECT theme, language, startup, tun_mode, system_proxy, auto_connect, geo_lookup, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level, test_url
          FROM settings WHERE id = 1",
         [],
         |row| {
@@ -17,6 +17,7 @@ pub fn get(db: &Db) -> Result<Settings, StorageError> {
                 tun_mode: row.get::<_, i64>("tun_mode")? != 0,
                 system_proxy: row.get::<_, i64>("system_proxy")? != 0,
                 auto_connect: row.get::<_, i64>("auto_connect")? != 0,
+                geo_lookup: row.get::<_, i64>("geo_lookup")? != 0,
                 tun_interface: row.get("tun_interface")?,
                 auto_update_subscriptions: row.get::<_, i64>("auto_update_subscriptions")? != 0,
                 subscription_update_interval: row.get("subscription_update_interval")?,
@@ -38,6 +39,7 @@ pub struct SettingsPatch<'a> {
     pub tun_mode: Option<bool>,
     pub system_proxy: Option<bool>,
     pub auto_connect: Option<bool>,
+    pub geo_lookup: Option<bool>,
     pub tun_interface: Option<&'a str>,
     pub auto_update_subscriptions: Option<bool>,
     pub subscription_update_interval: Option<&'a str>,
@@ -64,13 +66,14 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             tun_mode = COALESCE(?4, tun_mode),
             system_proxy = COALESCE(?5, system_proxy),
             auto_connect = COALESCE(?6, auto_connect),
-            tun_interface = COALESCE(?7, tun_interface),
-            auto_update_subscriptions = COALESCE(?8, auto_update_subscriptions),
-            subscription_update_interval = COALESCE(?9, subscription_update_interval),
-            custom_subscription_update_minutes = COALESCE(?10, custom_subscription_update_minutes),
-            group_sort = COALESCE(?11, group_sort),
-            log_level = COALESCE(?12, log_level),
-            test_url = COALESCE(?13, test_url)
+            geo_lookup = COALESCE(?7, geo_lookup),
+            tun_interface = COALESCE(?8, tun_interface),
+            auto_update_subscriptions = COALESCE(?9, auto_update_subscriptions),
+            subscription_update_interval = COALESCE(?10, subscription_update_interval),
+            custom_subscription_update_minutes = COALESCE(?11, custom_subscription_update_minutes),
+            group_sort = COALESCE(?12, group_sort),
+            log_level = COALESCE(?13, log_level),
+            test_url = COALESCE(?14, test_url)
          WHERE id = 1",
         params![
             patch.theme,
@@ -79,6 +82,7 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             patch.tun_mode.map(|v| v as i64),
             patch.system_proxy.map(|v| v as i64),
             patch.auto_connect.map(|v| v as i64),
+            patch.geo_lookup.map(|v| v as i64),
             patch.tun_interface,
             patch.auto_update_subscriptions.map(|v| v as i64),
             patch.subscription_update_interval,
@@ -270,6 +274,38 @@ mod tests {
         )
         .unwrap();
         assert!(!get(&db).unwrap().auto_connect);
+    }
+
+    #[test]
+    fn geo_lookup_round_trip() {
+        let db = Db::open_in_memory().unwrap();
+        assert!(
+            get(&db).unwrap().geo_lookup,
+            "the location on the dashboard is the point, so the lookup starts on"
+        );
+
+        update(
+            &db,
+            &SettingsPatch {
+                geo_lookup: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert!(
+            !get(&db).unwrap().geo_lookup,
+            "turning it off must actually stop the request to the third party"
+        );
+
+        update(
+            &db,
+            &SettingsPatch {
+                geo_lookup: Some(true),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert!(get(&db).unwrap().geo_lookup);
     }
 
     #[test]

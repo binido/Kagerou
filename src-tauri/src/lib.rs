@@ -1,6 +1,7 @@
 pub mod app_state;
 pub mod clash_api;
 pub mod commands;
+pub mod geo;
 pub mod privilege;
 pub mod probe;
 pub mod singbox;
@@ -108,6 +109,7 @@ pub fn run() {
             commands::cancel_group_test,
             commands::connect,
             commands::disconnect,
+            commands::lookup_exit_location,
             commands::select_profile,
             commands::add_local_profile,
             commands::rename_profile,

@@ -193,6 +193,7 @@ pub struct Settings {
     pub tun_mode: bool,
     pub system_proxy: bool,
     pub auto_connect: bool,
+    pub geo_lookup: bool,
     pub tun_interface: String,
     pub auto_update_subscriptions: bool,
     pub subscription_update_interval: String,
