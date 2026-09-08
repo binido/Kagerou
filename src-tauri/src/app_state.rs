@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 use tokio::sync::watch;
 
@@ -31,6 +31,10 @@ pub struct AppState {
     pub test_supervisor: Mutex<Supervisor<SidecarLauncher>>,
     pub clash: Mutex<Option<ClashApiClient>>,
     pub traffic_stop: Mutex<Option<watch::Sender<bool>>>,
+    /// When the running connection came up, so the dashboard's uptime is
+    /// measured by whoever kept counting rather than by the WebView, which
+    /// forgets everything on a reload.
+    pub connected_since: Mutex<Option<SystemTime>>,
     /// Set while a core is running purely to serve delay tests, which is not
     /// the same thing as being connected: no TUN, nothing announced to the
     /// UI, and it shuts itself down once the tests stop coming.
@@ -76,6 +80,7 @@ impl AppState {
             })),
             clash: Mutex::new(None),
             traffic_stop: Mutex::new(None),
+            connected_since: Mutex::new(None),
             test_clash: Mutex::new(None),
             last_test_at: Mutex::new(None),
             test_core_gate: tokio::sync::Mutex::new(()),
