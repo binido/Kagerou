@@ -77,6 +77,16 @@ fn to_location(body: Response) -> Result<ExitLocation, GeoError> {
     })
 }
 
+/// Whether another attempt could plausibly answer differently. The core is
+/// started and the connection announced in the same breath, so the first
+/// lookup after connecting routinely arrives before sing-box has its inbound
+/// listening — that refusal is a starting proxy, not a verdict. An HTTP status
+/// or a refusal from the service itself is an answer, and repeating the
+/// request would only ask the same question again.
+pub fn is_transient(error: &GeoError) -> bool {
+    matches!(error, GeoError::Unreachable(_) | GeoError::Timeout)
+}
+
 pub struct GeoClient {
     client: reqwest::Client,
     url: String,
@@ -221,6 +231,21 @@ mod tests {
         let client = GeoClient::with_config(reqwest::Client::new(), url);
 
         assert_eq!(client.lookup(SHORT).await, Err(GeoError::Timeout));
+    }
+
+    #[test]
+    fn only_a_proxy_that_never_answered_is_worth_asking_again() {
+        assert!(is_transient(&GeoError::Unreachable("refused".into())));
+        assert!(is_transient(&GeoError::Timeout));
+        assert!(
+            !is_transient(&GeoError::Rejected("Reserved range".into())),
+            "the service answered; asking again gets the same answer"
+        );
+        assert!(
+            !is_transient(&GeoError::Http(429)),
+            "retrying a rate limit is how a rate limit becomes a ban"
+        );
+        assert!(!is_transient(&GeoError::Decode("bad json".into())));
     }
 
     #[test]

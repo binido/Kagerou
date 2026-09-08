@@ -278,6 +278,12 @@ pub(crate) async fn auto_connect(app: &AppHandle) -> Result<(), String> {
     connect_internal(app, state.inner()).await
 }
 
+/// A cold sing-box takes a moment to listen. Four attempts two seconds apart
+/// covers that without leaving the location spinning for long if the tunnel is
+/// genuinely dead.
+const GEO_LOOKUP_ATTEMPTS: u32 = 4;
+const GEO_LOOKUP_RETRY_DELAY: Duration = Duration::from_secs(2);
+
 /// Asks a public service, through the running tunnel, where the exit node
 /// appears to be. `None` — rather than an error — when there is nothing to
 /// ask through or the user has turned the lookup off: neither is a failure,
@@ -299,11 +305,22 @@ pub async fn lookup_exit_location(
 
     let socks = format!("127.0.0.1:{}", state.paths.mixed_listen_port);
     let client = geo::GeoClient::through_socks(&socks).map_err(to_err)?;
-    client
-        .lookup(Duration::from_secs(8))
-        .await
-        .map(Some)
-        .map_err(to_err)
+
+    // `connect` announces the connection as soon as the process is spawned,
+    // so this runs while sing-box is still opening its inbound and the first
+    // attempt is usually refused. Without the retry the dashboard silently
+    // keeps the profile's flag until someone presses refresh by hand.
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        match client.lookup(Duration::from_secs(8)).await {
+            Ok(location) => return Ok(Some(location)),
+            Err(error) if attempts < GEO_LOOKUP_ATTEMPTS && geo::is_transient(&error) => {
+                tokio::time::sleep(GEO_LOOKUP_RETRY_DELAY).await;
+            }
+            Err(error) => return Err(to_err(error)),
+        }
+    }
 }
 
 #[tauri::command]

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/card'
 import { ConnectionDial } from '@/components/dashboard/ConnectionDial'
 import { ConnectionTrafficReadouts } from '@/components/dashboard/ConnectionTrafficReadouts'
-import { SpeedSparkline } from '@/components/dashboard/SpeedSparkline'
+import { hasShape, SpeedSparkline } from '@/components/dashboard/SpeedSparkline'
 import { Button } from '@/components/ui/button'
 import { formatExitLocation, formatUptime } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
@@ -64,6 +64,9 @@ export function ConnectionStage({
   const { t, i18n } = useTranslation('dashboard')
   const uptime = useUptime(connectedSince)
   const language = i18n.resolvedLanguage ?? 'en'
+  // Without a chart the card has nothing to spend height on, so it stops
+  // asking for any.
+  const plotted = hasShape(trafficHistory)
   const place = exitLocation
     ? formatExitLocation(exitLocation, language)
     : exitLocationPending
@@ -71,7 +74,7 @@ export function ConnectionStage({
       : location
 
   return (
-    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
+    <Card className={cn('flex flex-col overflow-hidden rounded-[10px] border border-hairline bg-surface p-0 shadow-none', plotted ? 'min-h-0 flex-1' : 'shrink-0')}>
       <div className="grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-stretch gap-7 p-7 max-[860px]:grid-cols-1 max-[860px]:justify-items-center max-[860px]:gap-5 max-[860px]:p-5">
         <div className="flex flex-col items-center justify-center gap-2.5">
           <ConnectionDial connected={connected} onToggle={onToggleConnection} />

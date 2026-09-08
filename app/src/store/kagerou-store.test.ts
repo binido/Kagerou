@@ -586,7 +586,7 @@ describe('backend event handling', () => {
     expect(useKagerouStore.getState()).toMatchObject({ exitLocation: null, exitLocationPending: false })
   })
 
-  it('disconnecting stamps the uptime clock and clears the history', async () => {
+  it('disconnecting stops the uptime clock but leaves the last minute on screen', async () => {
     let traffic: (event: TrafficEvent) => void = () => {}
     let connection: (connected: boolean) => void = () => {}
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { traffic = h; return Promise.resolve(() => {}) })
@@ -600,9 +600,12 @@ describe('backend event handling', () => {
     connection(false)
     expect(useKagerouStore.getState()).toMatchObject({
       connectedSince: null,
-      trafficHistory: [],
       activeConnections: null,
     })
+    expect(useKagerouStore.getState().trafficHistory).toHaveLength(1)
+
+    connection(true)
+    expect(useKagerouStore.getState().trafficHistory).toEqual([])
   })
 
   it('a traffic sample event replaces sessionTraffic with the backend-reported totals', async () => {
