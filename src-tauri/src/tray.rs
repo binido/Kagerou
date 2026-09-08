@@ -129,7 +129,11 @@ pub fn refresh<R: Runtime>(app: &AppHandle<R>, connected: bool) {
     let Some(tray) = app.tray_by_id("main") else {
         return;
     };
-    let _ = tray.set_icon(Some(icon_for(connected)));
+    // Not `set_icon`: on macOS that one hands the image to the status bar
+    // with the template flag hardcoded off, so the black silhouette would
+    // vanish into a dark menu bar. This sets both together, which also
+    // spares the redraw the two separate calls would cost.
+    let _ = tray.set_icon_with_as_template(Some(icon_for(connected)), true);
     if let Ok(menu) = build_menu(app, connected) {
         let _ = tray.set_menu(Some(menu));
     }
