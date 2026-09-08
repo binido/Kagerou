@@ -24,7 +24,10 @@
       "connectionsUnit": "conn"
     },
     "uptime": "Up {{value}}",
-    "idleHint": "Tap to connect"
+    "idleHint": "Tap to connect",
+    "locating": "Locating…",
+    "exitIp": "Exit address",
+    "refreshLocation": "Refresh location"
   },
   "sparkline": {
     "ariaLabel": "Download and upload speed over the last minute",

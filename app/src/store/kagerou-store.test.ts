@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppSnapshot, TrafficEvent } from '@/lib/tauri-api'
-import type { Profile, RoutingRule, Source, TestResult } from '@/types/kagerou'
+import type { ExitLocation, Profile, RoutingRule, Source, TestResult } from '@/types/kagerou'
 import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
 
 const api = vi.hoisted(() => ({
@@ -42,6 +42,7 @@ const api = vi.hoisted(() => ({
   startGroupTest: vi.fn(),
   cancelGroupTest: vi.fn(),
   onCrashed: vi.fn(),
+  lookupExitLocation: vi.fn(async (): Promise<ExitLocation | null> => null),
 }))
 
 vi.mock('@/lib/tauri-api', () => ({ kagerouApi: api }))
@@ -63,6 +64,7 @@ const emptySnapshot: AppSnapshot = {
     theme: 'catppuccin-mocha',
     language: 'en',
     startup: false,
+    geoLookup: true,
     tunMode: false,
     systemProxy: false,
     autoConnect: false,
@@ -557,6 +559,31 @@ describe('backend event handling', () => {
     handler({ kind: 'sample', up: 1, down: 2, uploadTotal: null, downloadTotal: null, activeConnections: null })
 
     expect(useKagerouStore.getState().activeConnections).toBe(12)
+  })
+
+  it('connecting asks where the tunnel comes out', async () => {
+    let connection: (connected: boolean) => void = () => {}
+    api.onConnectionChanged.mockImplementation((h: (c: boolean) => void) => { connection = h; return Promise.resolve(() => {}) })
+    api.lookupExitLocation.mockResolvedValue({ ip: '81.2.69.142', city: 'London', country: 'United Kingdom', countryCode: 'GB' })
+
+    await useKagerouStore.getState().hydrate()
+    connection(true)
+    await vi.waitFor(() => expect(useKagerouStore.getState().exitLocation?.city).toBe('London'))
+
+    connection(false)
+    expect(useKagerouStore.getState().exitLocation).toBeNull()
+  })
+
+  it('a failed lookup leaves no location rather than a stale one', async () => {
+    api.lookupExitLocation.mockResolvedValue({ ip: '81.2.69.142', city: 'London', country: 'United Kingdom', countryCode: 'GB' })
+    await useKagerouStore.getState().hydrate()
+    await useKagerouStore.getState().refreshExitLocation()
+    expect(useKagerouStore.getState().exitLocation?.city).toBe('London')
+
+    api.lookupExitLocation.mockRejectedValue(new Error('nope'))
+    await useKagerouStore.getState().refreshExitLocation()
+
+    expect(useKagerouStore.getState()).toMatchObject({ exitLocation: null, exitLocationPending: false })
   })
 
   it('disconnecting stamps the uptime clock and clears the history', async () => {

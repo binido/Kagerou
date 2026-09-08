@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
-import { MapPin } from 'lucide-react'
+import { MapPin, RotateCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Card } from '@/components/ui/card'
 import { ConnectionDial } from '@/components/dashboard/ConnectionDial'
 import { ConnectionTrafficReadouts } from '@/components/dashboard/ConnectionTrafficReadouts'
 import { SpeedSparkline } from '@/components/dashboard/SpeedSparkline'
-import { formatUptime } from '@/lib/formatters'
-import type { SessionTraffic, TestResult, TrafficSample } from '@/types/kagerou'
+import { Button } from '@/components/ui/button'
+import { formatExitLocation, formatUptime } from '@/lib/formatters'
+import { cn } from '@/lib/utils'
+import type { ExitLocation, SessionTraffic, TestResult, TrafficSample } from '@/types/kagerou'
 
 /** Ticks once a second while connected, and not at all otherwise. The
  * stored `now` is whatever the last tick saw, so the first second after a
@@ -26,7 +28,12 @@ function useUptime(connectedSince: number | null) {
 
 interface ConnectionStageProps {
   profileName: string
+  /** The profile's own flag-derived guess, used whenever there is no lookup:
+   * disconnected, still in flight, turned off, or failed. */
   location: string
+  exitLocation: ExitLocation | null
+  exitLocationPending: boolean
+  onRefreshLocation: () => void
   connected: boolean
   connectedSince: number | null
   ping: TestResult
@@ -41,6 +48,9 @@ interface ConnectionStageProps {
 export function ConnectionStage({
   profileName,
   location,
+  exitLocation,
+  exitLocationPending,
+  onRefreshLocation,
   connected,
   connectedSince,
   ping,
@@ -51,8 +61,14 @@ export function ConnectionStage({
   sessionTraffic,
   onToggleConnection,
 }: ConnectionStageProps) {
-  const { t } = useTranslation('dashboard')
+  const { t, i18n } = useTranslation('dashboard')
   const uptime = useUptime(connectedSince)
+  const language = i18n.resolvedLanguage ?? 'en'
+  const place = exitLocation
+    ? formatExitLocation(exitLocation, language)
+    : exitLocationPending
+      ? t('connection.locating')
+      : location
 
   return (
     <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
@@ -69,10 +85,26 @@ export function ConnectionStage({
           <h2 className="type-display mt-2 min-w-0 truncate text-[22px] leading-tight tracking-[-0.01em] text-primary" id="connection-stage-title">
             {profileName}
           </h2>
-          <p className="mt-2 flex min-w-0 items-center gap-2 truncate text-[14px] text-body max-[860px]:justify-center">
+          <div className="mt-2 flex min-w-0 items-center gap-2 text-[14px] text-body max-[860px]:justify-center">
             <MapPin aria-hidden="true" className="size-4 shrink-0 text-muted-copy" strokeWidth={1.7} />
-            <span className="truncate">{location}</span>
-          </p>
+            <span className="truncate">{place}</span>
+            {exitLocation ? (
+              <span className="type-data shrink-0 text-muted-copy" title={t('connection.exitIp')}>{exitLocation.ip}</span>
+            ) : null}
+            {connected ? (
+              <Button
+                aria-label={t('connection.refreshLocation')}
+                className="size-6 shrink-0 text-muted-copy"
+                disabled={exitLocationPending}
+                onClick={onRefreshLocation}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <RotateCw aria-hidden="true" className={cn('size-3.5', exitLocationPending && 'animate-spin')} strokeWidth={1.7} />
+              </Button>
+            ) : null}
+          </div>
 
           <div className="mt-5 border-t border-hairline pt-4">
             <ConnectionTrafficReadouts

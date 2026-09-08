@@ -42,6 +42,7 @@ export function SettingsPage() {
             <SettingSwitchRow checked={settings.autoConnect} description={t('descriptions.autoConnect')} label={t('fields.autoConnect')} onChange={(autoConnect) => updateSettings({ autoConnect })} />
             <SettingSwitchRow checked={settings.tunMode} description={t('descriptions.tunMode')} label={t('fields.tunMode')} onChange={(tunMode) => updateSettings({ tunMode })} />
             <SettingSwitchRow checked={settings.systemProxy} description={t('descriptions.systemProxyUnavailable')} disabled label={t('fields.systemProxy')} onChange={(systemProxy) => updateSettings({ systemProxy })} />
+            <SettingSwitchRow checked={settings.geoLookup} description={t('descriptions.geoLookup')} label={t('fields.geoLookup')} onChange={(geoLookup) => updateSettings({ geoLookup })} />
           </SettingsSection>
           <SettingsSection title={t('sections.appearance')}>
             <div className="flex min-h-14 items-center justify-between gap-8 border-b border-hairline max-[639px]:flex-col max-[639px]:items-stretch max-[639px]:gap-3 max-[639px]:py-3"><span className="text-[14px] leading-5 text-body">{t('fields.theme')}</span><ThemePicker onChange={setTheme} value={settings.theme} /></div>
