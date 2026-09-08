@@ -571,7 +571,11 @@ describe('backend event handling', () => {
     await vi.waitFor(() => expect(useKagerouStore.getState().exitLocation?.city).toBe('London'))
 
     connection(false)
-    expect(useKagerouStore.getState().exitLocation).toBeNull()
+    expect(useKagerouStore.getState().exitLocation?.city).toBe(
+      'London',
+      // Where the last session came out is still worth reading; the alternative
+      // is the flag from the profile name, which is the guess this replaced.
+    )
   })
 
   it('a failed lookup leaves no location rather than a stale one', async () => {
@@ -586,7 +590,7 @@ describe('backend event handling', () => {
     expect(useKagerouStore.getState()).toMatchObject({ exitLocation: null, exitLocationPending: false })
   })
 
-  it('disconnecting stops the uptime clock but leaves the last minute on screen', async () => {
+  it('disconnecting stamps the uptime clock and clears the history', async () => {
     let traffic: (event: TrafficEvent) => void = () => {}
     let connection: (connected: boolean) => void = () => {}
     api.onTraffic.mockImplementation((h: (e: TrafficEvent) => void) => { traffic = h; return Promise.resolve(() => {}) })
@@ -600,12 +604,9 @@ describe('backend event handling', () => {
     connection(false)
     expect(useKagerouStore.getState()).toMatchObject({
       connectedSince: null,
+      trafficHistory: [],
       activeConnections: null,
     })
-    expect(useKagerouStore.getState().trafficHistory).toHaveLength(1)
-
-    connection(true)
-    expect(useKagerouStore.getState().trafficHistory).toEqual([])
   })
 
   it('a traffic sample event replaces sessionTraffic with the backend-reported totals', async () => {
