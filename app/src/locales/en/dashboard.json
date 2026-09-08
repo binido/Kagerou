@@ -28,7 +28,8 @@
   },
   "sparkline": {
     "ariaLabel": "Download and upload speed over the last minute",
-    "empty": "No traffic yet"
+    "empty": "No traffic yet",
+    "peak": "peak {{value}} {{unit}}"
   },
   "modes": {
     "title": "Modes",

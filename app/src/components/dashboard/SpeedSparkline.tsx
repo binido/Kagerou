@@ -1,10 +1,17 @@
 import { useTranslation } from 'react-i18next'
 
+import { formatSpeedMbps } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import type { TrafficSample } from '@/types/kagerou'
 
 const VIEW_WIDTH = 600
 const VIEW_HEIGHT = 100
+
+/** 1 Mbit/s, in bytes per second. Scaling to the window's own peak with no
+ * floor turns a handful of stray packets into a full-height mountain range
+ * while the readouts beside it say 0.0 Mbps; below this the line stays flat
+ * at the bottom, which is what an idle connection looks like. */
+const SCALE_FLOOR = 125_000
 
 /** Maps samples onto the viewBox, newest on the right. The scale is the
  * window's own maximum: the previous chart pinned its axis to [0, 100] while
@@ -31,7 +38,7 @@ export function SpeedSparkline({ history, className }: SpeedSparklineProps) {
   // A flat line at zero would read as "no traffic" when the truth is "not
   // connected", so an empty window says so in words and keeps its height.
   const hasShape = history.length >= 2
-  const peak = Math.max(1, ...history.map((point) => Math.max(point.download, point.upload)))
+  const peak = Math.max(SCALE_FLOOR, ...history.map((point) => Math.max(point.download, point.upload)))
 
   return (
     <div className={cn('relative min-h-[56px] overflow-hidden rounded-md border border-hairline bg-canvas', className)}>
@@ -65,6 +72,11 @@ export function SpeedSparkline({ history, className }: SpeedSparklineProps) {
       ) : (
         <p className="type-meta flex size-full items-center justify-center">{t('sparkline.empty')}</p>
       )}
+      {hasShape ? (
+        <p className="type-data absolute right-2 top-1.5 text-muted-copy">
+          {t('sparkline.peak', { value: formatSpeedMbps(peak), unit: t('connection.traffic.unit') })}
+        </p>
+      ) : null}
     </div>
   )
 }
