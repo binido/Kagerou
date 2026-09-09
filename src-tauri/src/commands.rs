@@ -1113,6 +1113,11 @@ pub fn add_routing_rule(
     Ok(id)
 }
 
+#[tauri::command]
+pub fn delete_routing_rule(id: String, state: State<AppState>) -> Result<(), String> {
+    routing::delete_rule(&state.db, &id).map_err(to_err)
+}
+
 // ---------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------
