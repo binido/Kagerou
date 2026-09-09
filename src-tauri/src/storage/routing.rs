@@ -127,6 +127,15 @@ pub fn update_rule(db: &Db, id: &str, patch: &RulePatch) -> Result<(), StorageEr
     Ok(())
 }
 
+pub fn delete_rule(db: &Db, id: &str) -> Result<(), StorageError> {
+    let conn = db.lock();
+    let affected = conn.execute("DELETE FROM routing_rules WHERE id = ?1", params![id])?;
+    if affected == 0 {
+        return Err(StorageError::NotFound);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,6 +211,51 @@ mod tests {
             .map(|r| r.id.clone())
             .collect();
         assert_eq!(selected, vec!["r2"]);
+    }
+
+    #[test]
+    fn delete_rule_removes_it_and_keeps_the_order_of_the_rest() {
+        let db = Db::open_in_memory().unwrap();
+        for id in ["r1", "r2", "r3"] {
+            insert_rule(
+                &db,
+                &NewRoutingRule {
+                    id: id.into(),
+                    match_value: id.into(),
+                    outbound: "Direct".into(),
+                },
+            )
+            .unwrap();
+        }
+        delete_rule(&db, "r2").unwrap();
+        let ids: Vec<_> = list_rules(&db).unwrap().into_iter().map(|r| r.id).collect();
+        assert_eq!(ids, vec!["r1", "r3"]);
+    }
+
+    #[test]
+    fn deleting_the_selected_rule_leaves_nothing_selected() {
+        let db = Db::open_in_memory().unwrap();
+        insert_rule(
+            &db,
+            &NewRoutingRule {
+                id: "r1".into(),
+                match_value: "a".into(),
+                outbound: "Direct".into(),
+            },
+        )
+        .unwrap();
+        select_rule(&db, "r1").unwrap();
+        delete_rule(&db, "r1").unwrap();
+        assert!(list_rules(&db).unwrap().is_empty());
+    }
+
+    #[test]
+    fn deleting_an_unknown_rule_is_not_found() {
+        let db = Db::open_in_memory().unwrap();
+        assert!(matches!(
+            delete_rule(&db, "ghost").unwrap_err(),
+            StorageError::NotFound
+        ));
     }
 
     #[test]

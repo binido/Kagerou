@@ -67,7 +67,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     // history so the sparkline stops drawing the previous session's shape.
     void kagerouApi.onConnectionChanged((connected) => {
       set(connected
-        ? { connected, connectedSince: Date.now() }
+        ? { connected, connectedSince: Date.now(), rulesChangedSinceConnect: false }
         : { connected, connectedSince: null, trafficHistory: [], activeConnections: null })
       // The exit only exists while the core does, so this is one of the two
       // moments worth asking — the other is a profile switch.
@@ -130,6 +130,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     sources: [],
     routingPresets: [],
     routingRules: [],
+    rulesChangedSinceConnect: false,
     logs: [],
     trafficSample: { download: 0, upload: 0 },
     trafficHistory: [],
@@ -390,8 +391,34 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     updateRule: (id, patch) => {
       set((state) => ({
         routingRules: state.routingRules.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)),
+        rulesChangedSinceConnect: state.connected || state.rulesChangedSinceConnect,
       }))
       void kagerouApi.updateRule(id, patch).catch((error) => console.error('updateRule failed', error))
+    },
+
+    // Waits for the backend because the new rule's id comes from there.
+    addRule: async (match, outbound) => {
+      try {
+        const id = await kagerouApi.addRoutingRule(match, outbound)
+        await refresh()
+        set((state) => ({ rulesChangedSinceConnect: state.connected || state.rulesChangedSinceConnect }))
+        return id
+      } catch {
+        return null
+      }
+    },
+
+    deleteRule: async (id) => {
+      try {
+        await kagerouApi.deleteRoutingRule(id)
+        set((state) => ({
+          routingRules: state.routingRules.filter((rule) => rule.id !== id),
+          rulesChangedSinceConnect: state.connected || state.rulesChangedSinceConnect,
+        }))
+        return true
+      } catch {
+        return false
+      }
     },
 
     setTheme: (themeId) => {

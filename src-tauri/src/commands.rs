@@ -1113,6 +1113,18 @@ pub fn add_routing_rule(
     Ok(id)
 }
 
+/// Runs the generator's own classifier, so the hint under the match field
+/// and the rule that ends up in the config can never disagree.
+#[tauri::command]
+pub fn analyze_rule_match(value: String) -> singbox::match_spec::MatchAnalysis {
+    singbox::match_spec::analyze(&value)
+}
+
+#[tauri::command]
+pub fn delete_routing_rule(id: String, state: State<AppState>) -> Result<(), String> {
+    routing::delete_rule(&state.db, &id).map_err(to_err)
+}
+
 // ---------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------

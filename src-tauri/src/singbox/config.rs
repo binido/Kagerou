@@ -1,8 +1,7 @@
-use std::net::IpAddr;
-
 use serde_json::{json, Value};
 use thiserror::Error;
 
+use super::match_spec::{classify_match, Matcher};
 use super::outbound_json::to_singbox_outbound;
 use crate::storage::models::{Profile, RoutingRule};
 use crate::subscription::{self, SubscriptionError};
@@ -195,31 +194,6 @@ fn routing_rule_to_json(rule: &RoutingRule) -> Value {
         Matcher::IpCidr(c) => value["ip_cidr"] = json!([c]),
     }
     value
-}
-
-enum Matcher {
-    Domain(String),
-    DomainSuffix(String),
-    IpCidr(String),
-}
-
-fn classify_match(raw: &str) -> Matcher {
-    if raw.eq_ignore_ascii_case("localhost") {
-        return Matcher::Domain(raw.to_string());
-    }
-    if let Some((addr, _prefix)) = raw.split_once('/') {
-        if addr.parse::<IpAddr>().is_ok() {
-            return Matcher::IpCidr(raw.to_string());
-        }
-    }
-    if raw.parse::<IpAddr>().is_ok() {
-        let cidr = match raw.parse::<IpAddr>().unwrap() {
-            IpAddr::V4(_) => format!("{raw}/32"),
-            IpAddr::V6(_) => format!("{raw}/128"),
-        };
-        return Matcher::IpCidr(cidr);
-    }
-    Matcher::DomainSuffix(raw.to_string())
 }
 
 #[cfg(test)]

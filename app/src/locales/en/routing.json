@@ -11,7 +11,11 @@
     "trafficMatches": "Traffic matches",
     "firstMatchWins": "First match wins",
     "rulesCount": "{{count}} rules",
-    "evaluatedTopBottom": "Rules are evaluated from top to bottom."
+    "evaluatedTopBottom": "Rules are evaluated from top to bottom.",
+    "addRule": "Add rule",
+    "notLiveYet": "These rules are not live yet. The core reads them when the connection is next brought up.",
+    "emptyTitle": "No custom rules",
+    "emptyDescription": "Everything follows the presets above and then your active profile."
   },
   "presets": {
     "bypassLan": {
@@ -32,7 +36,8 @@
     "direct": "Direct",
     "proxy": "Proxy",
     "block": "Block",
-    "editRule": "Edit {{match}}"
+    "editRule": "Edit {{match}}",
+    "deleteRule": "Delete {{match}}"
   },
   "dialog": {
     "title": "Edit routing rule",
@@ -42,6 +47,25 @@
     "outbound": "Outbound",
     "error": "Enter a domain, IP range, or hostname.",
     "cancel": "Cancel",
-    "save": "Save rule"
+    "save": "Save rule",
+    "addTitle": "Add routing rule",
+    "outboundPlaceholder": "Choose a direction",
+    "outboundError": "Choose where this traffic should go.",
+    "add": "Add rule",
+    "kindDomain": "Matches this exact hostname.",
+    "kindDomainSuffix": "Matches this domain and everything under it.",
+    "kindIpCidr": "Matches this address range.",
+    "warningWildcard": "Wildcards do not work here. Write the suffix on its own, as example.com.",
+    "warningUrl": "Write the hostname on its own, without a scheme or a path.",
+    "warningNonAscii": "Non-ASCII names are not converted. Enter the domain in its punycode form.",
+    "warningInvalidPrefix": "The prefix length is out of range for this address.",
+    "warningInvalidDomain": "This does not look like a domain, an address, or a range."
+  },
+  "deleteDialog": {
+    "eyebrow": "Delete rule",
+    "title": "Delete this routing rule?",
+    "description": "Traffic that matched it will follow the rules below it, or your active profile.",
+    "keep": "Keep",
+    "delete": "Delete"
   }
 }

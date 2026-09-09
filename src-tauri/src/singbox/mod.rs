@@ -1,4 +1,5 @@
 pub mod config;
+pub mod match_spec;
 mod outbound_json;
 pub mod process;
 
