@@ -454,37 +454,22 @@ user needs to know about.
   Enter, then Tab again and land inside the page content rather than back
   in the sidebar. **Good first issue.**
 
-- [ ] **`aria-selected` on a `<tr>` inside a plain table.**
-  `app/src/components/routing/RoutingRulesTable.tsx:32`.
+- [x] **`aria-selected` on a `<tr>` inside a plain table.**
+  `app/src/components/routing/RoutingRulesTable.tsx`.
 
   `aria-selected` is only defined for the `row` role inside `grid` or
-  `treegrid`. In a `table` it is dropped, so the selected routing rule —
-  which the edit panel below acts on — is announced identically to every
-  other row. Two more problems in the same element: `event.preventDefault()`
-  on Space kills page scrolling while a row has focus, and the row is a
-  focusable element containing another focusable element, the edit button.
+  `treegrid`, so in a `table` it was dropped and the selected rule was
+  announced identically to every other row. Two more problems sat in the same
+  element: `event.preventDefault()` on Space killed page scrolling while a row
+  had focus, and the row was a focusable element containing another focusable
+  element.
 
-  ```tsx
-  // app/src/components/routing/RoutingRulesTable.tsx:28
-  <Table className="min-w-[620px]" role="grid">
-  ```
-
-  ```tsx
-  // app/src/components/routing/RoutingRulesTable.tsx:32 — Enter only
-  onKeyDown={(event) => {
-    if (event.key === 'Enter') { event.preventDefault(); onSelect(rule.id) }
-  }}
-  ```
-
-  Declaring `role="grid"` is a promise about keyboard behaviour that the
-  table does not currently keep — a grid is one tab stop with arrow keys
-  moving the focus inside it, not one tab stop per row. Either implement
-  the roving tabindex, or drop the row interaction entirely and let the
-  match cell hold a real button. The second is less code and loses nothing:
-  the row already has a button in it.
-
-  Verify: with a screen reader on, move between rules and hear the selected
-  one announced as selected.
+  Fixed the way this entry proposed, by dropping the row interaction rather
+  than promising grid keyboard behaviour the table does not implement. The
+  match cell now holds a real button carrying `aria-current` on the selected
+  rule, which needs no roving tabindex and reads as "current" rather than as
+  nothing. The delete button added alongside edit would otherwise have made
+  the nesting worse, not better.
 
 - [ ] **Fonts are fetched from Google at every launch.**
   `app/src/index.css:1`.
