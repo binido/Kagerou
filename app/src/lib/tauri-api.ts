@@ -7,6 +7,7 @@ import type {
   Profile,
   ProfileGroup,
   RoutingPreset,
+  MatchAnalysis,
   RoutingRule,
   ExitLocation,
   SettingsState,
@@ -85,6 +86,9 @@ export const kagerouApi = {
   setPreset: (id: string, enabled: boolean) => invoke<void>('set_preset', { id, enabled }),
   selectRule: (id: string) => invoke<void>('select_rule', { id }),
   updateRule: (id: string, patch: { match?: string; outbound?: string }) => invoke<void>('update_rule', { id, patch }),
+  addRoutingRule: (matchValue: string, outbound: string) => invoke<string>('add_routing_rule', { matchValue, outbound }),
+  deleteRoutingRule: (id: string) => invoke<void>('delete_routing_rule', { id }),
+  analyzeRuleMatch: (value: string) => invoke<MatchAnalysis>('analyze_rule_match', { value }),
 
   setTheme: (themeId: string) => invoke<void>('set_theme', { themeId }),
   updateSettings: (patch: Record<string, unknown>) => invoke<void>('update_settings', { patch }),

@@ -22,6 +22,16 @@ export type SourceType = 'url' | 'key'
 export type SourceStatus = 'up-to-date' | 'ready' | 'refresh-due' | 'updating'
 export type Outbound = 'Direct' | 'Proxy' | 'Block'
 export const routeOutboundOptions: Outbound[] = ['Direct', 'Proxy', 'Block']
+export type MatchKind = 'domain' | 'domain-suffix' | 'ip-cidr'
+export type MatchWarning = 'wildcard' | 'url' | 'non-ascii' | 'invalid-prefix' | 'invalid-domain'
+
+/** Mirrors `singbox::match_spec::MatchAnalysis`. `normalized` is what gets
+ * stored, which is not always what was typed. */
+export interface MatchAnalysis {
+  normalized: string
+  kind: MatchKind
+  warning: MatchWarning | null
+}
 export type LogLevel = 'INFO' | 'WARN' | 'ERROR'
 export type Language = 'en' | 'ru'
 export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
@@ -168,6 +178,9 @@ export interface KagerouStore {
   sources: Source[]
   routingPresets: RoutingPreset[]
   routingRules: RoutingRule[]
+  /** Rules were edited after the current connection came up, so the running
+   * core is still on the config generated at connect time. */
+  rulesChangedSinceConnect: boolean
   logs: LogEntry[]
   trafficSample: TrafficSample
   trafficHistory: TrafficSample[]
@@ -207,6 +220,8 @@ export interface KagerouStore {
   setPreset: (id: string, enabled: boolean) => void
   selectRule: (id: string) => void
   updateRule: (id: string, patch: Partial<Pick<RoutingRule, 'match' | 'outbound'>>) => void
+  addRule: (match: string, outbound: Outbound) => Promise<string | null>
+  deleteRule: (id: string) => Promise<boolean>
   setTheme: (themeId: ThemeId) => void
   updateSettings: (patch: Partial<SettingsState>) => void
   refreshExitLocation: () => Promise<void>
