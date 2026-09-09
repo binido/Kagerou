@@ -133,6 +133,7 @@ pub fn run() {
             commands::update_rule,
             commands::add_routing_rule,
             commands::delete_routing_rule,
+            commands::analyze_rule_match,
             commands::set_theme,
             commands::update_settings,
         ])
