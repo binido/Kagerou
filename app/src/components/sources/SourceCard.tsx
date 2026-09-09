@@ -68,7 +68,7 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
   }
 
   return (
-    <Card className={cn('h-full gap-0 rounded-[10px] border border-hairline bg-surface p-5 shadow-none', refreshing && 'border-warn/40')}>
+    <Card className={cn('@container h-full gap-0 rounded-[10px] border border-hairline bg-surface p-5 shadow-none', refreshing && 'border-warn/40')}>
       <div className="flex items-start justify-between gap-5">
         <div className="flex min-w-0 items-start gap-3.5">
           <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-[9px] bg-raised text-lavender-hi', isKey && 'text-good')}><Icon aria-hidden="true" className="size-[19px]" strokeWidth={1.7} /></span>
@@ -98,7 +98,7 @@ export function SourceCard({ source, profileCount, refreshing, onRefresh, onEdit
         <Link2 aria-hidden="true" className="size-[15px] shrink-0 text-muted-copy" strokeWidth={1.7} />
         <code className="min-w-0 truncate font-mono text-[11px] text-body">{displayedValue}</code>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-5 border-t border-hairline pt-3.5 max-[640px]:grid-cols-1 max-[640px]:gap-3">
+      <div className="mt-4 grid grid-cols-3 gap-5 border-t border-hairline pt-3.5 @max-[440px]:grid-cols-1 @max-[440px]:gap-3">
         <div><p className="type-eyebrow !text-[10px]">{t('card.vpnLabel')}</p><p className="mt-1 text-[13px] font-medium text-primary">{tc(profileCount === 1 ? 'counts.vpnOne' : 'counts.vpnMany', { count: profileCount })}</p></div>
         <div><p className="type-eyebrow !text-[10px]">{isKey ? t('card.lastUpdate') : t('card.lastRefresh')}</p><p className="mt-1 text-[12px] text-body">{refreshing ? t('card.refreshingNow') : lastRefresh}</p></div>
         <div><p className="type-eyebrow !text-[10px]">{t('card.origin')}</p><p className="mt-1 text-[12px] text-body">{originLabel}</p></div>
