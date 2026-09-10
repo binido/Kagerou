@@ -382,7 +382,7 @@ user needs to know about.
   Verify: point the app at an unreadable app-data directory, or throw from
   `get_app_state`, and confirm the window says something. **Good first issue.**
 
-- [ ] **Fourteen actions fail silently.**
+- [x] **Fourteen actions fail silently.**
   `app/src/store/kagerou-store.ts:151, 159, 191, 221, 263, 276, 285, 294, 304, 348, 355, 362, 370, 375`.
 
   Every mutating action catches its error into `console.error` and stops
@@ -423,6 +423,20 @@ user needs to know about.
 
   Verify: stop the sing-box sidecar from resolving and press Connect; a
   toast appears naming the reason.
+
+  Fixed as proposed: every mutating action reports through
+  `backendErrorMessage`, so the backend's own message reaches the toast and
+  the `common:feedback.*` copy is only the fallback. The six optimistic ones
+  roll back from a fresh `get_app_state` snapshot — the same re-sync
+  `selectProfile` already did on failure — instead of captured values, so
+  the UI cannot disagree with what the database actually accepted. Two
+  things a snapshot does not restore get explicit handling: `setTheme`
+  reverts the persisted theme id, and `updateRule` reverts the
+  `rulesChangedSinceConnect` flag. `refreshExitLocation` keeps its silent
+  failure — it is deliberate and documented — and the actions that return
+  null/false into dialogs were never part of this row, since the pages show
+  those errors inline. Failure paths and rollbacks are covered by store
+  tests.
 
 - [ ] **No skip link, and `<main>` has no accessible name.**
   `app/src/components/layout/AppShell.tsx:9`.
