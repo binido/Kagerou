@@ -1,5 +1,8 @@
 import { create } from 'zustand'
+import { toast } from 'sonner'
 
+import i18n from '@/i18n'
+import { backendErrorMessage } from '@/lib/errors'
 import { kagerouApi, type AppSnapshot } from '@/lib/tauri-api'
 import { getInitialThemeId, getTheme } from '@/themes'
 import { persistThemeId } from '@/themes/runtime'
@@ -178,15 +181,23 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
         if (connected) await kagerouApi.disconnect()
         else await kagerouApi.connect()
       } catch (error) {
-        console.error('toggleConnection failed', error)
+        toast.error(backendErrorMessage(
+          error,
+          i18n.t(connected ? 'common:feedback.disconnectFailed' : 'common:feedback.connectFailed'),
+        ))
       }
     },
 
+    // Rollback is a full refresh rather than a captured value: the snapshot
+    // is what the database actually accepted and cannot drift from it.
     setProfileGroupOpen: (id, open) => {
       set((state) => ({
         profileGroups: state.profileGroups.map((group) => (group.id === id ? { ...group, open } : group)),
       }))
-      void kagerouApi.setProfileGroupOpen(id, open).catch((error) => console.error('setProfileGroupOpen failed', error))
+      void kagerouApi.setProfileGroupOpen(id, open).catch(async (error) => {
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.groupOpenSaveFailed')))
+        await refresh()
+      })
     },
 
     addProfileGroup: async (label) => {
@@ -221,7 +232,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
         // nothing else would invalidate the location.
         void get().refreshExitLocation()
       } catch (error) {
-        console.error('selectProfile failed', error)
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.profileSelectFailed')))
         await refresh()
       }
     },
@@ -251,7 +262,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
         await kagerouApi.deleteProfile(id)
         await refresh()
       } catch (error) {
-        console.error('deleteProfile failed', error)
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.profileDeleteFailed')))
       }
     },
 
@@ -306,7 +317,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
         const total = await kagerouApi.startGroupTest(groupId)
         if (total === 0) set({ testRun: null })
       } catch (error) {
-        console.error('startGroupTest failed', error)
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.groupTestStartFailed')))
         set({ testRun: null })
       }
     },
@@ -315,7 +326,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       try {
         await kagerouApi.cancelGroupTest()
       } catch (error) {
-        console.error('cancelGroupTest failed', error)
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.groupTestCancelFailed')))
       }
     },
 
@@ -324,7 +335,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
         await kagerouApi.clearGroupTestResults(groupId)
         await refresh()
       } catch (error) {
-        console.error('clearGroupTestResults failed', error)
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.groupTestClearFailed')))
       }
     },
 
@@ -334,7 +345,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
         await refresh()
         return deleted
       } catch (error) {
-        console.error('deleteUnavailableProfiles failed', error)
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.deleteUnavailableFailed')))
         return 0
       }
     },
@@ -378,22 +389,35 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       set((state) => ({
         routingPresets: state.routingPresets.map((preset) => (preset.id === id ? { ...preset, enabled } : preset)),
       }))
-      void kagerouApi.setPreset(id, enabled).catch((error) => console.error('setPreset failed', error))
+      void kagerouApi.setPreset(id, enabled).catch(async (error) => {
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.presetSaveFailed')))
+        await refresh()
+      })
     },
 
     selectRule: (id) => {
       set((state) => ({
         routingRules: state.routingRules.map((rule) => ({ ...rule, selected: rule.id === id })),
       }))
-      void kagerouApi.selectRule(id).catch((error) => console.error('selectRule failed', error))
+      void kagerouApi.selectRule(id).catch(async (error) => {
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.ruleSelectFailed')))
+        await refresh()
+      })
     },
 
     updateRule: (id, patch) => {
+      const rulesChangedBefore = get().rulesChangedSinceConnect
       set((state) => ({
         routingRules: state.routingRules.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)),
         rulesChangedSinceConnect: state.connected || state.rulesChangedSinceConnect,
       }))
-      void kagerouApi.updateRule(id, patch).catch((error) => console.error('updateRule failed', error))
+      void kagerouApi.updateRule(id, patch).catch(async (error) => {
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.ruleSaveFailed')))
+        // refresh() restores the rules but not this frontend-only flag; the
+        // failed write changed nothing the core would need to reload.
+        set({ rulesChangedSinceConnect: rulesChangedBefore })
+        await refresh()
+      })
     },
 
     // Waits for the backend because the new rule's id comes from there.
@@ -424,9 +448,15 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
     setTheme: (themeId) => {
       const theme = getTheme(themeId)
       if (!theme) return
+      const previousThemeId = get().settings.theme
       set((state) => ({ settings: { ...state.settings, theme: theme.id } }))
       persistThemeId(theme.id)
-      void kagerouApi.setTheme(theme.id).catch((error) => console.error('setTheme failed', error))
+      void kagerouApi.setTheme(theme.id).catch(async (error) => {
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.themeSaveFailed')))
+        // refresh() restores the stored theme but not the localStorage copy.
+        persistThemeId(previousThemeId)
+        await refresh()
+      })
     },
 
     /** Failure is not worth surfacing: a null location is the signal, and the
@@ -445,7 +475,10 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
 
     updateSettings: (patch) => {
       set((state) => ({ settings: { ...state.settings, ...patch } }))
-      void kagerouApi.updateSettings(patch).catch((error) => console.error('updateSettings failed', error))
+      void kagerouApi.updateSettings(patch).catch(async (error) => {
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.settingsSaveFailed')))
+        await refresh()
+      })
     },
   }
 })

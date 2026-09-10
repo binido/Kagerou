@@ -75,5 +75,21 @@
   },
   "validation": {
     "positiveInteger": "Введите целое число больше 0."
+  },
+  "feedback": {
+    "connectFailed": "Не удалось подключиться.",
+    "disconnectFailed": "Не удалось отключиться.",
+    "profileSelectFailed": "Не удалось сменить профиль.",
+    "profileDeleteFailed": "Не удалось удалить профиль.",
+    "groupOpenSaveFailed": "Не удалось сохранить состояние группы.",
+    "presetSaveFailed": "Не удалось сохранить пресет.",
+    "ruleSelectFailed": "Не удалось сохранить выбор правила.",
+    "ruleSaveFailed": "Не удалось сохранить изменение правила.",
+    "themeSaveFailed": "Не удалось сохранить тему.",
+    "settingsSaveFailed": "Не удалось сохранить настройку.",
+    "groupTestStartFailed": "Не удалось запустить проверку группы.",
+    "groupTestCancelFailed": "Не удалось остановить проверку группы.",
+    "groupTestClearFailed": "Не удалось очистить результаты проверки.",
+    "deleteUnavailableFailed": "Не удалось удалить недоступные профили."
   }
 }

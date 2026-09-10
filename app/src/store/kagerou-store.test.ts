@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { toast } from 'sonner'
+
 import type { AppSnapshot, TrafficEvent } from '@/lib/tauri-api'
-import type { ExitLocation, Profile, RoutingRule, Source, TestResult } from '@/types/kagerou'
+import type { ExitLocation, Profile, ProfileGroup, RoutingRule, Source, TestResult } from '@/types/kagerou'
 import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
+import { persistThemeId } from '@/themes/runtime'
 
 const api = vi.hoisted(() => ({
   getAppState: vi.fn(),
@@ -52,6 +55,8 @@ vi.mock('@/lib/tauri-api', () => ({ kagerouApi: api }))
 
 vi.mock('@/themes/runtime', () => ({ persistThemeId: vi.fn() }))
 
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() } }))
+
 const { useKagerouStore, __resetBackendEventSubscriptionForTests } = await import('@/store/kagerou-store')
 
 const emptySnapshot: AppSnapshot = {
@@ -100,6 +105,7 @@ beforeEach(() => {
   useKagerouStore.setState(initialState, true)
   __resetBackendEventSubscriptionForTests()
   Object.values(api).forEach((fn) => fn.mockReset())
+  vi.mocked(toast.error).mockClear()
   api.getAppState.mockResolvedValue(emptySnapshot)
   api.checkForUpdate.mockResolvedValue(null)
   api.onConnectionChanged.mockResolvedValue(() => {})
@@ -222,6 +228,7 @@ describe('toggleConnection', () => {
     useKagerouStore.setState({ connected: false })
     api.connect.mockRejectedValue(new Error('sing-box not running'))
     await expect(useKagerouStore.getState().toggleConnection()).resolves.toBeUndefined()
+    expect(toast.error).toHaveBeenCalledWith('sing-box not running')
   })
 })
 
@@ -255,6 +262,7 @@ describe('selectProfile', () => {
 
     await useKagerouStore.getState().selectProfile('b')
 
+    expect(toast.error).toHaveBeenCalledWith('not found')
     expect(api.getAppState).toHaveBeenCalled()
     expect(useKagerouStore.getState().activeProfileId).toBe('a')
   })
@@ -357,6 +365,7 @@ describe('group test run', () => {
     api.startGroupTest.mockRejectedValue('a test run is already in progress')
     await useKagerouStore.getState().startGroupTest('g1')
     expect(useKagerouStore.getState().testRun).toBeNull()
+    expect(toast.error).toHaveBeenCalledWith('a test run is already in progress')
   })
 
   it('a progress event advances the count and applies the profile result', async () => {
@@ -442,6 +451,7 @@ describe('clearGroupTestResults', () => {
     await useKagerouStore.getState().clearGroupTestResults('g1')
 
     expect(useKagerouStore.getState().profiles).toEqual(original)
+    expect(toast.error).toHaveBeenCalledWith('boom')
   })
 })
 
@@ -466,6 +476,7 @@ describe('deleteUnavailableProfiles', () => {
 
     expect(deleted).toBe(0)
     expect(useKagerouStore.getState().profiles).toEqual(original)
+    expect(toast.error).toHaveBeenCalledWith('boom')
   })
 })
 
@@ -490,6 +501,111 @@ describe('updateSettings', () => {
     expect(useKagerouStore.getState().settings.startup).toBe(false)
     expect(useKagerouStore.getState().settings.language).toBe('en')
     expect(api.updateSettings).toHaveBeenCalledWith({ startup: false })
+  })
+})
+
+describe('backend failure reporting', () => {
+  it('toggleConnection uses the disconnect fallback when the rejection carries no message', async () => {
+    useKagerouStore.setState({ connected: true })
+    api.disconnect.mockRejectedValue(undefined)
+
+    await useKagerouStore.getState().toggleConnection()
+
+    expect(toast.error).toHaveBeenCalledWith('Could not disconnect.')
+  })
+
+  it('reports a failed profile deletion', async () => {
+    api.deleteProfile.mockRejectedValue('the profile is in use')
+    await useKagerouStore.getState().deleteProfile('p1')
+    expect(toast.error).toHaveBeenCalledWith('the profile is in use')
+  })
+
+  it('reports a failed test cancellation', async () => {
+    api.cancelGroupTest.mockRejectedValue('no test run')
+    await useKagerouStore.getState().cancelGroupTest()
+    expect(toast.error).toHaveBeenCalledWith('no test run')
+  })
+
+  it('rolls the group panel back from the snapshot when the open state fails to persist', async () => {
+    const stored: ProfileGroup[] = [{ id: 'g1', label: 'G1', kind: 'custom', profileIds: [], open: false }]
+    useKagerouStore.setState({ profileGroups: [{ ...stored[0] }] })
+    api.setProfileGroupOpen.mockRejectedValue(new Error('db locked'))
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, profileGroups: stored })
+
+    useKagerouStore.getState().setProfileGroupOpen('g1', true)
+    expect(useKagerouStore.getState().profileGroups[0].open).toBe(true)
+
+    await vi.waitFor(() => expect(useKagerouStore.getState().profileGroups[0].open).toBe(false))
+    expect(toast.error).toHaveBeenCalledWith('db locked')
+  })
+
+  it('rolls the preset toggle back from the snapshot when persistence fails', async () => {
+    const stored = [{ id: 'bypass-lan', label: 'Bypass LAN', description: 'Private ranges go direct', enabled: false }]
+    useKagerouStore.setState({ routingPresets: [{ ...stored[0] }] })
+    api.setPreset.mockRejectedValue(new Error('db locked'))
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, routingPresets: stored })
+
+    useKagerouStore.getState().setPreset('bypass-lan', true)
+    expect(useKagerouStore.getState().routingPresets[0].enabled).toBe(true)
+
+    await vi.waitFor(() => expect(useKagerouStore.getState().routingPresets[0].enabled).toBe(false))
+    expect(toast.error).toHaveBeenCalledWith('db locked')
+  })
+
+  it('reverts the rule selection from the snapshot when the backend refuses it', async () => {
+    const stored: RoutingRule[] = [
+      { id: 'r1', match: 'a.com', outbound: 'Direct', selected: true },
+      { id: 'r2', match: 'b.com', outbound: 'Proxy', selected: false },
+    ]
+    useKagerouStore.setState({ routingRules: stored.map((rule) => ({ ...rule })) })
+    api.selectRule.mockRejectedValue(new Error('db locked'))
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, routingRules: stored })
+
+    useKagerouStore.getState().selectRule('r2')
+    expect(useKagerouStore.getState().routingRules.find((rule) => rule.id === 'r2')?.selected).toBe(true)
+
+    await vi.waitFor(() => expect(useKagerouStore.getState().routingRules.find((rule) => rule.id === 'r1')?.selected).toBe(true))
+    expect(toast.error).toHaveBeenCalledWith('db locked')
+  })
+
+  it('rolls the rule and the pending-changes flag back when the update fails to persist', async () => {
+    const stored: RoutingRule[] = [{ id: 'r1', match: 'a.com', outbound: 'Direct', selected: false }]
+    useKagerouStore.setState({ routingRules: stored.map((rule) => ({ ...rule })), connected: true, rulesChangedSinceConnect: false })
+    api.updateRule.mockRejectedValue(new Error('db locked'))
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, routingRules: stored, connected: true })
+
+    useKagerouStore.getState().updateRule('r1', { outbound: 'Block' })
+    expect(useKagerouStore.getState().rulesChangedSinceConnect).toBe(true)
+    expect(useKagerouStore.getState().routingRules[0].outbound).toBe('Block')
+
+    await vi.waitFor(() => expect(useKagerouStore.getState().rulesChangedSinceConnect).toBe(false))
+    expect(useKagerouStore.getState().routingRules[0].outbound).toBe('Direct')
+    expect(toast.error).toHaveBeenCalledWith('db locked')
+  })
+
+  it('reverts the theme and the persisted id when the backend refuses the change', async () => {
+    useKagerouStore.setState({ settings: { ...initialState.settings, theme: 'catppuccin-mocha' } })
+    api.setTheme.mockRejectedValue(new Error('db locked'))
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, settings: { ...emptySnapshot.settings, theme: 'catppuccin-mocha' } })
+
+    useKagerouStore.getState().setTheme('kanagawa-wave')
+    expect(useKagerouStore.getState().settings.theme).toBe('kanagawa-wave')
+
+    await vi.waitFor(() => expect(useKagerouStore.getState().settings.theme).toBe('catppuccin-mocha'))
+    expect(persistThemeId).toHaveBeenLastCalledWith('catppuccin-mocha')
+    expect(toast.error).toHaveBeenCalledWith('db locked')
+  })
+
+  it('rolls the settings back from the snapshot when persistence fails', async () => {
+    useKagerouStore.setState({ settings: { ...initialState.settings, testUrl: 'http://changed.example/204' } })
+    api.updateSettings.mockRejectedValue(new Error('db locked'))
+    api.getAppState.mockResolvedValue(emptySnapshot)
+
+    useKagerouStore.getState().updateSettings({ testUrl: 'http://changed.example/204' })
+    expect(useKagerouStore.getState().settings.testUrl).toBe('http://changed.example/204')
+
+    await vi.waitFor(() => expect(useKagerouStore.getState().settings.testUrl).toBe('http://www.gstatic.com/generate_204'))
+    expect(toast.error).toHaveBeenCalledWith('db locked')
   })
 })
 

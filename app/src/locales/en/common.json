@@ -75,5 +75,21 @@
   },
   "validation": {
     "positiveInteger": "Enter a whole number greater than 0."
+  },
+  "feedback": {
+    "connectFailed": "Could not connect.",
+    "disconnectFailed": "Could not disconnect.",
+    "profileSelectFailed": "Could not switch profile.",
+    "profileDeleteFailed": "Could not delete profile.",
+    "groupOpenSaveFailed": "Could not save the group state.",
+    "presetSaveFailed": "Could not save the preset.",
+    "ruleSelectFailed": "Could not save the selected rule.",
+    "ruleSaveFailed": "Could not save the rule change.",
+    "themeSaveFailed": "Could not save the theme.",
+    "settingsSaveFailed": "Could not save the setting.",
+    "groupTestStartFailed": "Could not start the group test.",
+    "groupTestCancelFailed": "Could not stop the group test.",
+    "groupTestClearFailed": "Could not clear the test results.",
+    "deleteUnavailableFailed": "Could not delete the unavailable profiles."
   }
 }
