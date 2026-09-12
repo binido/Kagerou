@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 
@@ -22,17 +22,23 @@ interface ProfileTableProps {
 }
 
 
-// Tailwind's max-[1220px] compiles to `width < 1220px`; max-width: 1220px would disagree with it at exactly 1220
-const NARROW_QUERY = '(max-width: 1219.98px)'
+// Below this width the table's columns no longer leave a readable name. It is
+// measured on the table's own box rather than the window: the sidebar and the
+// page padding take a different share of the window at every size, so a window
+// query switched to stacked rows while the group still had room for one line.
+const NARROW_WIDTH = 720
 
-function subscribeNarrow(onChange: () => void) {
-  const queryList = window.matchMedia(NARROW_QUERY)
-  queryList.addEventListener('change', onChange)
-  return () => queryList.removeEventListener('change', onChange)
-}
-
-function useNarrowViewport() {
-  return useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches)
+function useNarrowContainer() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [narrow, setNarrow] = useState(false)
+  useLayoutEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width < NARROW_WIDTH))
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+  return [ref, narrow] as const
 }
 
 function getProfileResult(profile: Profile, runningTests: Record<string, boolean>, runningLabel: string): TestResult {
@@ -103,10 +109,10 @@ function ProfileCompactRow({
 export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileTableProps) {
   const { t } = useTranslation('profiles')
   const runningLabel = t('table.running')
-  const narrow = useNarrowViewport()
+  const [containerRef, narrow] = useNarrowContainer()
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0" ref={containerRef}>
       {narrow ? (
         profiles.map((profile, index) => (
           <ProfileCompactRow
