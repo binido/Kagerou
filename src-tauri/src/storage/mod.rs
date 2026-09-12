@@ -26,6 +26,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0007_profile_last_selected.sql"),
     include_str!("migrations/0008_auto_connect.sql"),
     include_str!("migrations/0009_geo_lookup.sql"),
+    include_str!("migrations/0010_unify_sources.sql"),
 ];
 
 /// A handle to the application's SQLite database.
@@ -187,6 +188,67 @@ mod tests {
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .unwrap();
         assert_eq!(version, 1, "version must not advance past the failed step");
+    }
+
+    #[test]
+    fn migration_10_drops_key_sources_and_frees_orphaned_subscription_groups() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        for migration in &MIGRATIONS[..9] {
+            conn.execute_batch(migration).unwrap();
+        }
+        conn.execute_batch(
+            "INSERT INTO sources (id, name, type, value, status, last_refresh, origin_label) VALUES
+               ('key', 'Key', 'key', 'vless://a', 'ready', 'Added just now', 'Local key'),
+               ('url', 'Url', 'url', 'https://sub.example', 'up-to-date', 'Updated just now', 'Remote URL');
+             INSERT INTO profile_groups (id, label, kind, source_id, is_open, position) VALUES
+               ('live', 'Live', 'subscription', 'url', 1, 5),
+               ('orphan', 'Orphan', 'subscription', NULL, 1, 6);
+             INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key, position) VALUES
+               ('from-key', 'K', '', 'VLESS', 'local', 'default', 'key', 0, '', 'muted', 'vless://a', 0),
+               ('from-live', 'L', '', 'VLESS', 'imported', 'live', 'url', 0, '', 'muted', 'vless://b', 0),
+               ('from-orphan', 'O', '', 'VLESS', 'imported', 'orphan', NULL, 0, '', 'muted', 'vless://c', 0);",
+        )
+        .unwrap();
+
+        conn.execute_batch(MIGRATIONS[9]).unwrap();
+
+        let source_ids: Vec<String> = conn
+            .prepare("SELECT id FROM sources")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(source_ids, vec!["url"]);
+        let profile = |id: &str| -> (String, Option<String>) {
+            conn.query_row(
+                "SELECT origin, source_id FROM profiles WHERE id = ?1",
+                [id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap()
+        };
+        assert_eq!(
+            profile("from-key"),
+            ("local".into(), None),
+            "the VPN outlives its key row"
+        );
+        assert_eq!(
+            profile("from-live"),
+            ("imported".into(), Some("url".into()))
+        );
+        assert_eq!(profile("from-orphan"), ("local".into(), None));
+        let kind = |id: &str| -> String {
+            conn.query_row(
+                "SELECT kind FROM profile_groups WHERE id = ?1",
+                [id],
+                |row| row.get(0),
+            )
+            .unwrap()
+        };
+        assert_eq!(kind("live"), "subscription");
+        assert_eq!(kind("orphan"), "custom");
     }
 
     #[test]

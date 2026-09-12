@@ -195,23 +195,39 @@ pub fn delete_unavailable(
 }
 
 /// Moves a profile into `target_group_id`, appending it at the end of that
-/// group's ordering.
+/// group's ordering. Subscription groups are closed both ways: a refresh
+/// replaces the whole group, so a profile moved in would be deleted by the
+/// next one and a profile moved out would come back beside itself.
 pub fn move_to_group(db: &Db, id: &str, target_group_id: &str) -> Result<(), StorageError> {
     let mut conn = db.lock();
     let tx = conn.transaction()?;
 
-    let group_exists: bool = tx
+    let target_kind: Option<String> = tx
         .query_row(
-            "SELECT 1 FROM profile_groups WHERE id = ?1",
+            "SELECT kind FROM profile_groups WHERE id = ?1",
             params![target_group_id],
-            |_| Ok(()),
+            |row| row.get(0),
         )
-        .optional()?
-        .is_some();
-    if !group_exists {
+        .optional()?;
+    let Some(target_kind) = target_kind else {
         return Err(StorageError::InvalidInput(format!(
             "group {target_group_id} does not exist"
         )));
+    };
+    let current_kind: Option<String> = tx
+        .query_row(
+            "SELECT g.kind FROM profiles p JOIN profile_groups g ON g.id = p.group_id WHERE p.id = ?1",
+            params![id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    let Some(current_kind) = current_kind else {
+        return Err(StorageError::NotFound);
+    };
+    if target_kind == "subscription" || current_kind == "subscription" {
+        return Err(StorageError::InvalidInput(
+            "subscription VPNs cannot be moved in or out of their group".into(),
+        ));
     }
 
     let next_position: i64 = tx.query_row(
@@ -412,6 +428,52 @@ mod tests {
         let err = move_to_group(&db, "p1", "ghost-group").unwrap_err();
         assert!(matches!(err, StorageError::InvalidInput(_)));
         assert_eq!(get(&db, "p1").unwrap().group_id, "default");
+    }
+
+    fn add_subscription_group(db: &Db) {
+        groups::insert(
+            db,
+            &NewProfileGroup {
+                id: "sub".into(),
+                label: "Sub".into(),
+                kind: "subscription".into(),
+                source_id: None,
+            },
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn move_to_group_refuses_a_subscription_group_as_the_target() {
+        let db = seeded_db();
+        add_subscription_group(&db);
+        insert(&db, &new_profile("p1", "default")).unwrap();
+
+        let err = move_to_group(&db, "p1", "sub").unwrap_err();
+
+        assert!(matches!(err, StorageError::InvalidInput(_)));
+        assert_eq!(get(&db, "p1").unwrap().group_id, "default");
+    }
+
+    #[test]
+    fn move_to_group_refuses_to_take_a_profile_out_of_a_subscription() {
+        let db = seeded_db();
+        add_subscription_group(&db);
+        insert(&db, &new_profile("p1", "sub")).unwrap();
+
+        let err = move_to_group(&db, "p1", "custom").unwrap_err();
+
+        assert!(matches!(err, StorageError::InvalidInput(_)));
+        assert_eq!(get(&db, "p1").unwrap().group_id, "sub");
+    }
+
+    #[test]
+    fn move_to_group_on_an_unknown_profile_is_not_found() {
+        let db = seeded_db();
+        assert!(matches!(
+            move_to_group(&db, "ghost", "custom").unwrap_err(),
+            StorageError::NotFound
+        ));
     }
 
     #[test]

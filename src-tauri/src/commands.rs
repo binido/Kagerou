@@ -8,13 +8,14 @@ use crate::app_state::AppState;
 use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
 use crate::geo;
+use crate::import::{self, ImportOutcome, Pasted};
 use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
     NewProfile, NewProfileGroup, NewRoutingRule, NewSource, Profile, ProfileGroup, Protocol,
     RoutingPreset, RoutingRule, Settings, Source, TestResult, Tone,
 };
-use crate::storage::{groups, profiles, routing, settings, sources};
+use crate::storage::{groups, profiles, routing, settings, sources, Db};
 use crate::subscription;
 use crate::updates;
 
@@ -909,7 +910,7 @@ pub async fn add_source(
         return Ok(source_id);
     }
 
-    let body = fetch_subscription(&value).await.map_err(to_err)?;
+    let body = fetch_subscription(&value).await?.body;
     let parsed = subscription::parse_subscription(&body).map_err(to_err)?;
     let name = input.name.unwrap_or_else(|| "Subscription".to_string());
     let group_id = format!("subscription-{source_id}");
@@ -940,7 +941,7 @@ pub async fn add_source(
     for outbound in &parsed {
         profiles::insert(
             &state.db,
-            &parsed_outbound_to_new_profile(outbound, &group_id, &source_id),
+            &import::profile_from_outbound(outbound, &group_id, Some(&source_id), "imported"),
         )
         .map_err(to_err)?;
     }
@@ -949,19 +950,23 @@ pub async fn add_source(
 
 #[tauri::command]
 pub async fn refresh_source(id: String, state: State<'_, AppState>) -> Result<(), String> {
-    let source = sources::get(&state.db, &id).map_err(to_err)?;
+    refresh_subscription(&state.db, &id).await
+}
+
+async fn refresh_subscription(db: &Db, id: &str) -> Result<(), String> {
+    let source = sources::get(db, id).map_err(to_err)?;
     if source.kind != "url" {
         return Ok(());
     }
-    let body = fetch_subscription(&source.value).await.map_err(to_err)?;
+    let body = fetch_subscription(&source.value).await?.body;
     let parsed = subscription::parse_subscription(&body).map_err(to_err)?;
-    let group = groups::list_all(&state.db)
+    let group = groups::list_all(db)
         .map_err(to_err)?
         .into_iter()
-        .find(|g| g.source_id.as_deref() == Some(id.as_str()))
+        .find(|g| g.source_id.as_deref() == Some(id))
         .ok_or("no group for this source")?;
 
-    let existing_by_key: std::collections::HashMap<String, String> = profiles::list_all(&state.db)
+    let existing_by_key: std::collections::HashMap<String, String> = profiles::list_all(db)
         .map_err(to_err)?
         .into_iter()
         .filter(|p| p.group_id == group.id)
@@ -969,18 +974,19 @@ pub async fn refresh_source(id: String, state: State<'_, AppState>) -> Result<()
         .collect();
 
     for old_id in &group.profile_ids {
-        let _ = profiles::delete(&state.db, old_id);
+        let _ = profiles::delete(db, old_id);
     }
     for outbound in &parsed {
-        let mut new_profile = parsed_outbound_to_new_profile(outbound, &group.id, &id);
+        let mut new_profile =
+            import::profile_from_outbound(outbound, &group.id, Some(id), "imported");
         if let Some(existing_id) = existing_by_key.get(&new_profile.key) {
             new_profile.id = existing_id.clone();
         }
-        profiles::insert(&state.db, &new_profile).map_err(to_err)?;
+        profiles::insert(db, &new_profile).map_err(to_err)?;
     }
     sources::update(
-        &state.db,
-        &id,
+        db,
+        id,
         &sources::SourcePatch {
             name: None,
             value: None,
@@ -997,62 +1003,71 @@ pub fn remove_source(id: String, state: State<AppState>) -> Result<(), String> {
     sources::delete(&state.db, &id).map_err(to_err)
 }
 
-fn parsed_outbound_to_new_profile(
-    outbound: &subscription::model::ParsedOutbound,
-    group_id: &str,
-    source_id: &str,
-) -> NewProfile {
-    let protocol = match outbound.protocol_label() {
-        "VMess" => Protocol::VMess,
-        "Trojan" => Protocol::Trojan,
-        "Shadowsocks" => Protocol::Shadowsocks,
-        "Hysteria2" => Protocol::Hysteria2,
-        "Tuic" => Protocol::Tuic,
-        _ => Protocol::VLESS,
+/// The one way VPNs get in: whatever was on the clipboard, or pasted by hand.
+/// A URL that is already a subscription is refreshed rather than added twice.
+#[tauri::command]
+pub async fn import_from_text(
+    text: String,
+    state: State<'_, AppState>,
+) -> Result<ImportOutcome, String> {
+    let url = match import::classify(&text).map_err(to_err)? {
+        Pasted::Outbounds(outbounds) => {
+            return import::add_outbounds(&state.db, &outbounds).map_err(to_err)
+        }
+        Pasted::SubscriptionUrl(url) => url,
     };
-    NewProfile {
-        id: new_id("imported"),
-        name: outbound.name().to_string(),
-        region: region_from_name(outbound.name()),
-        protocol,
-        origin: "imported".to_string(),
-        group_id: group_id.to_string(),
-        source_id: Some(source_id.to_string()),
-        key: subscription::to_uri(outbound),
+    if let Some(group) = import::subscription_for_url(&state.db, &url).map_err(to_err)? {
+        if let Some(source_id) = &group.source_id {
+            refresh_subscription(&state.db, source_id).await?;
+        }
+        return Ok(ImportOutcome::SubscriptionRefreshed { group_id: group.id });
     }
+    let fetched = fetch_subscription(&url).await?;
+    let parsed = subscription::parse_subscription(&fetched.body).map_err(to_err)?;
+    let name = import::subscription_name(fetched.title.as_deref(), &url);
+    import::add_subscription(&state.db, &url, &name, &parsed).map_err(to_err)
 }
 
-/// Subscriptions conventionally prefix the profile name with a flag emoji, and
-/// a flag is just two regional-indicator code points that map 1:1 onto the
-/// letters of the ISO 3166-1 alpha-2 country code. Names without one get an
-/// empty region: the server hostname used to go here, but it says nothing
-/// about location, so a blank is at least honest.
-// ponytail: no geo-IP lookup; add one only if names stop carrying flags.
-fn region_from_name(name: &str) -> String {
-    fn letter(c: char) -> Option<char> {
-        ('\u{1F1E6}'..='\u{1F1FF}')
-            .contains(&c)
-            .then(|| (b'A' + (c as u32 - 0x1F1E6) as u8) as char)
-    }
-    let mut chars = name.trim_start().chars();
-    match (chars.next().and_then(letter), chars.next().and_then(letter)) {
-        (Some(a), Some(b)) => format!("{a}{b}"),
-        _ => String::new(),
-    }
+#[tauri::command]
+pub fn delete_subscription(
+    group_id: String,
+    app: AppHandle,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let connected = matches!(
+        *state.supervisor.lock().unwrap().status(),
+        singbox::Status::Running
+    );
+    let active = settings::get_active_profile_id(&state.db).map_err(to_err)?;
+    import::remove_subscription(&state.db, &group_id, active.as_deref(), connected)
+        .map_err(to_err)?;
+    // The recent list in the tray may have just lost entries.
+    crate::tray::refresh(&app, connected);
+    Ok(())
 }
 
-async fn fetch_subscription(url: &str) -> Result<String, String> {
-    reqwest::Client::new()
+struct FetchedSubscription {
+    body: String,
+    /// The provider's `profile-title` header, still encoded.
+    title: Option<String>,
+}
+
+async fn fetch_subscription(url: &str) -> Result<FetchedSubscription, String> {
+    let response = reqwest::Client::new()
         .get(url)
         .timeout(Duration::from_secs(15))
         .send()
         .await
         .map_err(to_err)?
         .error_for_status()
-        .map_err(to_err)?
-        .text()
-        .await
-        .map_err(to_err)
+        .map_err(to_err)?;
+    let title = response
+        .headers()
+        .get("profile-title")
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string);
+    let body = response.text().await.map_err(to_err)?;
+    Ok(FetchedSubscription { body, title })
 }
 
 // ---------------------------------------------------------------------
@@ -1218,7 +1233,7 @@ pub fn update_settings(
 
 #[cfg(test)]
 mod tests {
-    use super::{region_from_name, test_core_is_idle, to_dashboard_event, DashboardTrafficEvent};
+    use super::{test_core_is_idle, to_dashboard_event, DashboardTrafficEvent};
     use crate::clash_api::model::{
         ConnectionInfo, ConnectionMetadata, ConnectionsResponse, TrafficSample,
     };
@@ -1244,21 +1259,6 @@ mod tests {
             test_core_is_idle(None, now, timeout),
             "a core with no recorded test outlived whatever started it"
         );
-    }
-
-    #[test]
-    fn flag_emoji_becomes_a_country_code() {
-        assert_eq!(region_from_name("🇦🇹 ALL VPN | Австрия"), "AT");
-        assert_eq!(region_from_name("  🇵🇱 ALL VPN"), "PL");
-    }
-
-    #[test]
-    fn names_without_a_flag_have_no_region() {
-        assert_eq!(region_from_name("Fast Node 03"), "");
-        assert_eq!(region_from_name(""), "");
-        assert_eq!(region_from_name("🚀 Boost"), "");
-        // A lone regional indicator is not a flag.
-        assert_eq!(region_from_name("🇦 Node"), "");
     }
 
     fn connection(id: &str) -> ConnectionInfo {

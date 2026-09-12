@@ -88,10 +88,10 @@ pub fn update(db: &Db, id: &str, patch: &SourcePatch) -> Result<(), StorageError
     Ok(())
 }
 
-/// Removes a source. Profiles that referenced it keep existing (their
-/// `source_id` is cleared via `ON DELETE SET NULL`) rather than being
-/// deleted, matching the frontend's `removeSource` behavior of demoting
-/// imported profiles to local ones instead of losing them.
+/// Removes a source. Profiles and groups that referenced it keep existing
+/// with their `source_id` cleared by `ON DELETE SET NULL`. Deleting a
+/// subscription together with its VPNs is `import::remove_subscription`,
+/// which drops the group before the source.
 pub fn delete(db: &Db, id: &str) -> Result<(), StorageError> {
     let conn = db.lock();
     let affected = conn.execute("DELETE FROM sources WHERE id = ?1", params![id])?;

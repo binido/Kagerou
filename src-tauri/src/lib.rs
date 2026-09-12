@@ -2,6 +2,7 @@ pub mod app_state;
 pub mod clash_api;
 pub mod commands;
 pub mod geo;
+pub mod import;
 pub mod privilege;
 pub mod probe;
 pub mod singbox;
@@ -128,6 +129,8 @@ pub fn run() {
             commands::update_source,
             commands::refresh_source,
             commands::remove_source,
+            commands::import_from_text,
+            commands::delete_subscription,
             commands::set_preset,
             commands::select_rule,
             commands::update_rule,
