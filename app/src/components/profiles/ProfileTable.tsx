@@ -133,10 +133,10 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
           <TableHeader>
             <TableRow className="border-b border-hairline hover:bg-transparent">
               <TableHead className="w-[58px] px-5 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.order')}</TableHead>
-              <TableHead className="w-[30%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.vpn')}</TableHead>
-              <TableHead className="w-[12%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.protocol')}</TableHead>
-              <TableHead className="w-[27%] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.ping')}</TableHead>
-              <TableHead className="w-[13%] whitespace-nowrap px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.use')}</TableHead>
+              <TableHead className="px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.vpn')}</TableHead>
+              <TableHead className="w-[110px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.protocol')}</TableHead>
+              <TableHead className="w-[140px] px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.ping')}</TableHead>
+              <TableHead className="w-[130px] whitespace-nowrap px-3 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy">{t('table.use')}</TableHead>
               <TableHead className="w-[54px] px-3 py-3 text-right text-[10px] font-medium uppercase tracking-[0.14em] text-muted-copy"><span className="sr-only">{t('table.actions')}</span></TableHead>
             </TableRow>
           </TableHeader>
@@ -146,9 +146,9 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
               return (
                 <TableRow className={cn('min-h-[75px] border-b border-hairline/55 text-body hover:bg-row-hover focus-within:bg-row-hover', profile.selected && 'bg-selected hover:bg-selected')} data-profile-id={profile.id} key={profile.id}>
                   <TableCell className="px-5 py-4 align-middle"><div className="font-mono text-[12px] tabular-nums text-muted-copy"><span className="w-3 text-center">{index + 1}</span></div></TableCell>
-                  <TableCell className="max-w-[330px] px-3 py-4 align-middle">
+                  <TableCell className="max-w-0 px-3 py-4 align-middle">
                     <div className="min-w-0">
-                      <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[14px] font-medium text-primary">{profile.name}</span><Badge className={cn('h-5 rounded-md px-1.5 py-0 text-[10px] font-semibold', profile.origin === 'local' ? 'bg-lavender/15 text-lavender-hi' : 'bg-good/15 text-good')} variant="outline">{profile.origin === 'local' ? t('table.local') : t('table.imported')}</Badge></div>
+                      <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[14px] font-medium text-primary">{profile.name}</span><Badge className={cn('h-5 shrink-0 rounded-md px-1.5 py-0 text-[10px] font-semibold', profile.origin === 'local' ? 'bg-lavender/15 text-lavender-hi' : 'bg-good/15 text-good')} variant="outline">{profile.origin === 'local' ? t('table.local') : t('table.imported')}</Badge></div>
                       <span className="mt-1 block truncate text-[11px] text-muted-copy">{profile.origin === 'local' ? t('table.localVpn') : t('table.managedBySubscription')}</span>
                     </div>
                   </TableCell>
