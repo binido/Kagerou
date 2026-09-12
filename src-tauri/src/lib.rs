@@ -38,6 +38,10 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_shell::init())
+        // Reading the clipboard from the WebView is a permission prompt on
+        // Windows, a paste callout on macOS and switched off by default in
+        // WebKitGTK; the plugin reads it natively on all three.
+        .plugin(tauri_plugin_clipboard_manager::init())
         // LaunchAgent writes a plist under the user's LaunchAgents directory;
         // the AppleScript route it competes with is unreliable on modern macOS.
         .plugin(tauri_plugin_autostart::init(

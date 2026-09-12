@@ -12,6 +12,7 @@
   "dependencies": {
     "@catppuccin/palette": "^1.8.0",
     "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-clipboard-manager": "2.3.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "i18next": "^26.4.1",
