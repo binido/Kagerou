@@ -227,52 +227,36 @@ dropdown and popover.
 Defects that make the app unusable for someone, or that hide a failure the
 user needs to know about.
 
-- [ ] **Modals and popovers cannot be dismissed by keyboard or by clicking away.**
-  `app/src/components/ui/dialog.tsx:64`, `app/src/components/ui/popover.tsx`,
-  `app/src/components/ui/alert-dialog.tsx:59`.
+- [ ] **Reported modal and popover dismissal failure: not reproduced.**
+  `app/src/components/ui/dialog.tsx`, `app/src/components/ui/popover.tsx`,
+  `app/src/components/ui/alert-dialog.tsx`.
 
-  Reproduced four times, by two independent routes: a real key event through
-  the debugging protocol, and a synthetic `KeyboardEvent` dispatched at the
-  focused element. Escape reaches `document` and comes back with
-  `defaultPrevented: true`, so Radix sees it — but `data-state` stays `open`.
-  A real mouse click on the overlay at (150, 440) does not close it either.
-  The theme picker's `Popover` behaves the same way, so the whole
-  `DismissableLayer` mechanism is dead, not one component. The only way out of
-  a dialog is a mouse click on Cancel or the × button, which is a keyboard
-  trap.
+  The original audit reported four failures using debugging-protocol key
+  events and synthetic KeyboardEvents: Escape reached document with
+  defaultPrevented set, but data-state remained open. An overlay click at
+  (150, 440) and Theme Picker dismissal reportedly failed too.
 
-  Establish the cause before writing a fix, because there are two very
-  different ones. `radix-ui@1.6.7` against `react@19.2.8` under
-  `React.StrictMode` is the first suspect: the doubled effect can leave the
-  layer's listener detached. Test it by dropping StrictMode for one run:
+  A follow-up on 2026-09-12 at `f7fdcd7`, with the same
+  `radix-ui@1.6.7` and `react@19.2.8`, passed 39 browser checks in each of
+  three runs: Chromium with StrictMode, Chromium without StrictMode, and
+  WebKit with StrictMode. The temporary StrictMode change was reverted.
 
-  ```tsx
-  // app/src/main.tsx:10 — temporary, revert either way
-  createRoot(document.getElementById('root')!).render(<App />)
-  ```
+  Each run opened add group, rename group, add key, rename profile, delete
+  profile, add source, edit source, remove source, remove unavailable,
+  edit rule, add rule, delete rule, and Theme Picker through their UI controls.
+  Each was checked with Escape, an outside click, and Escape after reopening.
+  Dialog and Popover closed on both inputs. AlertDialog closed on Escape
+  and stayed open on outside clicks, as intended.
 
-  If Escape starts working, the fix is upgrading `radix-ui` and keeping
-  StrictMode. If it does not, drive the dismissal explicitly from the
-  primitive, so that all six call sites are covered by one change:
+  These checks used the Vite development app with synthetic in-memory store
+  data and browser keyboard/mouse events. They did not exercise a packaged
+  Tauri app or real backend data. SourceDialog intentionally blocks dismissal
+  while submitting; the checks above covered its idle state.
 
-  ```tsx
-  // app/src/components/ui/dialog.tsx:64
-  <DialogPrimitive.Content
-    data-slot="dialog-content"
-    onEscapeKeyDown={(event) => { event.preventDefault(); onOpenChange?.(false) }}
-    onPointerDownOutside={() => onOpenChange?.(false)}
-    ...
-  ```
-
-  Repeat in `alert-dialog.tsx` and `popover.tsx`. Note that `AlertDialog`
-  deliberately ignores outside clicks — that is correct for a destructive
-  confirmation — so it needs the Escape half only.
-
-  Verify: open every dialog in the app (add group, rename group, add key,
-  rename profile, delete profile, add source, edit source, remove source,
-  remove unavailable, edit rule) plus the theme picker, and close each one
-  with Escape. **Discuss first** — the StrictMode question decides whether
-  this is a dependency bump or a permanent local override.
+  The cause of the original observation remains unknown. StrictMode
+  incompatibility was not confirmed, so no dependency update or dismissal
+  override was applied. Keep this item open until the original failing
+  environment and sequence can be reproduced. **Discuss first.**
 
 - [ ] **The light themes fail WCAG AA across every page.**
   `app/src/themes/catppuccin.ts:12-23`, `app/src/themes/kanagawa.ts:150-165`.
