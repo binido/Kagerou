@@ -46,11 +46,15 @@ pub enum Pasted {
     Outbounds(Vec<ParsedOutbound>),
 }
 
+pub fn is_subscription_url(text: &str) -> bool {
+    let trimmed = text.trim();
+    !trimmed.contains(char::is_whitespace)
+        && url::Url::parse(trimmed).is_ok_and(|url| matches!(url.scheme(), "http" | "https"))
+}
+
 pub fn classify(text: &str) -> Result<Pasted, ImportError> {
     let trimmed = text.trim();
-    let is_http_url = !trimmed.contains(char::is_whitespace)
-        && url::Url::parse(trimmed).is_ok_and(|url| matches!(url.scheme(), "http" | "https"));
-    if is_http_url {
+    if is_subscription_url(trimmed) {
         return Ok(Pasted::SubscriptionUrl(trimmed.to_string()));
     }
     Ok(Pasted::Outbounds(subscription::parse_subscription(
@@ -369,6 +373,15 @@ mod tests {
             classify("http://sub.example").unwrap(),
             Pasted::SubscriptionUrl(_)
         ));
+    }
+
+    #[test]
+    fn only_a_single_http_link_is_a_subscription_url() {
+        assert!(is_subscription_url(" https://sub.example/list?token=abc "));
+        assert!(!is_subscription_url(TOKYO));
+        assert!(!is_subscription_url("ftp://files.example/list"));
+        assert!(!is_subscription_url("https://a.example https://b.example"));
+        assert!(!is_subscription_url(""));
     }
 
     #[test]

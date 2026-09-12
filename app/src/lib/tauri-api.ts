@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { readText } from '@tauri-apps/plugin-clipboard-manager'
 
 import type {
-  AddLocalProfileInput,
-  AddSourceInput,
+  ImportOutcome,
   Profile,
   ProfileGroup,
   RoutingPreset,
@@ -61,7 +61,6 @@ export const kagerouApi = {
   lookupExitLocation: () => invoke<ExitLocation | null>('lookup_exit_location'),
 
   selectProfile: (id: string) => invoke<void>('select_profile', { id }),
-  addLocalProfile: (input: AddLocalProfileInput) => invoke<string>('add_local_profile', { input }),
   renameProfile: (id: string, name: string) => invoke<void>('rename_profile', { id, name }),
   deleteProfile: (id: string) => invoke<void>('delete_profile', { id }),
   moveProfileToGroup: (profileId: string, targetGroupId: string) => invoke<void>('move_profile_to_group', { profileId, targetGroupId }),
@@ -77,11 +76,11 @@ export const kagerouApi = {
   addProfileGroup: (label: string) => invoke<string>('add_profile_group', { label }),
   renameProfileGroup: (id: string, label: string) => invoke<void>('rename_profile_group', { id, label }),
 
-  validateSource: (kind: 'url' | 'key', value: string) => invoke<string | null>('validate_source', { kind, value }),
-  addSource: (input: AddSourceInput) => invoke<string>('add_source', { input }),
+  readClipboardText: () => readText(),
+  importFromText: (text: string) => invoke<ImportOutcome>('import_from_text', { text }),
   updateSource: (id: string, patch: { name?: string; value?: string }) => invoke<void>('update_source', { id, patch }),
   refreshSource: (id: string) => invoke<void>('refresh_source', { id }),
-  removeSource: (id: string) => invoke<void>('remove_source', { id }),
+  deleteSubscription: (groupId: string) => invoke<void>('delete_subscription', { groupId }),
 
   setPreset: (id: string, enabled: boolean) => invoke<void>('set_preset', { id, enabled }),
   selectRule: (id: string) => invoke<void>('select_rule', { id }),

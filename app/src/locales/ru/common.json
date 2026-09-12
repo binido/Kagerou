@@ -6,7 +6,6 @@
     "primaryNavigation": "Основная навигация",
     "dashboard": "Панель",
     "groups": "Группы",
-    "sources": "Источники",
     "routingRules": "Правила маршрутизации",
     "logs": "Журнал",
     "settings": "Настройки",
@@ -22,7 +21,6 @@
     "edit": "Изменить",
     "refresh": "Обновить",
     "refreshing": "Обновление",
-    "removeSource": "Удалить источник",
     "more": "Дополнительные действия: {{name}}",
     "use": "Использовать",
     "selected": "Выбрано",
@@ -36,10 +34,6 @@
     "disconnectedState": "Отключено",
     "on": "Вкл.",
     "off": "Выкл.",
-    "upToDate": "Актуально",
-    "ready": "Готово",
-    "refreshDue": "Требуется обновление",
-    "updating": "Обновление…",
     "checking": "Проверка…",
     "running": "Выполняется…",
     "notTested": "Не проверено",
@@ -52,20 +46,10 @@
   "counts": {
     "vpnOne": "{{count}} VPN",
     "vpnMany": "{{count}} VPN",
-    "sourceOne": "{{count}} источник",
-    "sourceMany": "{{count}} источников",
     "entryOne": "{{count}} запись",
     "entryMany": "{{count}} записей",
     "matchingEntryOne": "{{count}} совпадение",
     "matchingEntryMany": "{{count}} совпадений"
-  },
-  "source": {
-    "subscriptionUrl": "URL подписки",
-    "singleKey": "Одиночный ключ",
-    "sourceUrl": "URL источника",
-    "vpnKey": "Ключ VPN",
-    "remoteUrl": "Удалённый URL",
-    "localKey": "Локальный ключ"
   },
   "origin": {
     "local": "Локальный",
@@ -90,6 +74,8 @@
     "groupTestStartFailed": "Не удалось запустить проверку группы.",
     "groupTestCancelFailed": "Не удалось остановить проверку группы.",
     "groupTestClearFailed": "Не удалось очистить результаты проверки.",
-    "deleteUnavailableFailed": "Не удалось удалить недоступные профили."
+    "deleteUnavailableFailed": "Не удалось удалить недоступные профили.",
+    "importFailed": "Не удалось добавить эти VPN.",
+    "subscriptionDeleteFailed": "Не удалось удалить подписку."
   }
 }

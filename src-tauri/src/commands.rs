@@ -12,8 +12,8 @@ use crate::import::{self, ImportOutcome, Pasted};
 use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
-    NewProfile, NewProfileGroup, NewRoutingRule, NewSource, Profile, ProfileGroup, Protocol,
-    RoutingPreset, RoutingRule, Settings, Source, TestResult, Tone,
+    NewProfileGroup, NewRoutingRule, Profile, ProfileGroup, RoutingPreset, RoutingRule, Settings,
+    Source, TestResult, Tone,
 };
 use crate::storage::{groups, profiles, routing, settings, sources, Db};
 use crate::subscription;
@@ -25,39 +25,6 @@ fn to_err(e: impl std::fmt::Display) -> String {
 
 fn new_id(prefix: &str) -> String {
     format!("{prefix}-{}", uuid::Uuid::new_v4())
-}
-
-/// Best-effort protocol detection from a raw connection URI, used when
-/// storing a profile: a successful parse gives the real protocol, and an
-/// unparseable-but-plausible-looking key still gets a scheme-based guess
-/// rather than rejecting the add outright (mirrors the frontend's existing
-/// leniency).
-fn detect_protocol(key: &str) -> Protocol {
-    if let Ok(parsed) = subscription::parse_uri(key) {
-        return match parsed.protocol_label() {
-            "VMess" => Protocol::VMess,
-            "Trojan" => Protocol::Trojan,
-            "Shadowsocks" => Protocol::Shadowsocks,
-            "Hysteria2" => Protocol::Hysteria2,
-            "Tuic" => Protocol::Tuic,
-            _ => Protocol::VLESS,
-        };
-    }
-    match key
-        .trim()
-        .split("://")
-        .next()
-        .unwrap_or_default()
-        .to_ascii_lowercase()
-        .as_str()
-    {
-        "vmess" => Protocol::VMess,
-        "trojan" => Protocol::Trojan,
-        "ss" => Protocol::Shadowsocks,
-        "hysteria2" | "hy2" => Protocol::Hysteria2,
-        "tuic" => Protocol::Tuic,
-        _ => Protocol::VLESS,
-    }
 }
 
 // ---------------------------------------------------------------------
@@ -359,39 +326,6 @@ pub async fn select_profile(
         let _ = clash.select_outbound("proxy", &id).await;
     }
     Ok(())
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AddLocalProfileInput {
-    pub name: String,
-    pub key: String,
-    pub group_id: Option<String>,
-    pub source_id: Option<String>,
-}
-
-#[tauri::command]
-pub fn add_local_profile(
-    input: AddLocalProfileInput,
-    state: State<AppState>,
-) -> Result<String, String> {
-    let id = new_id("local");
-    let group_id = input.group_id.unwrap_or_else(|| "default".to_string());
-    profiles::insert(
-        &state.db,
-        &NewProfile {
-            id: id.clone(),
-            name: input.name.trim().to_string(),
-            region: "Local profile".to_string(),
-            protocol: detect_protocol(&input.key),
-            origin: "local".to_string(),
-            group_id,
-            source_id: input.source_id,
-            key: input.key.trim().to_string(),
-        },
-    )
-    .map_err(to_err)?;
-    Ok(id)
 }
 
 #[tauri::command]
@@ -813,15 +747,6 @@ pub fn rename_profile_group(
 // Subscription sources
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AddSourceInput {
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub name: Option<String>,
-    pub value: String,
-}
-
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateSourceInput {
@@ -835,117 +760,21 @@ pub fn update_source(
     patch: UpdateSourceInput,
     state: State<AppState>,
 ) -> Result<(), String> {
+    let value = patch.value.as_deref().map(str::trim);
+    if value.is_some_and(|value| !import::is_subscription_url(value)) {
+        return Err("a subscription URL must be an http(s) link".to_string());
+    }
     sources::update(
         &state.db,
         &id,
         &sources::SourcePatch {
             name: patch.name.as_deref(),
-            value: patch.value.as_deref(),
+            value,
             status: None,
             last_refresh: None,
         },
     )
     .map_err(to_err)
-}
-
-#[tauri::command]
-pub fn validate_source(kind: String, value: String) -> Option<String> {
-    let value = value.trim();
-    if kind == "url" {
-        return if url::Url::parse(value)
-            .map(|u| u.scheme() == "http" || u.scheme() == "https")
-            .unwrap_or(false)
-        {
-            None
-        } else {
-            Some("invalidUrl".to_string())
-        };
-    }
-    if subscription::parse_uri(value).is_ok() {
-        None
-    } else {
-        Some("invalidKey".to_string())
-    }
-}
-
-#[tauri::command]
-pub async fn add_source(
-    input: AddSourceInput,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let source_id = new_id("source");
-    let value = input.value.trim().to_string();
-
-    if input.kind == "key" {
-        let name = input
-            .name
-            .unwrap_or_else(|| format!("{} key", detect_protocol(&value).as_str()));
-        sources::insert(
-            &state.db,
-            &NewSource {
-                id: source_id.clone(),
-                name: name.clone(),
-                kind: "key".to_string(),
-                value: value.clone(),
-                status: "ready".to_string(),
-                last_refresh: "Added just now".to_string(),
-                origin_label: "Local key".to_string(),
-            },
-        )
-        .map_err(to_err)?;
-        profiles::insert(
-            &state.db,
-            &NewProfile {
-                id: new_id("local"),
-                name,
-                region: "Local profile".to_string(),
-                protocol: detect_protocol(&value),
-                origin: "local".to_string(),
-                group_id: "default".to_string(),
-                source_id: Some(source_id.clone()),
-                key: value,
-            },
-        )
-        .map_err(to_err)?;
-        return Ok(source_id);
-    }
-
-    let body = fetch_subscription(&value).await?.body;
-    let parsed = subscription::parse_subscription(&body).map_err(to_err)?;
-    let name = input.name.unwrap_or_else(|| "Subscription".to_string());
-    let group_id = format!("subscription-{source_id}");
-
-    sources::insert(
-        &state.db,
-        &NewSource {
-            id: source_id.clone(),
-            name: name.clone(),
-            kind: "url".to_string(),
-            value,
-            status: "up-to-date".to_string(),
-            last_refresh: "Updated just now".to_string(),
-            origin_label: "Remote URL".to_string(),
-        },
-    )
-    .map_err(to_err)?;
-    groups::insert(
-        &state.db,
-        &NewProfileGroup {
-            id: group_id.clone(),
-            label: name,
-            kind: "subscription".to_string(),
-            source_id: Some(source_id.clone()),
-        },
-    )
-    .map_err(to_err)?;
-    for outbound in &parsed {
-        profiles::insert(
-            &state.db,
-            &import::profile_from_outbound(outbound, &group_id, Some(&source_id), "imported"),
-        )
-        .map_err(to_err)?;
-    }
-    Ok(source_id)
 }
 
 #[tauri::command]
@@ -996,11 +825,6 @@ async fn refresh_subscription(db: &Db, id: &str) -> Result<(), String> {
     )
     .map_err(to_err)?;
     Ok(())
-}
-
-#[tauri::command]
-pub fn remove_source(id: String, state: State<AppState>) -> Result<(), String> {
-    sources::delete(&state.db, &id).map_err(to_err)
 }
 
 /// The one way VPNs get in: whatever was on the clipboard, or pasted by hand.

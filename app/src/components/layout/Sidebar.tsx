@@ -4,7 +4,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Route,
-  Rss,
   Server,
   Settings,
 } from 'lucide-react'
@@ -21,7 +20,6 @@ import type { RouteKey } from '@/types/kagerou'
 type SidebarLabelKey =
   | 'sidebar.dashboard'
   | 'sidebar.groups'
-  | 'sidebar.sources'
   | 'sidebar.routingRules'
   | 'sidebar.logs'
   | 'sidebar.settings'
@@ -29,7 +27,6 @@ type SidebarLabelKey =
 const navigation: Array<{ key: RouteKey; labelKey: SidebarLabelKey; to: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', labelKey: 'sidebar.dashboard', to: '/dashboard', icon: LayoutDashboard },
   { key: 'groups', labelKey: 'sidebar.groups', to: '/groups', icon: Server },
-  { key: 'sources', labelKey: 'sidebar.sources', to: '/sources', icon: Rss },
   { key: 'routing-rules', labelKey: 'sidebar.routingRules', to: '/routing-rules', icon: Route },
   { key: 'logs', labelKey: 'sidebar.logs', to: '/logs', icon: FileText },
   { key: 'settings', labelKey: 'sidebar.settings', to: '/settings', icon: Settings },
@@ -61,7 +58,7 @@ export function Sidebar() {
       <nav aria-label={t('sidebar.primaryNavigation')} className="flex flex-col gap-1">
         {navigation.map(({ labelKey, to, icon: Icon }) => {
           const label = t(labelKey) as string
-          const isActive = location.pathname === to || (to === '/sources' && location.pathname === '/subscriptions')
+          const isActive = location.pathname === to
           const link = (
             <NavLink
               aria-current={isActive ? 'page' : undefined}

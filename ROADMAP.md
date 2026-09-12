@@ -71,7 +71,7 @@ row.
 | Protocols: VLESS, VMess, Trojan, Shadowsocks, Hysteria2, TUIC | ✅ | Parsed from links and generated into sing-box outbounds. |
 | Subscription formats | ✅ | Plain or base64 URI lists, Clash-style YAML (`proxies:`), sing-box JSON (`outbounds`). |
 | Profile groups | ✅ | Create, rename, move profiles between groups, reorder, drag-and-drop. |
-| Subscription sources | ✅ | Add by URL or pasted key, manual refresh, remove. |
+| Import and subscriptions | ✅ | One "Add from clipboard" button, or a paste anywhere on the groups page, and the text decides what it is: an http(s) link becomes a subscription group that refreshes from it (named from its `profile-title` header, else its host), a single key lands in Default, several keys become an "Imported" group. Keys already present in any group are skipped, ignoring their display name; a link already added is refreshed instead. Unreadable or unrecognised text opens a paste dialog with the reason. Subscription groups carry their own refresh, change-URL, copy-URL and delete actions, and are closed to moving profiles in or out, because a refresh replaces the whole group. Deleting one takes its VPNs with it and is refused while connected through one of them. |
 | Per-profile delay test | ✅ | One measurement: the latency of the whole path through the proxy, reported by sing-box's own API and shown in the Ping column. The TCP ping that used to sit beside it is gone — it measured the round trip to the proxy server rather than through it, which told a user nothing they could act on. |
 | Group-wide delay test | ✅ | Each group's menu tests all its members concurrently (TCP or URL), then "clear results" resets both stored results and "delete unavailable" removes the profiles that failed the chosen method — never the active profile, never untested ones, behind a confirmation. |
 | Export and sharing | 📋 | Copy a profile as a link, show it as a QR code, export a whole group to clipboard or file. |
@@ -99,9 +99,9 @@ row.
 
 | Feature | Status | Notes |
 |---|---|---|
-| Dashboard, groups, sources, routing, logs, settings | ✅ | Six pages, all driven by the real backend. |
+| Dashboard, groups, routing, logs, settings | ✅ | Five pages, all driven by the real backend. Subscriptions used to have a page of their own and now live on the groups page, with `/sources` redirecting there. |
 | Themes | 🟡 | Catppuccin and Kanagawa flavours. The four dark ones are clean; both light ones fail WCAG AA on every page, because the surface ramp is derived for a dark background and inverted when it is reused for a light one — see [the light theme row](#accessibility--ux-audit) in the audit. |
-| Localisation | 🟡 | English and Russian. One hole: source refresh timestamps are stored as English prose by the backend and parsed back into translation keys by a regular expression, so anything the pattern misses reaches the screen untranslated — see [the timestamp row](#accessibility--ux-audit) in the audit. |
+| Localisation | 🟡 | English and Russian. One hole: subscription refresh timestamps are stored as English prose by the backend, and the groups page translates only the one phrase it writes, so anything else reaches the screen untranslated — see [the timestamp row](#accessibility--ux-audit) in the audit. |
 | Live traffic telemetry | ✅ | Download and upload speed, session totals, live connection count and session uptime, read from sing-box's own traffic and connections endpoints so they survive a frontend reload. A sparkline plots the last minute of speed, scaled to the window's own peak with a 1 Mbit/s floor and that peak labelled, and absorbs whatever height the rest of the dashboard leaves it. |
 | Exit location lookup | ✅ | The dashboard names the exit country and city by asking a public service (ipwho.is), through the tunnel, what address it sees — replacing a guess made from the flag emoji in the profile's name, which most names do not carry. The exit IP sits beside it as the check that traffic really is leaving where it claims. A stored setting, on by default. With no lookup the line is simply absent — the flag it used to fall back to is already in the profile name above it — and the last session's location stays, unhighlighted, after disconnecting. Refreshed on connect, on a profile switch, and on demand, retrying a few times because the connection is announced while sing-box is still opening its inbound. |
 | Log viewer | 🟡 | Streams the core's output live, with level detection. Three defects found by the audit: the timestamp column prints a raw ISO string, the INFO level uses a hardcoded hex that ignores the theme, and 500 rows render unvirtualised on every incoming line. |
@@ -157,7 +157,7 @@ section](#accessibility--ux-audit) below, with a fix written out for each.
 | `ProfileTable` renders every row twice | 📋 | The wide table and the narrow card list are both rendered on every pass, with CSS hiding whichever doesn't apply. Correct, but it doubles the DOM and the render work for every profile in every group. A `matchMedia` hook would render one or the other. **Good first issue.** |
 | Linux desktop entry and icon are malformed | 📋 | The generated `.desktop` has an empty `Categories=`, so the app lands uncategorised in application menus — fixed upstream with `bundle.category` in `tauri.conf.json`. The icon installed at `hicolor/256x256@2/apps/` is a 256×256 image: `@2` is not a hicolor directory, and the size is wrong for the name it was given. Both ship in the `.deb` and `.rpm` today. **Good first issue.** |
 | Dead profile-ordering plumbing | 📋 | `moveProfile` and `reorderProfiles` in the store, and the `move_profile` / `reorder_profiles` Tauri commands behind them, have no UI calling them. Either wire up manual reordering or delete all four; leaving them is a trap for the next person who greps for them. |
-| Dialogs remount via their `key` | 📋 | `SourceDialog` and `ProfileGroupDialog` include the open flag in their React `key`, so every open and close throws the component away to reset its form state. It works, but resetting state on open would be the honest version. **Good first issue.** |
+| Dialogs remount via their `key` | 📋 | `ProfileGroupDialog` includes the open flag in its React `key`, so every open and close throws the component away to reset its form state. It works, but resetting state on open would be the honest version. **Good first issue.** |
 
 ---
 
@@ -717,8 +717,7 @@ doing.
   101 and give it a single label.
 
 - [ ] **Dialog validation errors are not tied to their field.**
-  `app/src/components/profiles/ProfileGroupDialog.tsx:71-74`,
-  `app/src/components/sources/SourceDialog.tsx:95`.
+  `app/src/components/profiles/ProfileGroupDialog.tsx:71-74`.
 
   The message renders as a sibling above the footer. The input gets no
   `aria-invalid`, its `aria-describedby` points only at the helper text, and
@@ -754,25 +753,21 @@ doing.
   footer, so the eye finds it where the mistake is. **Good first issue.**
 
 - [ ] **URL fields are typed as plain text and spell-checked.**
-  `app/src/components/sources/SourceDialog.tsx:87, 92`,
   `app/src/components/settings/SettingTextRow.tsx:37`.
 
-  The subscription URL, the pasted protocol key and the connection-test URL
-  are all `type="text"` with spellcheck on, so the browser underlines
-  base64 payloads and hostnames in red.
+  The connection-test URL is `type="text"` with spellcheck on, so the
+  browser underlines its hostname in red. The subscription URL and paste
+  fields on the groups page already turn spellcheck off.
 
   ```tsx
   <Input
     autoComplete="off"
     inputMode="url"
     spellCheck={false}
-    type={type === 'url' ? 'url' : 'text'}
+    type="url"
     ...
   />
   ```
-
-  Leave the key field as `type="text"` — `vless://` is not a URL the browser
-  validator recognises — but it still wants `spellCheck={false}`.
 
   In the same files: `SettingTextRow.tsx:23` and `SettingNumberRow.tsx:26`
   call `onChange` on every keystroke, which walks through the store to a
@@ -798,23 +793,20 @@ doing.
   with the other ten. **Good first issue.**
 
 - [ ] **Relative timestamps never advance, and English leaks through the parser.**
-  `app/src/components/sources/SourceCard.tsx:35-58`,
-  `src-tauri/src/commands.rs:826, 861, 924`,
-  `src-tauri/src/storage/sources.rs:115`.
+  `app/src/components/profiles/ProfileGroupCard.tsx`,
+  `src-tauri/src/commands.rs` (`refresh_subscription`),
+  `src-tauri/src/import.rs` (`add_subscription`).
 
   The backend writes the literal string `"Updated just now"` into the
-  database, and the frontend parses it back into an i18n key with a regular
-  expression. Two consequences. First, the branches matching
-  `/^Updated (\d+) min ago$/` and `days ago` are dead code — nothing ever
-  writes those strings — so a source refreshed a week ago still reads
-  "Updated just now" forever. Second, `SourceCard.tsx:58` falls through to
-  the raw stored value when the pattern misses, which puts untranslated
-  English on screen.
+  database, and the groups page translates that exact phrase. Two
+  consequences. First, a subscription refreshed a week ago still reads
+  "updated just now" forever. Second, any other stored value is shown as it
+  came, which puts untranslated English on screen.
 
   Store a timestamp and format it at the edge:
 
   ```rust
-  // src-tauri/src/commands.rs:924
+  // src-tauri/src/commands.rs, refresh_subscription
   last_refresh: Some(&chrono::Utc::now().to_rfc3339()),
   ```
 
@@ -831,20 +823,20 @@ doing.
   }
   ```
 
-  Then delete `sourceTimestampKey` and the five `card.updated*` keys from
-  both locale files. This needs a migration decision: existing rows hold
+  Then delete the phrase check in `ProfileGroupCard` and the
+  `group.updatedJustNow` key from both locale files. This needs a migration decision: existing rows hold
   prose, not timestamps, and `Date.parse` returns `NaN` for them. Either
   migrate them to `NULL` and render an em dash, or add a migration that
   stamps them with the migration's own time — the first is honest, the
   second is prettier. **Discuss first**, because it changes the storage
   schema's meaning and touches both sides at once.
 
-- [ ] **A decorative arrow is read aloud.**
+- [x] **A decorative arrow is read aloud.**
   `app/src/components/sources/SourceCard.tsx:106`.
 
-  `<span className="text-lavender">→</span>` is announced as "right arrow"
-  in the middle of a sentence. Add `aria-hidden="true"`.
-  **Good first issue.**
+  `<span className="text-lavender">→</span>` was announced as "right arrow"
+  in the middle of a sentence. Gone with the sources page: the card that
+  carried it was deleted when subscriptions moved onto the groups page.
 
 - [ ] **A disabled switch looks almost enabled.**
   `app/src/components/settings/SettingSwitchRow.tsx:18`,
@@ -950,8 +942,7 @@ a desktop application.
   }
   ```
 
-  Then hand selection back to the things people genuinely copy — the masked
-  subscription value at `app/src/components/sources/SourceCard.tsx:99`, log
+  Then hand selection back to the things people genuinely copy — log
   message text at `app/src/components/logs/LogRow.tsx:30`, and every input:
 
   ```css

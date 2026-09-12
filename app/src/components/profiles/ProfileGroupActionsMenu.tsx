@@ -1,4 +1,4 @@
-import { Eraser, LockKeyhole, MoreHorizontal, Pencil, Trash2, Waypoints } from 'lucide-react'
+import { Copy, Eraser, Link2, MoreHorizontal, Pencil, Trash2, Waypoints } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -12,11 +12,15 @@ interface ProfileGroupActionsMenuProps {
   onTestGroup: () => void
   onClearResults: () => void
   onDeleteUnavailable: () => void
+  onChangeUrl: () => void
+  onCopyUrl: () => void
+  onDeleteSubscription: () => void
 }
 
-export function ProfileGroupActionsMenu({ group, testRunning, onRename, onTestGroup, onClearResults, onDeleteUnavailable }: ProfileGroupActionsMenuProps) {
+export function ProfileGroupActionsMenu({ group, testRunning, onRename, onTestGroup, onClearResults, onDeleteUnavailable, onChangeUrl, onCopyUrl, onDeleteSubscription }: ProfileGroupActionsMenuProps) {
   const { t } = useTranslation('profiles')
   const canRename = group.kind !== 'default'
+  const isSubscription = group.kind === 'subscription'
   const groupLabel = group.kind === 'default' ? t('group.defaultName') : group.label
 
   return (
@@ -31,11 +35,17 @@ export function ProfileGroupActionsMenu({ group, testRunning, onRename, onTestGr
           <Pencil aria-hidden="true" className="size-3.5" />
           <span>{canRename ? t('menu.renameGroup') : t('menu.defaultRenameDisabled')}</span>
         </DropdownMenuItem>
-        {group.kind === 'subscription' ? (
-          <DropdownMenuItem disabled>
-            <LockKeyhole aria-hidden="true" className="size-3.5" />
-            <span>{t('menu.locked')}</span>
-          </DropdownMenuItem>
+        {isSubscription ? (
+          <>
+            <DropdownMenuItem onSelect={onChangeUrl}>
+              <Link2 aria-hidden="true" className="size-3.5" />
+              <span>{t('menu.changeUrl')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onCopyUrl}>
+              <Copy aria-hidden="true" className="size-3.5" />
+              <span>{t('menu.copyUrl')}</span>
+            </DropdownMenuItem>
+          </>
         ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={testRunning} onSelect={onTestGroup}>
@@ -50,6 +60,15 @@ export function ProfileGroupActionsMenu({ group, testRunning, onRename, onTestGr
           <Trash2 aria-hidden="true" className="size-3.5" />
           <span>{t('menu.deleteUnavailable')}</span>
         </DropdownMenuItem>
+        {isSubscription ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-bad focus:bg-bad/10 focus:text-bad" onSelect={onDeleteSubscription}>
+              <Trash2 aria-hidden="true" className="size-3.5" />
+              <span>{t('menu.deleteSubscription')}</span>
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )

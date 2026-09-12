@@ -1,20 +1,22 @@
-import { ChevronDown, ChevronRight, Folder, Lock, MonitorCog, Radar } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder, MonitorCog, Radar, RefreshCw, Rss } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ProfileGroupActionsMenu } from '@/components/profiles/ProfileGroupActionsMenu'
 import { ProfileTable } from '@/components/profiles/ProfileTable'
 import { cn } from '@/lib/utils'
-import type { Profile, ProfileGroup } from '@/types/kagerou'
+import type { Profile, ProfileGroup, Source } from '@/types/kagerou'
 
 interface ProfileGroupCardProps {
   group: ProfileGroup
   profiles: Profile[]
+  /** The URL behind a subscription group; absent for every other kind. */
+  source?: Source
   movableGroups: ProfileGroup[]
   runningTests: Record<string, boolean>
   testRunning: boolean
+  refreshing: boolean
   onToggle: () => void
   onRenameGroup: (group: ProfileGroup) => void
   onSelect: (id: string) => void
@@ -25,15 +27,22 @@ interface ProfileGroupCardProps {
   onTestGroup: () => void
   onClearResults: () => void
   onDeleteUnavailable: () => void
+  onRefresh: () => void
+  onChangeUrl: () => void
+  onCopyUrl: () => void
+  onDeleteSubscription: () => void
 }
 
-export function ProfileGroupCard({ group, profiles, movableGroups, runningTests, testRunning, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest, onTestGroup, onClearResults, onDeleteUnavailable }: ProfileGroupCardProps) {
+export function ProfileGroupCard({ group, profiles, source, movableGroups, runningTests, testRunning, refreshing, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest, onTestGroup, onClearResults, onDeleteUnavailable, onRefresh, onChangeUrl, onCopyUrl, onDeleteSubscription }: ProfileGroupCardProps) {
   const { t } = useTranslation('profiles')
   const { t: tc } = useTranslation('common')
   const isSubscription = group.kind === 'subscription'
   const isDefault = group.kind === 'default'
   const groupLabel = isDefault ? t('group.defaultName') : group.label
   const profileCount = tc(profiles.length === 1 ? 'counts.vpnOne' : 'counts.vpnMany', { count: profiles.length })
+  // The backend still stores this as English prose; the one phrase it writes
+  // is translated and anything else is shown as it came.
+  const lastRefresh = source ? (source.lastRefresh === 'Updated just now' ? t('group.updatedJustNow') : source.lastRefresh) : ''
 
   return (
     <Card className="overflow-visible rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
@@ -42,18 +51,21 @@ export function ProfileGroupCard({ group, profiles, movableGroups, runningTests,
           {group.open ? <ChevronDown aria-hidden="true" className="size-[18px] shrink-0 text-muted-copy" strokeWidth={1.7} /> : <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-muted-copy" strokeWidth={1.7} />}
           <span className="min-w-0">
             <span className="block truncate text-[17px] font-semibold tracking-[-0.015em]">{groupLabel}</span>
-            <span className="mt-1 block text-[12px] font-normal text-muted-copy">{profileCount}{isDefault ? t('group.singleKeysStartHere') : ''}</span>
+            <span className="mt-1 block truncate text-[12px] font-normal text-muted-copy">{profileCount}{isDefault ? t('group.singleKeysStartHere') : ''}{lastRefresh ? ` · ${refreshing ? t('actions.refreshing') : lastRefresh}` : ''}</span>
           </span>
         </Button>
         <div className="flex shrink-0 items-center gap-1.5">
           {isSubscription ? (
-            <Badge className="gap-1.5 rounded-md border border-good/20 bg-transparent px-2.5 py-2 font-mono text-[10px] font-normal text-good" variant="outline"><Lock aria-hidden="true" className="size-3" />{t('group.managedOnSources')}</Badge>
+            <>
+              <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy max-[720px]:hidden"><Rss aria-hidden="true" className="size-3.5" />{t('group.subscriptionGroup')}</span>
+              <Button aria-label={t('actions.refreshAria', { name: groupLabel })} className="ml-2 h-9 gap-2 border-hairline px-3 text-[11px] text-body hover:bg-raised hover:text-primary" disabled={refreshing || !source} onClick={onRefresh} type="button" variant="outline"><RefreshCw aria-hidden="true" className={cn('size-[15px]', refreshing && 'animate-spin')} /><span>{refreshing ? t('actions.refreshing') : t('actions.refresh')}</span></Button>
+            </>
           ) : isDefault ? (
             <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy"><MonitorCog aria-hidden="true" className="size-3.5" />{t('group.defaultGroup')}</span>
           ) : (
             <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy"><Folder aria-hidden="true" className="size-3.5" />{t('group.customGroup')}</span>
           )}
-          <ProfileGroupActionsMenu group={group} onClearResults={onClearResults} onDeleteUnavailable={onDeleteUnavailable} onRename={() => onRenameGroup(group)} onTestGroup={onTestGroup} testRunning={testRunning} />
+          <ProfileGroupActionsMenu group={group} onChangeUrl={onChangeUrl} onClearResults={onClearResults} onCopyUrl={onCopyUrl} onDeleteSubscription={onDeleteSubscription} onDeleteUnavailable={onDeleteUnavailable} onRename={() => onRenameGroup(group)} onTestGroup={onTestGroup} testRunning={testRunning} />
         </div>
       </div>
       {group.open ? (

@@ -6,7 +6,6 @@
     "primaryNavigation": "Primary navigation",
     "dashboard": "Dashboard",
     "groups": "Groups",
-    "sources": "Sources",
     "routingRules": "Routing rules",
     "logs": "Logs",
     "settings": "Settings",
@@ -22,7 +21,6 @@
     "edit": "Edit",
     "refresh": "Refresh",
     "refreshing": "Refreshing",
-    "removeSource": "Remove source",
     "more": "More actions for {{name}}",
     "use": "Use",
     "selected": "Selected",
@@ -36,10 +34,6 @@
     "disconnectedState": "Disconnected",
     "on": "On",
     "off": "Off",
-    "upToDate": "Up to date",
-    "ready": "Ready",
-    "refreshDue": "Refresh due",
-    "updating": "Updating…",
     "checking": "Checking…",
     "running": "Running…",
     "notTested": "Not tested",
@@ -52,20 +46,10 @@
   "counts": {
     "vpnOne": "{{count}} VPN",
     "vpnMany": "{{count}} VPNs",
-    "sourceOne": "{{count}} source",
-    "sourceMany": "{{count}} sources",
     "entryOne": "{{count}} entry",
     "entryMany": "{{count}} entries",
     "matchingEntryOne": "{{count}} matching entry",
     "matchingEntryMany": "{{count}} matching entries"
-  },
-  "source": {
-    "subscriptionUrl": "Subscription URL",
-    "singleKey": "Single key",
-    "sourceUrl": "Source URL",
-    "vpnKey": "VPN key",
-    "remoteUrl": "Remote URL",
-    "localKey": "Local key"
   },
   "origin": {
     "local": "Local",
@@ -90,6 +74,8 @@
     "groupTestStartFailed": "Could not start the group test.",
     "groupTestCancelFailed": "Could not stop the group test.",
     "groupTestClearFailed": "Could not clear the test results.",
-    "deleteUnavailableFailed": "Could not delete the unavailable profiles."
+    "deleteUnavailableFailed": "Could not delete the unavailable profiles.",
+    "importFailed": "Could not add these VPNs.",
+    "subscriptionDeleteFailed": "Could not delete the subscription."
   }
 }

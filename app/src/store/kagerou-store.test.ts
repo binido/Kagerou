@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toast } from 'sonner'
 
 import type { AppSnapshot, TrafficEvent } from '@/lib/tauri-api'
-import type { ExitLocation, Profile, ProfileGroup, RoutingRule, Source, TestResult } from '@/types/kagerou'
+import type { ExitLocation, ImportOutcome, Profile, ProfileGroup, RoutingRule, TestResult } from '@/types/kagerou'
 import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
 import { persistThemeId } from '@/themes/runtime'
 
@@ -13,7 +13,6 @@ const api = vi.hoisted(() => ({
   connect: vi.fn(),
   disconnect: vi.fn(),
   selectProfile: vi.fn(),
-  addLocalProfile: vi.fn(),
   renameProfile: vi.fn(),
   deleteProfile: vi.fn(),
   moveProfileToGroup: vi.fn(),
@@ -25,11 +24,11 @@ const api = vi.hoisted(() => ({
   setProfileGroupOpen: vi.fn(),
   addProfileGroup: vi.fn(),
   renameProfileGroup: vi.fn(),
-  validateSource: vi.fn(),
-  addSource: vi.fn(),
+  readClipboardText: vi.fn(),
+  importFromText: vi.fn(),
   updateSource: vi.fn(),
   refreshSource: vi.fn(),
-  removeSource: vi.fn(),
+  deleteSubscription: vi.fn(),
   setPreset: vi.fn(),
   selectRule: vi.fn(),
   updateRule: vi.fn(),
@@ -854,33 +853,88 @@ describe('backend event handling', () => {
   })
 })
 
-describe('addSource / updateSource / removeSource failure handling', () => {
-  it('addSource returns null and does not throw when the fetch/parse fails', async () => {
-    api.addSource.mockRejectedValue(new Error('could not reach subscription URL'))
-    const id = await useKagerouStore.getState().addSource({ type: 'url', value: 'https://example.com/sub' })
-    expect(id).toBeNull()
+describe('importing pasted text', () => {
+  const outcome: ImportOutcome = { kind: 'profileAdded', profileId: 'p1', name: 'Tokyo' }
+
+  it('refreshes state and reports what the text became', async () => {
+    api.importFromText.mockResolvedValue(outcome)
+    api.getAppState.mockResolvedValue({ ...emptySnapshot, profiles: [profile({ name: 'Tokyo' })] })
+
+    const attempt = await useKagerouStore.getState().importText('vless://tokyo')
+
+    expect(api.importFromText).toHaveBeenCalledWith('vless://tokyo')
+    expect(attempt).toEqual({ status: 'imported', outcome })
+    expect(useKagerouStore.getState().profiles.map((p) => p.name)).toEqual(['Tokyo'])
   })
 
-  it('updateSource returns false on a validation failure', async () => {
-    api.updateSource.mockRejectedValue(new Error('source name cannot be empty'))
-    const ok = await useKagerouStore.getState().updateSource('s1', { name: '' })
+  it('hands the text back with the backend reason when the import fails', async () => {
+    api.importFromText.mockRejectedValue('could not recognize subscription format')
+
+    const attempt = await useKagerouStore.getState().importText('garbage')
+
+    expect(attempt).toEqual({ status: 'failed', text: 'garbage', error: 'could not recognize subscription format' })
+    expect(api.getAppState).not.toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('imports whatever the clipboard holds', async () => {
+    api.readClipboardText.mockResolvedValue('https://sub.example/list\n')
+    api.importFromText.mockResolvedValue(outcome)
+
+    const attempt = await useKagerouStore.getState().importFromClipboard()
+
+    expect(api.importFromText).toHaveBeenCalledWith('https://sub.example/list\n')
+    expect(attempt.status).toBe('imported')
+  })
+
+  it('treats a blank clipboard as nothing to import, without asking the backend', async () => {
+    api.readClipboardText.mockResolvedValue('   \n')
+
+    const attempt = await useKagerouStore.getState().importFromClipboard()
+
+    expect(attempt).toEqual({ status: 'failed', text: '', error: '' })
+    expect(api.importFromText).not.toHaveBeenCalled()
+  })
+
+  it('treats an unreadable clipboard the same way', async () => {
+    api.readClipboardText.mockRejectedValue('clipboard contents were not available')
+
+    const attempt = await useKagerouStore.getState().importFromClipboard()
+
+    expect(attempt).toEqual({ status: 'failed', text: '', error: '' })
+    expect(api.importFromText).not.toHaveBeenCalled()
+  })
+})
+
+describe('subscription actions', () => {
+  it('updateSource returns false when the backend refuses the URL', async () => {
+    api.updateSource.mockRejectedValue('invalid input: not an http(s) URL')
+    const ok = await useKagerouStore.getState().updateSource('s1', { value: 'vless://nope' })
     expect(ok).toBe(false)
   })
 
-  it('removeSource returns false for an unknown id', async () => {
-    api.removeSource.mockRejectedValue(new Error('not found'))
-    const ok = await useKagerouStore.getState().removeSource('ghost')
-    expect(ok).toBe(false)
-  })
+  it('deleteSubscription refreshes state on success', async () => {
+    const group: ProfileGroup = { id: 'sub', label: 'Work', kind: 'subscription', profileIds: ['p1'], open: true, sourceId: 's1' }
+    useKagerouStore.setState({ profileGroups: [group], profiles: [profile({ groupId: 'sub', origin: 'imported' })] })
+    api.deleteSubscription.mockResolvedValue(undefined)
 
-  it('removeSource returns true and refreshes state on success', async () => {
-    useKagerouStore.setState({ sources: [{ id: 's1', name: 'S', type: 'url', value: 'https://x', status: 'up-to-date', lastRefresh: '', originLabel: 'Remote URL' } as Source] })
-    api.removeSource.mockResolvedValue(undefined)
-    api.getAppState.mockResolvedValue({ ...emptySnapshot, sources: [] })
-
-    const ok = await useKagerouStore.getState().removeSource('s1')
+    const ok = await useKagerouStore.getState().deleteSubscription('sub')
 
     expect(ok).toBe(true)
-    expect(useKagerouStore.getState().sources).toEqual([])
+    expect(api.deleteSubscription).toHaveBeenCalledWith('sub')
+    expect(useKagerouStore.getState().profileGroups).toEqual([])
+    expect(useKagerouStore.getState().profiles).toEqual([])
+  })
+
+  it('deleteSubscription reports the backend reason and keeps the group', async () => {
+    const group: ProfileGroup = { id: 'sub', label: 'Work', kind: 'subscription', profileIds: ['p1'], open: true, sourceId: 's1' }
+    useKagerouStore.setState({ profileGroups: [group] })
+    api.deleteSubscription.mockRejectedValue('switch to a VPN outside this subscription or disconnect before deleting it')
+
+    const ok = await useKagerouStore.getState().deleteSubscription('sub')
+
+    expect(ok).toBe(false)
+    expect(toast.error).toHaveBeenCalledWith('switch to a VPN outside this subscription or disconnect before deleting it')
+    expect(useKagerouStore.getState().profileGroups).toEqual([group])
   })
 })

@@ -50,7 +50,7 @@
     "presets": "Пресеты: {{names}}",
     "noPresets": "Пресеты не включены",
     "rules": "Правил: {{count}}",
-    "sources": "Источников: {{count}}",
-    "sourcesStale": "Источников: {{count}} из {{total}} требуют обновления"
+    "sources": "Подписок: {{count}}",
+    "sourcesStale": "Подписок: {{count}} из {{total}} требуют обновления"
   }
 }
