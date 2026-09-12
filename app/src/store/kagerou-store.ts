@@ -7,8 +7,7 @@ import { kagerouApi, type AppSnapshot } from '@/lib/tauri-api'
 import { getInitialThemeId, getTheme } from '@/themes'
 import { persistThemeId } from '@/themes/runtime'
 import type {
-  AddLocalProfileInput,
-  AddSourceInput,
+  ImportAttempt,
   KagerouStore,
   LogEntry,
   LogLevel,
@@ -16,7 +15,6 @@ import type {
 } from '@/types/kagerou'
 import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
 
-const DEFAULT_PROFILE_GROUP_ID = 'default'
 const MAX_LOG_ENTRIES = 500
 
 let logSequence = 0
@@ -237,16 +235,6 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       }
     },
 
-    addLocalProfile: async (input: AddLocalProfileInput) => {
-      try {
-        const id = await kagerouApi.addLocalProfile({ ...input, groupId: input.groupId ?? DEFAULT_PROFILE_GROUP_ID })
-        await refresh()
-        return id
-      } catch {
-        return null
-      }
-    },
-
     renameProfile: async (id, name) => {
       try {
         await kagerouApi.renameProfile(id, name)
@@ -350,14 +338,29 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       }
     },
 
-    addSource: async (input: AddSourceInput) => {
+    // Waits for the backend: only it knows what the text turns into. A failure
+    // hands the text back rather than a toast, so the page can offer it for
+    // correction.
+    importText: async (text): Promise<ImportAttempt> => {
       try {
-        const id = await kagerouApi.addSource(input)
+        const outcome = await kagerouApi.importFromText(text)
         await refresh()
-        return id
-      } catch {
-        return null
+        return { status: 'imported', outcome }
+      } catch (error) {
+        return { status: 'failed', text, error: backendErrorMessage(error, i18n.t('common:feedback.importFailed')) }
       }
+    },
+
+    importFromClipboard: async () => {
+      let text = ''
+      try {
+        text = await kagerouApi.readClipboardText()
+      } catch {
+        // An empty clipboard rejects too; either way there is nothing to read
+        // and the manual paste dialog takes over.
+      }
+      if (!text.trim()) return { status: 'failed', text: '', error: '' }
+      return get().importText(text)
     },
 
     updateSource: async (id, patch: Partial<Pick<Source, 'name' | 'value'>>) => {
@@ -375,12 +378,13 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
       await refresh()
     },
 
-    removeSource: async (id) => {
+    deleteSubscription: async (groupId) => {
       try {
-        await kagerouApi.removeSource(id)
+        await kagerouApi.deleteSubscription(groupId)
         await refresh()
         return true
-      } catch {
+      } catch (error) {
+        toast.error(backendErrorMessage(error, i18n.t('common:feedback.subscriptionDeleteFailed')))
         return false
       }
     },

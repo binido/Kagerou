@@ -3,7 +3,6 @@ import type { ThemeId } from '@/themes/types'
 export type RouteKey =
   | 'dashboard'
   | 'groups'
-  | 'sources'
   | 'routing-rules'
   | 'logs'
   | 'settings'
@@ -18,7 +17,6 @@ export type ProfileProtocol =
   | 'Hysteria2'
   | 'Tuic'
 export type TestTone = 'good' | 'warn' | 'bad' | 'muted'
-export type SourceType = 'url' | 'key'
 export type SourceStatus = 'up-to-date' | 'ready' | 'refresh-due' | 'updating'
 export type Outbound = 'Direct' | 'Proxy' | 'Block'
 export const routeOutboundOptions: Outbound[] = ['Direct', 'Proxy', 'Block']
@@ -69,28 +67,31 @@ export interface ProfileGroup {
   sourceId?: string
 }
 
+/** The URL behind a subscription group. Single keys have no source. */
 export interface Source {
   id: string
   name: string
-  type: SourceType
+  type: 'url'
   value: string
   status: SourceStatus
   lastRefresh: string
-  originLabel: 'Remote URL' | 'Local key'
+  originLabel: 'Remote URL'
 }
 
-export interface AddSourceInput {
-  type: SourceType
-  name?: string
-  value: string
-}
+/** Mirrors `import::ImportOutcome`: what a piece of pasted text became. */
+export type ImportOutcome =
+  | { kind: 'subscriptionAdded'; groupId: string; added: number }
+  | { kind: 'subscriptionRefreshed'; groupId: string }
+  | { kind: 'profileAdded'; profileId: string; name: string }
+  | { kind: 'groupAdded'; groupId: string; added: number; skipped: number }
+  | { kind: 'alreadyPresent'; groupId: string }
+  | { kind: 'nothingNew'; skipped: number }
 
-export interface AddLocalProfileInput {
-  name: string
-  key: string
-  groupId?: string
-  sourceId?: string
-}
+/** A failed attempt carries its text back so it can be corrected by hand. An
+ * empty `error` means there was nothing to import in the first place. */
+export type ImportAttempt =
+  | { status: 'imported'; outcome: ImportOutcome }
+  | { status: 'failed'; text: string; error: string }
 
 export interface RoutingPreset {
   id: string
@@ -202,7 +203,6 @@ export interface KagerouStore {
   addProfileGroup: (label: string) => Promise<string | null>
   renameProfileGroup: (id: string, label: string) => Promise<boolean>
   selectProfile: (id: string) => Promise<void>
-  addLocalProfile: (input: AddLocalProfileInput) => Promise<string | null>
   renameProfile: (id: string, name: string) => Promise<boolean>
   deleteProfile: (id: string) => Promise<void>
   moveProfileToGroup: (profileId: string, targetGroupId: string) => Promise<boolean>
@@ -213,10 +213,11 @@ export interface KagerouStore {
   cancelGroupTest: () => Promise<void>
   clearGroupTestResults: (groupId: string) => Promise<void>
   deleteUnavailableProfiles: (groupId: string) => Promise<number>
-  addSource: (input: AddSourceInput) => Promise<string | null>
+  importText: (text: string) => Promise<ImportAttempt>
+  importFromClipboard: () => Promise<ImportAttempt>
   updateSource: (id: string, patch: Partial<Pick<Source, 'name' | 'value'>>) => Promise<boolean>
   refreshSource: (id: string) => Promise<void>
-  removeSource: (id: string) => Promise<boolean>
+  deleteSubscription: (groupId: string) => Promise<boolean>
   setPreset: (id: string, enabled: boolean) => void
   selectRule: (id: string) => void
   updateRule: (id: string, patch: Partial<Pick<RoutingRule, 'match' | 'outbound'>>) => void

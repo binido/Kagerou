@@ -2,22 +2,34 @@
   "page": {
     "eyebrow": "Kagerou  /  VPN-группы",
     "title": "Группы",
-    "description": "Организуйте одиночные ключи по локальным группам, сохраняя подписки вместе."
+    "description": "Все ваши VPN в одном месте. Вставьте ссылку на подписку или ключи, чтобы добавить новые."
   },
   "actions": {
     "addGroup": "Добавить группу",
-    "addSingleKey": "Добавить ключ",
-    "runTest": "Запустить проверку"
+    "addFromClipboard": "Добавить из буфера",
+    "runTest": "Запустить проверку",
+    "refresh": "Обновить",
+    "refreshing": "Обновление",
+    "refreshAria": "Обновить «{{name}}»"
   },
   "fallback": {
     "vpn": "VPN",
     "group": "группа"
   },
+  "import": {
+    "working": "Добавляем…",
+    "subscriptionAdded": "Подписка «{{name}}» добавлена · VPN: {{count}}",
+    "subscriptionRefreshed": "Подписка «{{name}}» уже добавлена · обновлена",
+    "profileAdded": "{{name}} добавлен в Default",
+    "groupAdded": "Группа «{{name}}» создана · VPN: {{count}}",
+    "groupAddedSkipped": "Группа «{{name}}» создана · VPN: {{count}}, уже были: {{skipped}}",
+    "alreadyPresent": "Этот VPN уже есть в группе «{{group}}»",
+    "nothingNew": "Ничего нового · уже добавлено: {{count}}"
+  },
   "feedback": {
     "testRunning": "Проверяем {{name}}…",
     "testRunningAll": "Проверяем все VPN…",
     "testFinished": "{{name}}: {{value}}.",
-    "added": "{{name}} добавлен в группу «Default».",
     "vpnNameEmpty": "Имя VPN не может быть пустым.",
     "renameLocalOnly": "Переименовывать можно только локальные VPN.",
     "renamed": "VPN переименован в «{{name}}».",
@@ -32,15 +44,23 @@
     "nothingUnavailable": "В «{{group}}» нет недоступных VPN.",
     "deletedUnavailable": "Удалено недоступных VPN из «{{group}}»: {{count}}.",
     "activeKept": "Выбранный VPN оставлен.",
-    "testFailed": "Не удалось проверить {{name}}."
+    "testFailed": "Не удалось проверить {{name}}.",
+    "refreshing": "Обновляем «{{name}}»…",
+    "refreshed": "«{{name}}» обновлена",
+    "refreshFailed": "Не удалось обновить подписку.",
+    "urlCopied": "URL подписки скопирован",
+    "urlCopyFailed": "Не удалось скопировать URL подписки.",
+    "subscriptionInUse": "Вы подключены через «{{group}}». Переключитесь на другой VPN или отключитесь, чтобы удалить её.",
+    "subscriptionDeleted": "«{{group}}» удалена"
   },
   "group": {
     "defaultName": "Default",
     "defaultGroup": "Группа Default",
     "customGroup": "Своя группа",
-    "managedOnSources": "Управляется в источниках",
+    "subscriptionGroup": "Подписка",
+    "updatedJustNow": "обновлено только что",
     "singleKeysStartHere": " · одиночные ключи находятся здесь",
-    "subscriptionNote": "VPN подписки остаются у этого источника. Переименуйте или обновите источник, чтобы изменить их.",
+    "subscriptionNote": "Обновление заменяет эти VPN текущим списком подписки, поэтому они остаются в этой группе.",
     "defaultNote": "Одиночные VPN можно перемещать из Default в любую свою группу."
   },
   "table": {
@@ -67,7 +87,9 @@
     "test": "Проверить",
     "managed": "Управляется подпиской",
     "defaultRenameDisabled": "Группу Default нельзя переименовать",
-    "locked": "Привязан к этой подписке",
+    "changeUrl": "Изменить URL",
+    "copyUrl": "Скопировать URL",
+    "deleteSubscription": "Удалить подписку",
     "testGroup": "Проверить группу",
     "clearResults": "Очистить результаты",
     "deleteUnavailable": "Удалить недоступные"
@@ -88,18 +110,30 @@
       "save": "Сохранить название",
       "create": "Создать группу"
     },
-    "add": {
-      "title": "Добавить одиночный ключ",
-      "description": "Создайте локальный VPN в Default. Позже его можно переместить в свою группу.",
-      "nameLabel": "Имя VPN",
-      "keyLabel": "Ключ VPN",
-      "namePlaceholder": "например, Дом · Сиэтл",
-      "keyPlaceholder": "vless://…",
-      "helper": "Одиночные ключи всегда начинают в Default и могут перемещаться между локальными группами.",
-      "nameRequired": "Введите имя VPN.",
-      "keyInvalid": "Вставьте поддерживаемый ключ VPN, например vless://…",
+    "import": {
+      "title": "Добавить VPN",
+      "description": "Вставьте ссылку на подписку, одиночный ключ или список ключей.",
+      "emptyClipboard": "В буфере обмена нечего добавить. Вставьте текст сюда.",
+      "label": "Ссылка или ключи",
+      "placeholder": "https://… или vless://…",
       "cancel": "Отмена",
-      "submit": "Добавить ключ"
+      "submit": "Добавить"
+    },
+    "subscriptionUrl": {
+      "title": "Изменить URL подписки",
+      "description": "Сразу после сохранения VPN в этой группе заменятся списком с нового URL.",
+      "label": "URL подписки",
+      "placeholder": "https://example.com/sub",
+      "invalid": "Введите корректный http(s) URL.",
+      "cancel": "Отмена",
+      "submit": "Сохранить и обновить"
+    },
+    "deleteSubscription": {
+      "eyebrow": "Удаление подписки",
+      "title": "Удалить «{{group}}»?",
+      "description": "Подписка перестанет обновляться, а её VPN будут удалены вместе с ней ({{count}}). Чтобы вернуть их, снова вставьте ссылку.",
+      "keep": "Оставить",
+      "submit": "Удалить подписку"
     },
     "rename": {
       "title": "Переименовать VPN",
@@ -112,7 +146,7 @@
       "title": "Удалить VPN?",
       "description": "Локальный VPN будет удалён из своей группы.",
       "warningPrefix": "Вы собираетесь удалить",
-      "warningSuffix": ". VPN подписки останутся под управлением источника.",
+      "warningSuffix": ". Это действие нельзя отменить.",
       "cancel": "Отмена",
       "submit": "Удалить VPN"
     },

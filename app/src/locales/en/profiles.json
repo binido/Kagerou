@@ -2,22 +2,34 @@
   "page": {
     "eyebrow": "Kagerou  /  VPN groups",
     "title": "Groups",
-    "description": "Organize single keys into local groups while subscriptions stay together."
+    "description": "All your VPNs in one place. Paste a subscription link or keys to add more."
   },
   "actions": {
     "addGroup": "Add group",
-    "addSingleKey": "Add single key",
-    "runTest": "Run test"
+    "addFromClipboard": "Add from clipboard",
+    "runTest": "Run test",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing",
+    "refreshAria": "Refresh {{name}}"
   },
   "fallback": {
     "vpn": "VPN",
     "group": "group"
   },
+  "import": {
+    "working": "Adding…",
+    "subscriptionAdded": "Subscription {{name}} added · VPNs: {{count}}",
+    "subscriptionRefreshed": "Subscription {{name}} is already added · refreshed",
+    "profileAdded": "{{name}} added to Default",
+    "groupAdded": "Group {{name}} created · VPNs: {{count}}",
+    "groupAddedSkipped": "Group {{name}} created · VPNs: {{count}}, already present: {{skipped}}",
+    "alreadyPresent": "This VPN is already in {{group}}",
+    "nothingNew": "Nothing new · already added: {{count}}"
+  },
   "feedback": {
     "testRunning": "Testing {{name}}…",
     "testRunningAll": "Testing all VPNs…",
     "testFinished": "{{name}}: {{value}}.",
-    "added": "{{name}} added to Default.",
     "vpnNameEmpty": "VPN name cannot be empty.",
     "renameLocalOnly": "Only local VPNs can be renamed.",
     "renamed": "VPN renamed to {{name}}.",
@@ -32,15 +44,23 @@
     "nothingUnavailable": "No unavailable VPNs in {{group}}.",
     "deletedUnavailable": "{{count}} unavailable VPNs deleted from {{group}}.",
     "activeKept": "The selected VPN was kept.",
-    "testFailed": "Could not test {{name}}."
+    "testFailed": "Could not test {{name}}.",
+    "refreshing": "Refreshing {{name}}…",
+    "refreshed": "{{name}} refreshed",
+    "refreshFailed": "Could not refresh the subscription.",
+    "urlCopied": "Subscription URL copied",
+    "urlCopyFailed": "Could not copy the subscription URL.",
+    "subscriptionInUse": "You are connected through {{group}}. Switch to another VPN or disconnect before deleting it.",
+    "subscriptionDeleted": "{{group}} deleted"
   },
   "group": {
     "defaultName": "Default",
     "defaultGroup": "Default group",
     "customGroup": "Custom group",
-    "managedOnSources": "Managed on Sources",
+    "subscriptionGroup": "Subscription",
+    "updatedJustNow": "updated just now",
     "singleKeysStartHere": " · single keys start here",
-    "subscriptionNote": "Subscription VPNs stay with this source. Rename or refresh the source to update them.",
+    "subscriptionNote": "Refreshing replaces these VPNs with the subscription's current list, so they stay in this group.",
     "defaultNote": "Single-key VPNs can be moved from Default into any custom group."
   },
   "table": {
@@ -67,7 +87,9 @@
     "test": "Test",
     "managed": "Managed by subscription",
     "defaultRenameDisabled": "Default group cannot be renamed",
-    "locked": "Locked to this subscription",
+    "changeUrl": "Change URL",
+    "copyUrl": "Copy URL",
+    "deleteSubscription": "Delete subscription",
     "testGroup": "Test group",
     "clearResults": "Clear results",
     "deleteUnavailable": "Delete unavailable"
@@ -88,18 +110,30 @@
       "save": "Save group name",
       "create": "Create group"
     },
-    "add": {
-      "title": "Add single key",
-      "description": "Create a local VPN in Default. You can move it to a custom group later.",
-      "nameLabel": "VPN name",
-      "keyLabel": "VPN key",
-      "namePlaceholder": "e.g. Home · Seattle",
-      "keyPlaceholder": "vless://…",
-      "helper": "Single keys always start in Default and can be moved between local groups.",
-      "nameRequired": "Enter a VPN name.",
-      "keyInvalid": "Paste a supported VPN key such as vless://…",
+    "import": {
+      "title": "Add VPNs",
+      "description": "Paste a subscription link, a single key, or a list of keys.",
+      "emptyClipboard": "The clipboard had nothing to add. Paste it here instead.",
+      "label": "Link or keys",
+      "placeholder": "https://… or vless://…",
       "cancel": "Cancel",
-      "submit": "Add key"
+      "submit": "Add"
+    },
+    "subscriptionUrl": {
+      "title": "Change subscription URL",
+      "description": "VPNs in this group are replaced from the new URL right after saving.",
+      "label": "Subscription URL",
+      "placeholder": "https://example.com/sub",
+      "invalid": "Enter a valid http(s) URL.",
+      "cancel": "Cancel",
+      "submit": "Save and refresh"
+    },
+    "deleteSubscription": {
+      "eyebrow": "Delete subscription",
+      "title": "Delete {{group}}?",
+      "description": "The subscription stops refreshing, and its VPNs are deleted with it ({{count}}). Paste the link again to bring them back.",
+      "keep": "Keep",
+      "submit": "Delete subscription"
     },
     "rename": {
       "title": "Rename VPN",
@@ -112,7 +146,7 @@
       "title": "Delete VPN?",
       "description": "This removes the local VPN from its group.",
       "warningPrefix": "You are about to delete",
-      "warningSuffix": ". Subscription VPNs remain managed by their source.",
+      "warningSuffix": ". This cannot be undone.",
       "cancel": "Cancel",
       "submit": "Delete VPN"
     },

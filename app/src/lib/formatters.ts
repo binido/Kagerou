@@ -1,7 +1,5 @@
 import type { ExitLocation } from '@/types/kagerou'
 
-export const formatSourceTimestamp = (value: string) => value
-
 /** Bytes/sec (what the Clash API reports) → Mbit/s with one decimal,
  * matching the dashboard readout's fixed "Mbps" unit label. */
 export const formatSpeedMbps = (bytesPerSecond: number): string => ((bytesPerSecond * 8) / 1_000_000).toFixed(1)
@@ -17,15 +15,6 @@ export const formatBytes = (bytes: number): { value: string; unit: string } => {
     unitIndex += 1
   }
   return { value: unitIndex === 0 ? String(value) : value.toFixed(2), unit: units[unitIndex] }
-}
-
-export const deriveSubscriptionName = (value: string, fallbackNumber: number, fallbackLabel: string) => {
-  try {
-    const host = new URL(value).hostname.replace(/^www\./i, '')
-    return host || `${fallbackLabel} ${String(fallbackNumber).padStart(2, '0')}`
-  } catch {
-    return `${fallbackLabel} ${String(fallbackNumber).padStart(2, '0')}`
-  }
 }
 
 /** An ISO 3166-1 alpha-2 region code (what the backend's region_from_name
@@ -53,21 +42,6 @@ export const formatExitLocation = (exit: ExitLocation, language: string): string
     : exit.country
   const place = exit.city ? `${exit.city}, ${country}` : country
   return flag ? `${flag} ${place}` : place
-}
-
-const MASK = '••••'
-
-/** Hides the secret half of a subscription URL while keeping the host, so
- * two sources stay distinguishable at a glance. The token lives in the path
- * or query, never in the hostname. Anything unparseable is masked whole. */
-export const maskSubscriptionUrl = (value: string): string => {
-  try {
-    const url = new URL(value)
-    const hasSecret = url.pathname.replace(/^\/+$/, '') !== '' || url.search !== '' || url.hash !== ''
-    return hasSecret ? `${url.protocol}//${url.host}/${MASK}` : `${url.protocol}//${url.host}`
-  } catch {
-    return MASK.repeat(4)
-  }
 }
 
 /** Elapsed milliseconds → "h:mm:ss" past the first hour, "m:ss" before it.

@@ -2,6 +2,7 @@ pub mod app_state;
 pub mod clash_api;
 pub mod commands;
 pub mod geo;
+pub mod import;
 pub mod privilege;
 pub mod probe;
 pub mod singbox;
@@ -37,6 +38,10 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_shell::init())
+        // Reading the clipboard from the WebView is a permission prompt on
+        // Windows, a paste callout on macOS and switched off by default in
+        // WebKitGTK; the plugin reads it natively on all three.
+        .plugin(tauri_plugin_clipboard_manager::init())
         // LaunchAgent writes a plist under the user's LaunchAgents directory;
         // the AppleScript route it competes with is unreliable on modern macOS.
         .plugin(tauri_plugin_autostart::init(
@@ -111,7 +116,6 @@ pub fn run() {
             commands::disconnect,
             commands::lookup_exit_location,
             commands::select_profile,
-            commands::add_local_profile,
             commands::rename_profile,
             commands::delete_profile,
             commands::move_profile_to_group,
@@ -123,11 +127,10 @@ pub fn run() {
             commands::set_profile_group_open,
             commands::add_profile_group,
             commands::rename_profile_group,
-            commands::validate_source,
-            commands::add_source,
             commands::update_source,
             commands::refresh_source,
-            commands::remove_source,
+            commands::import_from_text,
+            commands::delete_subscription,
             commands::set_preset,
             commands::select_rule,
             commands::update_rule,

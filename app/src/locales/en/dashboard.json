@@ -50,7 +50,7 @@
     "presets": "Presets: {{names}}",
     "noPresets": "No presets enabled",
     "rules": "Rules: {{count}}",
-    "sources": "Sources: {{count}}",
-    "sourcesStale": "Sources: {{count}} of {{total}} due for refresh"
+    "sources": "Subscriptions: {{count}}",
+    "sourcesStale": "Subscriptions: {{count}} of {{total}} due for refresh"
   }
 }

@@ -9,7 +9,6 @@ import { LogsPage } from '@/pages/LogsPage'
 import { GroupsPage } from '@/pages/GroupsPage'
 import { RoutingRulesPage } from '@/pages/RoutingRulesPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { SourcesPage } from '@/pages/SourcesPage'
 import { useKagerouStore } from '@/store/kagerou-store'
 import { ThemeProvider } from '@/themes/ThemeProvider'
 
@@ -33,8 +32,8 @@ function App() {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="groups" element={<GroupsPage />} />
             <Route path="profiles" element={<Navigate replace to="/groups" />} />
-            <Route path="sources" element={<SourcesPage />} />
-            <Route path="subscriptions" element={<Navigate replace to="/sources" />} />
+            <Route path="sources" element={<Navigate replace to="/groups" />} />
+            <Route path="subscriptions" element={<Navigate replace to="/groups" />} />
             <Route path="routing-rules" element={<RoutingRulesPage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="settings" element={<SettingsPage />} />
