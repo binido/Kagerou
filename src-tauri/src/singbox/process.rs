@@ -6,6 +6,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use thiserror::Error;
 
+use super::system_proxy;
 use crate::privilege::{self, TargetOs};
 
 const MAX_BUFFERED_LOG_LINES: usize = 500;
@@ -116,6 +117,11 @@ pub struct SidecarLauncher {
     /// directory rather than a fixed path so a leftover from a previous run
     /// can be spotted and cleared at startup — see [`clear_run_files`].
     pub run_dir: PathBuf,
+    /// The mixed inbound port this core listens on. A system proxy pointing
+    /// at it is cleared once the process exits; see [`system_proxy`]. Each
+    /// core passes its own, so the test core stopping never resets a proxy
+    /// the main one set.
+    pub system_proxy_port: u16,
 }
 
 /// Marks a live sing-box. Named per launch so a watchdog left over from a
@@ -271,31 +277,29 @@ impl Launcher for SidecarLauncher {
         // so a `kill` request delivered via `kill_rx` is never stuck
         // behind a held lock on a process that never exits on its own.
         let (kill_tx, kill_rx) = std::sync::mpsc::channel::<()>();
-        std::thread::spawn(move || loop {
-            if kill_rx.try_recv().is_ok() {
-                // An elevated child is only the osascript/pkexec wrapper, and
-                // the run file already told the real process to go.
-                if !tun {
-                    terminate_gracefully(&mut child);
+        let proxy_port = self.system_proxy_port;
+        std::thread::spawn(move || {
+            let code = loop {
+                if kill_rx.try_recv().is_ok() {
+                    // An elevated child is only the osascript/pkexec wrapper,
+                    // and the run file already told the real process to go.
+                    if !tun {
+                        terminate_gracefully(&mut child);
+                    }
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    break None;
                 }
-                let _ = child.kill();
-                let _ = child.wait();
-                let _ = tx.send(ProcessEvent::Exited { code: None });
-                break;
-            }
-            match child.try_wait() {
-                Ok(Some(status)) => {
-                    let _ = tx.send(ProcessEvent::Exited {
-                        code: status.code(),
-                    });
-                    break;
+                match child.try_wait() {
+                    Ok(Some(status)) => break status.code(),
+                    Ok(None) => std::thread::sleep(std::time::Duration::from_millis(100)),
+                    Err(_) => break None,
                 }
-                Ok(None) => std::thread::sleep(std::time::Duration::from_millis(100)),
-                Err(_) => {
-                    let _ = tx.send(ProcessEvent::Exited { code: None });
-                    break;
-                }
-            }
+            };
+            // Before `Exited`, which is what `stop` waits for: by the time it
+            // returns, and before any restart, the proxy is back to direct.
+            system_proxy::clear_if_ours(proxy_port);
+            let _ = tx.send(ProcessEvent::Exited { code });
         });
 
         Ok(ChildHandle {
@@ -639,6 +643,7 @@ mod tests {
         SidecarLauncher {
             binary_path: PathBuf::from(binary),
             run_dir: run_dir.to_path_buf(),
+            system_proxy_port: 2080,
         }
     }
 

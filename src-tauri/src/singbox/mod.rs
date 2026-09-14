@@ -2,6 +2,7 @@ pub mod config;
 pub mod match_spec;
 mod outbound_json;
 pub mod process;
+pub mod system_proxy;
 
 pub use config::{generate, ConfigError, ConfigInput};
 pub use process::{
