@@ -35,7 +35,7 @@
     "customIntervalA11y": "Minutes between automatic subscription updates.",
     "autoConnect": "Connects to the last active profile when Kagerou starts.",
     "tunMode": "Applies the next time you connect.",
-    "systemProxyUnavailable": "Not implemented yet — Kagerou does not change your system proxy.",
+    "systemProxy": "Points the system proxy at Kagerou while connected. Turns TUN mode off. Applies the next time you connect.",
     "logLevel": "Applies the next time you connect.",
     "testUrl": "Fetched through the VPN to measure its delay. Something small that answers from anywhere works best.",
     "geoLookup": "Asks a public service, through the tunnel, which country and city your connection appears to come from. Turning this off keeps the dashboard on the flag in the profile name."

@@ -29,6 +29,8 @@ pub struct ConfigInput<'a> {
     pub clash_api_listen: &'a str,
     pub log_level: &'a str,
     pub tun: bool,
+    /// Has sing-box set the OS proxy to the mixed inbound. Ignored under TUN.
+    pub system_proxy: bool,
 }
 
 /// Builds a full sing-box JSON configuration from stored profiles and
@@ -137,6 +139,10 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
 
     let mut inbounds = vec![json!({
         "type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": input.mixed_listen_port,
+        // sing-box points the OS proxy here on start and undoes it on a clean
+        // stop. Never with TUN: storage keeps the two exclusive, but a row
+        // saved before it did can still hold both.
+        "set_system_proxy": input.system_proxy && !input.tun,
     })];
     if input.tun {
         // ponytail: no `interface_name` — sing-box picks a valid one per
@@ -237,7 +243,35 @@ mod tests {
             clash_api_listen: "127.0.0.1:9090",
             log_level: "info",
             tun: false,
+            system_proxy: false,
         }
+    }
+
+    fn sets_system_proxy(config: &Value) -> bool {
+        config["inbounds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["type"] == "mixed")
+            .unwrap()["set_system_proxy"]
+            .as_bool()
+            .unwrap()
+    }
+
+    #[test]
+    fn the_system_proxy_is_set_only_when_asked_and_never_under_tun() {
+        let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+        let mut input = base_input(&profiles, &[]);
+        assert!(!sets_system_proxy(&generate(&input).unwrap()));
+
+        input.system_proxy = true;
+        assert!(sets_system_proxy(&generate(&input).unwrap()));
+
+        input.tun = true;
+        assert!(
+            !sets_system_proxy(&generate(&input).unwrap()),
+            "an elevated TUN core must not touch the proxy, even if a stale row asks"
+        );
     }
 
     #[test]
@@ -543,6 +577,9 @@ mod tests {
         for tun in [false, true] {
             let mut input = base_input(&profiles, &rules);
             input.tun = tun;
+            // On, so the non-TUN shape carries `set_system_proxy: true`.
+            // `check` only parses it; the OS proxy is left untouched.
+            input.system_proxy = true;
             let config = generate(&input).unwrap();
 
             let path = dir.path().join(format!("config-tun-{tun}.json"));
