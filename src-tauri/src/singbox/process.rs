@@ -11,8 +11,12 @@ use crate::privilege::{self, TargetOs};
 const MAX_BUFFERED_LOG_LINES: usize = 500;
 
 /// How long [`ChildHandle::kill`] waits for the process to be gone before
-/// giving up. Short, because the app's shutdown hook blocks on it.
-const KILL_CONFIRMATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+/// giving up. Short, because the app's shutdown hook blocks on it, but longer
+/// than [`GRACEFUL_STOP_TIMEOUT`] so the forced kill after it still counts.
+const KILL_CONFIRMATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(4);
+
+/// How long sing-box gets to shut down cleanly before it is killed outright.
+const GRACEFUL_STOP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
 #[derive(Debug, Error)]
 pub enum ProcessError {
@@ -269,6 +273,11 @@ impl Launcher for SidecarLauncher {
         let (kill_tx, kill_rx) = std::sync::mpsc::channel::<()>();
         std::thread::spawn(move || loop {
             if kill_rx.try_recv().is_ok() {
+                // An elevated child is only the osascript/pkexec wrapper, and
+                // the run file already told the real process to go.
+                if !tun {
+                    terminate_gracefully(&mut child);
+                }
                 let _ = child.kill();
                 let _ = child.wait();
                 let _ = tx.send(ProcessEvent::Exited { code: None });
@@ -305,6 +314,28 @@ impl Launcher for SidecarLauncher {
         })
     }
 }
+
+/// Asks sing-box to exit before anything forces it to. It undoes the system
+/// proxy only on a clean shutdown, and SIGKILL, which is all `Child::kill`
+/// sends, would leave the OS pointed at a port nobody listens on any more.
+/// Waiting on our own child is safe from PID reuse: until it is reaped, its
+/// PID cannot be handed to another process.
+#[cfg(unix)]
+fn terminate_gracefully(child: &mut std::process::Child) {
+    let _ = Command::new("kill").arg(child.id().to_string()).status();
+    let deadline = std::time::Instant::now() + GRACEFUL_STOP_TIMEOUT;
+    while std::time::Instant::now() < deadline {
+        if !matches!(child.try_wait(), Ok(None)) {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+}
+
+/// Windows has no signal to send a windowless child, so the proxy is cleared
+/// from outside once it is gone.
+#[cfg(not(unix))]
+fn terminate_gracefully(_child: &mut std::process::Child) {}
 
 fn spawn_line_forwarder(
     stream: Option<impl std::io::Read + Send + 'static>,
@@ -731,6 +762,37 @@ mod tests {
             );
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
+    }
+
+    /// SIGKILL cannot be trapped, so a fake that records a trapped TERM
+    /// proves the process was given the chance to undo the system proxy.
+    #[test]
+    #[cfg(unix)]
+    fn an_unprivileged_stop_lets_the_process_shut_down_cleanly() {
+        let dir = tempfile::tempdir().unwrap();
+        let marker = dir.path().join("terminated");
+        let script = dir.path().join("fake-sing-box");
+        std::fs::write(
+            &script,
+            format!(
+                "#!/bin/sh\ntrap 'touch {}; exit 0' TERM\nwhile :; do sleep 0.05; done\n",
+                marker.display()
+            ),
+        )
+        .unwrap();
+        std::fs::set_permissions(&script, std::os::unix::fs::PermissionsExt::from_mode(0o755))
+            .unwrap();
+        let mut sup = Supervisor::new(sidecar_launcher(
+            script.to_str().unwrap(),
+            &dir.path().join("run"),
+        ));
+        sup.start(Path::new("/tmp/config.json"), false).unwrap();
+        // Let the shell install its trap before it is signalled.
+        std::thread::sleep(std::time::Duration::from_millis(300));
+
+        sup.stop().unwrap();
+
+        assert!(marker.exists(), "sing-box must get SIGTERM before SIGKILL");
     }
 
     #[test]
