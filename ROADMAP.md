@@ -55,7 +55,7 @@ row.
 | Clash API client | ✅ | Version, proxies, connections, outbound selection, connection closing, traffic websocket with auto-reconnect. |
 | Hot profile switch while connected | ✅ | Selecting a profile switches the selector through the Clash API instead of restarting the core. |
 | TUN mode | ✅ | Confirmed end-to-end on macOS: connected to a real server with traffic routed through the TUN interface. The Windows (UAC) and Linux (`CAP_NET_ADMIN`, falling back to `pkexec`) elevation paths are implemented and unit-tested but have not been run on those systems — see [End-to-end verification](#distribution--quality). The mode is a stored setting read by `connect()`, so a change takes effect on the next connection rather than the current one. |
-| System proxy | 🟡 | The settings row is present but disabled, and says so. Nothing sets the OS proxy: no `networksetup` (macOS), registry write (Windows), or GSettings/environment handling (Linux). The preference persists; only the effect is missing. **Discuss first.** |
+| System proxy | ✅ | Confirmed on macOS: the proxy is set on connect and cleared on disconnect. sing-box's own `set_system_proxy` on the mixed inbound points the OS proxy at `127.0.0.1:2080` on start and restores it on a clean stop. A stop sends SIGTERM before SIGKILL so that cleanup runs; Windows has no such signal, so there Kagerou resets the proxy through WinINet after the core exits and at startup, but only while it still points at that port. Exclusive with TUN mode, and applies on the next connection. Windows and Linux have not been run; the WinINet path has only been type-checked against the Windows target. Still open: a crash on macOS or Linux leaves the proxy pointing at a dead port until the next connect and stop, and Linux desktops other than the ones sing-box supports will not see it at all. |
 | Inbound listen address and port | 📋 | The mixed inbound is hardcoded to `127.0.0.1:2080` and the Clash API to `127.0.0.1:9090`. Both should be settings, along with an "allow LAN access" toggle that binds `0.0.0.0`. **Good first issue.** |
 | Configurable log level | ✅ | sing-box's log level is a stored setting in a Diagnostics section of the settings page; like TUN mode, it applies on the next connection. |
 | Configurable connection-test URL | ✅ | The delay-test URL is a stored setting in Diagnostics, used by both the TCP and URL tests; blank values are rejected. |
@@ -842,18 +842,16 @@ doing.
   `app/src/components/settings/SettingSwitchRow.tsx:18`,
   `app/src/components/ui/switch.tsx:20`.
 
-  `disabled` gives only `opacity-50`, which on the System proxy row reads as
-  a slightly dimmer version of a working control rather than a disabled one.
-  The explanatory copy beside it carries the whole message. Give the state a
-  shape of its own:
+  `disabled` gives only `opacity-50`, which reads as a slightly dimmer
+  version of a working control rather than a disabled one. No settings row
+  is disabled since the System proxy row was switched on, so this waits for
+  the next one that is. Give the state a shape of its own:
 
   ```
   data-disabled:bg-transparent data-disabled:ring-1 data-disabled:ring-hairline
   ```
 
-  Ties into the System proxy row in
-  [Core & connectivity](#core--connectivity), which is 🟡 for the same
-  reason. **Good first issue.**
+  **Good first issue.**
 
 - [ ] **Dead `aria-hidden` and an unnamed region on group panels.**
   `app/src/components/profiles/ProfileGroupCard.tsx:59-60`.

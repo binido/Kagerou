@@ -204,6 +204,18 @@ describe('connection modes', () => {
     expect(api.connect).not.toHaveBeenCalled()
     expect(api.disconnect).not.toHaveBeenCalled()
   })
+
+  it('turns the other mode off when one is turned on, as the backend does', () => {
+    api.updateSettings.mockResolvedValue(undefined)
+    useKagerouStore.getState().updateSettings({ tunMode: true })
+    useKagerouStore.getState().updateSettings({ systemProxy: true })
+
+    expect(useKagerouStore.getState().settings).toMatchObject({ tunMode: false, systemProxy: true })
+    expect(api.updateSettings).toHaveBeenLastCalledWith({ systemProxy: true })
+
+    useKagerouStore.getState().updateSettings({ tunMode: true })
+    expect(useKagerouStore.getState().settings).toMatchObject({ tunMode: true, systemProxy: false })
+  })
 })
 
 describe('toggleConnection', () => {

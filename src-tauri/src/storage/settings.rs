@@ -57,6 +57,20 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             ));
         }
     }
+    // The connection modes are exclusive, so turning one on turns the other
+    // off. TUN already captures everything the proxy would, and its core runs
+    // elevated: on Linux that is pkexec's root, whose proxy is not the user's.
+    if patch.tun_mode == Some(true) && patch.system_proxy == Some(true) {
+        return Err(StorageError::InvalidInput(
+            "TUN mode and the system proxy cannot both be on".into(),
+        ));
+    }
+    let tun_mode = patch
+        .tun_mode
+        .or((patch.system_proxy == Some(true)).then_some(false));
+    let system_proxy = patch
+        .system_proxy
+        .or((patch.tun_mode == Some(true)).then_some(false));
     let conn = db.lock();
     conn.execute(
         "UPDATE settings SET
@@ -79,8 +93,8 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             patch.theme,
             patch.language,
             patch.startup.map(|v| v as i64),
-            patch.tun_mode.map(|v| v as i64),
-            patch.system_proxy.map(|v| v as i64),
+            tun_mode.map(|v| v as i64),
+            system_proxy.map(|v| v as i64),
             patch.auto_connect.map(|v| v as i64),
             patch.geo_lookup.map(|v| v as i64),
             patch.tun_interface,
@@ -231,7 +245,7 @@ mod tests {
         .unwrap();
         let settings = get(&db).unwrap();
         assert!(settings.tun_mode);
-        assert!(!settings.system_proxy, "the two modes patch independently");
+        assert!(!settings.system_proxy);
 
         update(
             &db,
@@ -245,6 +259,56 @@ mod tests {
         let settings = get(&db).unwrap();
         assert!(!settings.tun_mode);
         assert!(settings.system_proxy);
+    }
+
+    #[test]
+    fn turning_one_connection_mode_on_turns_the_other_off() {
+        let db = Db::open_in_memory().unwrap();
+        let set = |patch: SettingsPatch| update(&db, &patch).unwrap();
+
+        set(SettingsPatch {
+            system_proxy: Some(true),
+            ..Default::default()
+        });
+        set(SettingsPatch {
+            tun_mode: Some(true),
+            ..Default::default()
+        });
+        let settings = get(&db).unwrap();
+        assert!(settings.tun_mode && !settings.system_proxy);
+
+        set(SettingsPatch {
+            system_proxy: Some(true),
+            ..Default::default()
+        });
+        let settings = get(&db).unwrap();
+        assert!(!settings.tun_mode && settings.system_proxy);
+
+        // Turning one off leaves the other alone.
+        set(SettingsPatch {
+            tun_mode: Some(false),
+            ..Default::default()
+        });
+        assert!(get(&db).unwrap().system_proxy);
+    }
+
+    #[test]
+    fn both_connection_modes_at_once_are_rejected_without_a_partial_write() {
+        let db = Db::open_in_memory().unwrap();
+        let err = update(
+            &db,
+            &SettingsPatch {
+                tun_mode: Some(true),
+                system_proxy: Some(true),
+                language: Some("ru"),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, StorageError::InvalidInput(_)));
+        let settings = get(&db).unwrap();
+        assert!(!settings.tun_mode && !settings.system_proxy);
+        assert_eq!(settings.language, "en");
     }
 
     #[test]

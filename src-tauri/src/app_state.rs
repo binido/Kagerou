@@ -73,10 +73,12 @@ impl AppState {
             supervisor: Mutex::new(Supervisor::new(SidecarLauncher {
                 binary_path: sing_box_binary.clone(),
                 run_dir: run_dir.clone(),
+                system_proxy_port: paths.mixed_listen_port,
             })),
             test_supervisor: Mutex::new(Supervisor::new(SidecarLauncher {
                 binary_path: sing_box_binary,
                 run_dir,
+                system_proxy_port: paths.test_mixed_listen_port,
             })),
             clash: Mutex::new(None),
             traffic_stop: Mutex::new(None),

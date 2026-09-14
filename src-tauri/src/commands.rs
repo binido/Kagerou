@@ -145,6 +145,7 @@ pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Resul
         clash_api_listen: &state.paths.clash_api_listen,
         log_level: &stored.log_level,
         tun,
+        system_proxy: stored.system_proxy,
     })
     .map_err(to_err)?;
 
@@ -594,6 +595,8 @@ async fn clash_for_test(
         // password and rewrites the machine's routing, which is not
         // something a delay test is allowed to do.
         tun: false,
+        // Nor the OS proxy: that belongs to the main core.
+        system_proxy: false,
     })
     .map_err(to_err)?;
     let config_bytes = serde_json::to_vec_pretty(&config).map_err(to_err)?;

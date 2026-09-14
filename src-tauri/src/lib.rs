@@ -65,7 +65,11 @@ pub fn run() {
             let config_path = app_data_dir.join("sing-box-config.json");
             let sing_box_binary = singbox::sidecar_path("sing-box")?;
 
-            app.manage(AppState::new(db, sing_box_binary, config_path));
+            let state = AppState::new(db, sing_box_binary, config_path);
+            // The same crash can leave the OS proxy pointed at a core that
+            // is no longer there, which cuts off the whole machine.
+            singbox::system_proxy::clear_if_ours(state.paths.mixed_listen_port);
+            app.manage(state);
 
             tray::create(app.handle())?;
             // Started by the login item: the point of that is to connect

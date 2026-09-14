@@ -41,7 +41,7 @@ export function SettingsPage() {
           <SettingsSection title={t('sections.connection')}>
             <SettingSwitchRow checked={settings.autoConnect} description={t('descriptions.autoConnect')} label={t('fields.autoConnect')} onChange={(autoConnect) => updateSettings({ autoConnect })} />
             <SettingSwitchRow checked={settings.tunMode} description={t('descriptions.tunMode')} label={t('fields.tunMode')} onChange={(tunMode) => updateSettings({ tunMode })} />
-            <SettingSwitchRow checked={settings.systemProxy} description={t('descriptions.systemProxyUnavailable')} disabled label={t('fields.systemProxy')} onChange={(systemProxy) => updateSettings({ systemProxy })} />
+            <SettingSwitchRow checked={settings.systemProxy} description={t('descriptions.systemProxy')} label={t('fields.systemProxy')} onChange={(systemProxy) => updateSettings({ systemProxy })} />
             <SettingSwitchRow checked={settings.geoLookup} description={t('descriptions.geoLookup')} label={t('fields.geoLookup')} onChange={(geoLookup) => updateSettings({ geoLookup })} />
           </SettingsSection>
           <SettingsSection title={t('sections.appearance')}>
