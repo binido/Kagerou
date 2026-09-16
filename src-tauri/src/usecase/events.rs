@@ -130,4 +130,27 @@ impl<R: tauri::Runtime> Events for tauri::AppHandle<R> {
 }
 
 #[cfg(test)]
+pub(crate) mod test_support {
+    use super::{AppEvent, Events};
+    use std::sync::{Arc, Mutex};
+
+    /// Collects what was emitted, so logic that reports through `Events` can
+    /// be asserted on without a window.
+    #[derive(Clone, Default)]
+    pub(crate) struct RecordedEvents(Arc<Mutex<Vec<AppEvent>>>);
+
+    impl RecordedEvents {
+        pub(crate) fn all(&self) -> Vec<AppEvent> {
+            self.0.lock().unwrap().clone()
+        }
+    }
+
+    impl Events for RecordedEvents {
+        fn emit(&self, event: AppEvent) {
+            self.0.lock().unwrap().push(event);
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests;

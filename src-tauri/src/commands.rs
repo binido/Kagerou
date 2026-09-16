@@ -1,24 +1,23 @@
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
-use tokio::sync::watch;
 
 use crate::app_state::AppState;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
 use crate::geo;
 use crate::import::{self, ImportOutcome, Pasted};
-use crate::probe;
 use crate::singbox;
 use crate::storage::models::{
     NewProfileGroup, NewRoutingRule, Profile, ProfileGroup, RoutingPreset, RoutingRule, Settings,
-    Source, TestResult, Tone,
+    Source, TestResult,
 };
 use crate::storage::{groups, profiles, routing, settings, sources, Db};
 use crate::subscription;
 use crate::updates;
 use crate::usecase::core::{self, CoreSpec};
-use crate::usecase::events::{AppEvent, DashboardTrafficEvent, Events, TestFinished, TestProgress};
+use crate::usecase::events::{AppEvent, DashboardTrafficEvent, Events};
+use crate::usecase::testing;
 
 fn to_err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -63,10 +62,7 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
     // when the startup auto-connect wins the race (and on a mid-session
     // reload), so the snapshot carries the supervisor's own status as the
     // baseline and the events take over from there.
-    let connected = matches!(
-        *state.supervisor.lock().unwrap().status(),
-        singbox::Status::Running
-    );
+    let connected = state.is_connected();
     Ok(AppSnapshot {
         connected,
         connected_since: connected.then(|| epoch_millis(&state)).flatten(),
@@ -204,11 +200,7 @@ pub async fn lookup_exit_location(
     if !settings::get(&state.db).map_err(to_err)?.geo_lookup {
         return Ok(None);
     }
-    let running = matches!(
-        *state.supervisor.lock().unwrap().status(),
-        singbox::Status::Running
-    );
-    if !running {
+    if !state.is_connected() {
         return Ok(None);
     }
 
@@ -304,77 +296,42 @@ pub async fn start_group_test(
         return Ok(0);
     }
 
-    let (cancel_tx, mut cancel_rx) = watch::channel(false);
-    {
-        let mut slot = state.test_run_cancel.lock().unwrap();
-        if slot.is_some() {
-            return Err("a test run is already in progress".to_string());
-        }
-        *slot = Some(cancel_tx);
-    }
-
     let total = profile_ids.len();
+    let cancel = testing::begin_run(&state.test_core)?;
     let run_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let state = run_app.state::<AppState>();
-        let mut done = 0usize;
-        let mut cancelled = false;
-
-        for profile_id in profile_ids {
-            if *cancel_rx.borrow_and_update() {
-                cancelled = true;
-                break;
-            }
-            let result = match clash_for_test(&run_app, &state).await {
-                Ok(clash) => url_test_profile(&profile_id, &clash, &state)
-                    .await
-                    .unwrap_or(TestResult {
-                        value: "No response".to_string(),
-                        tone: Tone::Bad,
-                    }),
-                // The core itself failed to come up: report the profile as
-                // untested rather than blaming it for the run's problem.
-                Err(_) => TestResult {
-                    value: "Not tested".to_string(),
-                    tone: Tone::Muted,
-                },
-            };
-            if result.tone != Tone::Muted {
-                let _ = profiles::set_test_result(&state.db, &profile_id, &result);
-            }
-            done += 1;
-            Events::emit(
-                &run_app,
-                AppEvent::TestProgress(TestProgress {
-                    profile_id,
-                    result,
-                    done,
-                    total,
-                }),
-            );
-        }
-
-        *state.test_run_cancel.lock().unwrap() = None;
-        Events::emit(
+        let (db, paths, core) = (&state.db, &state.paths, &state.test_core);
+        testing::run_group(
+            db,
+            core,
             &run_app,
-            AppEvent::TestFinished(TestFinished {
-                done,
-                total,
-                cancelled,
-            }),
-        );
+            cancel,
+            profile_ids,
+            |profile_id| async move {
+                match testing::ensure_running(db, paths, core).await {
+                    Ok(clash) => testing::measure_profile(
+                        db,
+                        paths.test_mixed_listen_port,
+                        &clash,
+                        &profile_id,
+                    )
+                    .await
+                    .map(testing::Measured::Result)
+                    .unwrap_or(testing::Measured::CoreUnavailable),
+                    Err(_) => testing::Measured::CoreUnavailable,
+                }
+            },
+        )
+        .await;
     });
 
     Ok(total)
 }
 
-/// Asks a running group test to stop after the profile it is on. A no-op when
-/// nothing is running.
 #[tauri::command]
 pub fn cancel_group_test(state: State<AppState>) -> Result<(), String> {
-    if let Some(cancel) = state.test_run_cancel.lock().unwrap().as_ref() {
-        let _ = cancel.send(true);
-    }
+    state.test_core.cancel_run();
     Ok(())
 }
 
@@ -453,154 +410,18 @@ pub fn reorder_profiles(
 #[tauri::command]
 pub async fn run_profile_test(
     profile_id: String,
-    app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<TestResult, String> {
-    let clash = clash_for_test(&app, &state).await?;
-    let result = url_test_profile(&profile_id, &clash, &state).await?;
+    let clash = testing::ensure_running(&state.db, &state.paths, &state.test_core).await?;
+    let result = testing::measure_profile(
+        &state.db,
+        state.paths.test_mixed_listen_port,
+        &clash,
+        &profile_id,
+    )
+    .await?;
     let _ = profiles::set_test_result(&state.db, &profile_id, &result);
     Ok(result)
-}
-
-fn latency_tone(delay_ms: u32) -> Tone {
-    if delay_ms < 150 {
-        Tone::Good
-    } else if delay_ms < 400 {
-        Tone::Warn
-    } else {
-        Tone::Bad
-    }
-}
-
-/// How long a test-only core lingers after the last test before shutting
-/// itself down. Long enough that testing profiles one at a time does not
-/// restart it each time, short enough that nothing is left running.
-const TEST_CORE_IDLE: Duration = Duration::from_secs(30);
-const TEST_CORE_READY_TIMEOUT: Duration = Duration::from_secs(10);
-
-/// Brings up the core that exists only to answer tests, and hands back a
-/// client for it. Never the connection's own core, even when one is running:
-/// aiming a test at a particular server means pointing the selector at it,
-/// and doing that to a live tunnel would silently reroute the user's traffic
-/// through whatever is being tested. Its own ports, its own config, no TUN,
-/// nothing announced to the UI as connected.
-async fn clash_for_test(
-    app: &AppHandle,
-    state: &State<'_, AppState>,
-) -> Result<ClashApiClient, String> {
-    *state.last_test_at.lock().unwrap() = Some(Instant::now());
-
-    // One starter at a time: a group test fires dozens of these at once.
-    let _gate = state.test_core_gate.lock().await;
-    if let Some(clash) = state.test_clash_client() {
-        return Ok(clash);
-    }
-
-    let stored = settings::get(&state.db).map_err(to_err)?;
-    core::start(
-        &state.db,
-        &mut state.test_supervisor.lock().unwrap(),
-        &CoreSpec::test(&state.paths, &stored),
-    )
-    .map_err(to_err)?;
-
-    let clash = ClashApiClient::new(format!("http://{}", state.paths.test_clash_api_listen));
-    // The API is not up the instant the process is: poll until it answers,
-    // or the first delay request fails for a reason that has nothing to do
-    // with the profile being tested.
-    let ready = tokio::time::timeout(TEST_CORE_READY_TIMEOUT, async {
-        loop {
-            if clash.get_version().await.is_ok() {
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
-    })
-    .await;
-    if ready.is_err() {
-        let _ = state.test_supervisor.lock().unwrap().stop();
-        return Err("the proxy core did not come up for testing".to_string());
-    }
-
-    *state.test_clash.lock().unwrap() = Some(clash.clone());
-    spawn_test_core_reaper(app.clone());
-    Ok(clash)
-}
-
-/// Whether a test core has gone long enough without a request to be worth
-/// shutting down. No recorded request at all counts as idle: it means the
-/// core outlived whatever started it.
-fn test_core_is_idle(last_test_at: Option<Instant>, now: Instant, timeout: Duration) -> bool {
-    match last_test_at {
-        None => true,
-        Some(at) => now.duration_since(at) >= timeout,
-    }
-}
-
-/// Shuts the test-only core down once the tests stop arriving. Also stands
-/// down silently if `connect()` has taken the core over in the meantime.
-fn spawn_test_core_reaper(app: AppHandle) {
-    tauri::async_runtime::spawn(async move {
-        loop {
-            tokio::time::sleep(Duration::from_secs(5)).await;
-            let state = app.state::<AppState>();
-            if state.test_clash_client().is_none() {
-                return;
-            }
-            let last = *state.last_test_at.lock().unwrap();
-            if test_core_is_idle(last, Instant::now(), TEST_CORE_IDLE) {
-                stop_test_core(&state);
-                return;
-            }
-        }
-    });
-}
-
-/// Takes down the core that was up to serve tests. A no-op when there isn't
-/// one.
-pub fn stop_test_core(state: &AppState) {
-    if state.test_clash.lock().unwrap().take().is_none() {
-        return;
-    }
-    let _ = state.test_supervisor.lock().unwrap().stop();
-    *state.last_test_at.lock().unwrap() = None;
-}
-
-const TEST_TIMEOUT: Duration = Duration::from_secs(5);
-
-/// Round trip through this profile, measured by sending a real request over
-/// the test core's own inbound. Aiming at one profile means pointing that
-/// core's selector at it, which is why tests run one at a time.
-async fn url_test_profile(
-    profile_id: &str,
-    clash: &ClashApiClient,
-    state: &State<'_, AppState>,
-) -> Result<TestResult, String> {
-    let test_url = settings::get(&state.db).map_err(to_err)?.test_url;
-    if clash.select_outbound("proxy", profile_id).await.is_err() {
-        return Ok(TestResult {
-            value: "Unavailable".to_string(),
-            tone: Tone::Bad,
-        });
-    }
-
-    let socks = format!("127.0.0.1:{}", state.paths.test_mixed_listen_port);
-    Ok(
-        match probe::rtt_through_socks(&socks, &test_url, TEST_TIMEOUT).await {
-            Ok(delay_ms) => TestResult {
-                value: format!("{delay_ms} ms"),
-                tone: latency_tone(delay_ms),
-            },
-            Err(probe::ProbeError::Timeout) => TestResult {
-                value: "Timeout".to_string(),
-                tone: Tone::Bad,
-            },
-            Err(probe::ProbeError::Unreachable) => TestResult {
-                value: "No response".to_string(),
-                tone: Tone::Bad,
-            },
-        },
-    )
 }
 
 // ---------------------------------------------------------------------
@@ -757,10 +578,7 @@ pub fn delete_subscription(
     app: AppHandle,
     state: State<AppState>,
 ) -> Result<(), String> {
-    let connected = matches!(
-        *state.supervisor.lock().unwrap().status(),
-        singbox::Status::Running
-    );
+    let connected = state.is_connected();
     let active = settings::get_active_profile_id(&state.db).map_err(to_err)?;
     import::remove_subscription(&state.db, &group_id, active.as_deref(), connected)
         .map_err(to_err)?;
@@ -953,6 +771,3 @@ pub fn update_settings(
     }
     Ok(())
 }
-
-#[cfg(test)]
-mod tests;
