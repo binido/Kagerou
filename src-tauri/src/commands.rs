@@ -448,7 +448,7 @@ pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), AppErro
     settings::update(
         &state.db,
         &settings::SettingsPatch {
-            theme: Some(&theme_id),
+            theme: Some(theme_id),
             ..Default::default()
         },
     )
@@ -460,24 +460,6 @@ pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), AppErro
 #[tauri::command]
 pub async fn check_for_update(app: AppHandle) -> Option<updates::UpdateInfo> {
     updates::check(&app.package_info().version).await
-}
-
-#[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct SettingsPatchInput {
-    pub language: Option<String>,
-    pub startup: Option<bool>,
-    pub tun_mode: Option<bool>,
-    pub system_proxy: Option<bool>,
-    pub auto_connect: Option<bool>,
-    pub geo_lookup: Option<bool>,
-    pub tun_interface: Option<String>,
-    pub auto_update_subscriptions: Option<bool>,
-    pub subscription_update_interval: Option<String>,
-    pub custom_subscription_update_minutes: Option<i64>,
-    pub group_sort: Option<String>,
-    pub log_level: Option<String>,
-    pub test_url: Option<String>,
 }
 
 /// Makes the OS launch-at-login registration agree with `enabled`. The DB is
@@ -504,30 +486,13 @@ pub fn apply_startup_flag(app: &AppHandle, enabled: bool) -> Result<(), AppError
 
 #[tauri::command]
 pub fn update_settings(
-    patch: SettingsPatchInput,
+    patch: settings::SettingsPatch,
     state: State<AppState>,
     app: AppHandle,
 ) -> Result<(), AppError> {
-    settings::update(
-        &state.db,
-        &settings::SettingsPatch {
-            theme: None,
-            language: patch.language.as_deref(),
-            startup: patch.startup,
-            tun_mode: patch.tun_mode,
-            system_proxy: patch.system_proxy,
-            auto_connect: patch.auto_connect,
-            geo_lookup: patch.geo_lookup,
-            tun_interface: patch.tun_interface.as_deref(),
-            auto_update_subscriptions: patch.auto_update_subscriptions,
-            subscription_update_interval: patch.subscription_update_interval.as_deref(),
-            custom_subscription_update_minutes: patch.custom_subscription_update_minutes,
-            group_sort: patch.group_sort.as_deref(),
-            log_level: patch.log_level.as_deref(),
-            test_url: patch.test_url.as_deref(),
-        },
-    )?;
-    if let Some(startup) = patch.startup {
+    let startup = patch.startup;
+    settings::update(&state.db, &patch)?;
+    if let Some(startup) = startup {
         apply_startup_flag(&app, startup)?;
     }
     Ok(())

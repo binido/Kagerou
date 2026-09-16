@@ -29,7 +29,7 @@ fn update_rejects_an_unknown_log_level() {
     let err = update(
         &db,
         &SettingsPatch {
-            log_level: Some("verbose"),
+            log_level: Some("verbose".into()),
             ..Default::default()
         },
     )
@@ -48,7 +48,7 @@ fn log_level_round_trip() {
     update(
         &db,
         &SettingsPatch {
-            log_level: Some("trace"),
+            log_level: Some("trace".into()),
             ..Default::default()
         },
     )
@@ -58,7 +58,7 @@ fn log_level_round_trip() {
     update(
         &db,
         &SettingsPatch {
-            log_level: Some("error"),
+            log_level: Some("error".into()),
             ..Default::default()
         },
     )
@@ -72,7 +72,7 @@ fn test_url_round_trip() {
     update(
         &db,
         &SettingsPatch {
-            test_url: Some("http://example.com/health"),
+            test_url: Some("http://example.com/health".into()),
             ..Default::default()
         },
     )
@@ -83,7 +83,7 @@ fn test_url_round_trip() {
     let err = update(
         &db,
         &SettingsPatch {
-            test_url: Some("   "),
+            test_url: Some("   ".into()),
             ..Default::default()
         },
     )
@@ -164,7 +164,7 @@ fn both_connection_modes_at_once_are_rejected_without_a_partial_write() {
         &SettingsPatch {
             tun_mode: Some(true),
             system_proxy: Some(true),
-            language: Some("ru"),
+            language: Some("ru".into()),
             ..Default::default()
         },
     )
@@ -242,7 +242,7 @@ fn update_only_touches_provided_fields() {
     update(
         &db,
         &SettingsPatch {
-            theme: Some("kanagawa-wave"),
+            theme: Some("kanagawa-wave".into()),
             ..Default::default()
         },
     )
@@ -261,7 +261,7 @@ fn update_rejects_an_invalid_language_via_the_check_constraint() {
     let err = update(
         &db,
         &SettingsPatch {
-            language: Some("fr"),
+            language: Some("fr".into()),
             ..Default::default()
         },
     )

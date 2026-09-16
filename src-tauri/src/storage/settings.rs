@@ -1,4 +1,5 @@
 use rusqlite::params;
+use serde::Deserialize;
 
 use super::models::Settings;
 use super::{Db, StorageError};
@@ -31,26 +32,34 @@ pub fn get(db: &Db) -> Result<Settings, StorageError> {
     .map_err(StorageError::from)
 }
 
-#[derive(Default)]
-pub struct SettingsPatch<'a> {
-    pub theme: Option<&'a str>,
-    pub language: Option<&'a str>,
+/// The settings a call means to change; everything left `None` keeps its
+/// stored value.
+///
+/// This is also what the `update_settings` command deserialises into. It
+/// used to have a twin in `commands.rs` that differed only in owning its
+/// strings, and adding a setting meant remembering to extend both and the
+/// thirteen-line mapping between them.
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct SettingsPatch {
+    pub theme: Option<String>,
+    pub language: Option<String>,
     pub startup: Option<bool>,
     pub tun_mode: Option<bool>,
     pub system_proxy: Option<bool>,
     pub auto_connect: Option<bool>,
     pub geo_lookup: Option<bool>,
-    pub tun_interface: Option<&'a str>,
+    pub tun_interface: Option<String>,
     pub auto_update_subscriptions: Option<bool>,
-    pub subscription_update_interval: Option<&'a str>,
+    pub subscription_update_interval: Option<String>,
     pub custom_subscription_update_minutes: Option<i64>,
-    pub group_sort: Option<&'a str>,
-    pub log_level: Option<&'a str>,
-    pub test_url: Option<&'a str>,
+    pub group_sort: Option<String>,
+    pub log_level: Option<String>,
+    pub test_url: Option<String>,
 }
 
 pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
-    if let Some(url) = patch.test_url {
+    if let Some(url) = &patch.test_url {
         if url.trim().is_empty() {
             return Err(StorageError::InvalidInput(
                 "test url cannot be empty".into(),
@@ -90,20 +99,20 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             test_url = COALESCE(?14, test_url)
          WHERE id = 1",
         params![
-            patch.theme,
-            patch.language,
+            patch.theme.as_deref(),
+            patch.language.as_deref(),
             patch.startup.map(|v| v as i64),
             tun_mode.map(|v| v as i64),
             system_proxy.map(|v| v as i64),
             patch.auto_connect.map(|v| v as i64),
             patch.geo_lookup.map(|v| v as i64),
-            patch.tun_interface,
+            patch.tun_interface.as_deref(),
             patch.auto_update_subscriptions.map(|v| v as i64),
-            patch.subscription_update_interval,
+            patch.subscription_update_interval.as_deref(),
             patch.custom_subscription_update_minutes,
-            patch.group_sort,
-            patch.log_level,
-            patch.test_url.map(str::trim),
+            patch.group_sort.as_deref(),
+            patch.log_level.as_deref(),
+            patch.test_url.as_deref().map(str::trim),
         ],
     )?;
     Ok(())
