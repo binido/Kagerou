@@ -171,6 +171,7 @@ export interface SettingsState {
 
 export interface KagerouStore {
   hydrated: boolean
+  hydrateError: { message: string; dataDir: string } | null
   sidebarCollapsed: boolean
   connected: boolean
   activeProfileId: string

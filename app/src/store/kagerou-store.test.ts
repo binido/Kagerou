@@ -9,6 +9,7 @@ import { persistThemeId } from '@/themes/runtime'
 
 const api = vi.hoisted(() => ({
   getAppState: vi.fn(),
+  appDataDir: vi.fn(),
   checkForUpdate: vi.fn(),
   connect: vi.fn(),
   disconnect: vi.fn(),
@@ -106,6 +107,7 @@ beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset())
   vi.mocked(toast.error).mockClear()
   api.getAppState.mockResolvedValue(emptySnapshot)
+  api.appDataDir.mockResolvedValue('/data/kagerou')
   api.checkForUpdate.mockResolvedValue(null)
   api.onConnectionChanged.mockResolvedValue(() => {})
   api.onTraffic.mockResolvedValue(() => {})
@@ -148,6 +150,25 @@ describe('hydrate', () => {
     await useKagerouStore.getState().hydrate()
 
     expect(useKagerouStore.getState().connected).toBe(true)
+  })
+
+  it('flips hydrated with an error to show when the snapshot fails, so the window is never left blank', async () => {
+    api.getAppState.mockRejectedValue('database is locked')
+
+    await useKagerouStore.getState().hydrate()
+
+    const state = useKagerouStore.getState()
+    expect(state.hydrated).toBe(true)
+    expect(state.hydrateError).toEqual({ dataDir: '/data/kagerou', message: 'database is locked' })
+  })
+
+  it('still reports the failure when the data directory cannot be read either', async () => {
+    api.getAppState.mockRejectedValue('database is locked')
+    api.appDataDir.mockRejectedValue(new Error('no ipc'))
+
+    await useKagerouStore.getState().hydrate()
+
+    expect(useKagerouStore.getState().hydrateError).toEqual({ dataDir: '', message: 'database is locked' })
   })
 
   it('subscribes to backend events exactly once even across repeated hydrate calls', async () => {
