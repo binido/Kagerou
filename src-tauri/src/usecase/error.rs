@@ -8,12 +8,12 @@
 
 use serde::Serialize;
 
-use crate::geo::GeoError;
-use crate::import::ImportError;
+use crate::net::geo::GeoError;
 use crate::singbox::{ConfigError, ProcessError};
 use crate::storage::StorageError;
 use crate::subscription::fetch::FetchError;
 use crate::subscription::SubscriptionError;
+use crate::usecase::import::ImportError;
 
 use super::core::CoreError;
 use super::subscriptions::SubscriptionsError;

@@ -16,7 +16,7 @@ use super::error::{AppError, ErrorCode};
 use super::events::{AppEvent, Events, TestFinished, TestProgress};
 use crate::app_state::RuntimePaths;
 use crate::clash_api::ClashApiClient;
-use crate::probe;
+use crate::net::probe;
 use crate::singbox::{SidecarLauncher, Supervisor};
 use crate::storage::models::TestOutcome;
 use crate::storage::{profiles, settings, Db};

@@ -4,17 +4,17 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
 use crate::app_state::AppState;
-use crate::geo;
-use crate::import::{self, ImportOutcome};
+use crate::net::geo;
+use crate::net::updates;
 use crate::singbox;
 use crate::storage::models::{
     NewProfileGroup, NewRoutingRule, Profile, ProfileGroup, RoutingPreset, RoutingRule, Settings,
     Source, TestResult,
 };
 use crate::storage::{groups, profiles, routing, settings, sources};
-use crate::updates;
 use crate::usecase::connection;
 use crate::usecase::error::{AppError, ErrorCode};
+use crate::usecase::import::{self, ImportOutcome};
 use crate::usecase::subscriptions;
 use crate::usecase::testing;
 

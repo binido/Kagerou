@@ -8,11 +8,11 @@ use std::collections::HashMap;
 
 use thiserror::Error;
 
-use crate::import::{self, ImportError, ImportOutcome, Pasted};
 use crate::storage::{groups, profiles, sources, Db, StorageError};
 use crate::subscription::fetch::{self, FetchError};
 use crate::subscription::model::ParsedOutbound;
 use crate::subscription::{parse_subscription, SubscriptionError};
+use crate::usecase::import::{self, ImportError, ImportOutcome, Pasted};
 
 #[derive(Debug, Error)]
 pub enum SubscriptionsError {

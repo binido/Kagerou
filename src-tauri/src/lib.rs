@@ -1,15 +1,12 @@
 pub mod app_state;
 pub mod clash_api;
 pub mod commands;
-pub mod geo;
-pub mod import;
+pub mod net;
 pub mod privilege;
-pub mod probe;
 pub mod singbox;
 pub mod storage;
 pub mod subscription;
 pub mod tray;
-pub mod updates;
 pub mod usecase;
 
 use tauri::{Manager, WindowEvent};
