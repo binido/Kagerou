@@ -922,7 +922,7 @@ a desktop application.
   Verify: in a built bundle, not `tauri dev`, click both links and watch the
   system browser open. **Good first issue.**
 
-- [ ] **The interface selects like a web page.**
+- [x] **The interface selects like a web page.**
   `app/src/index.css:90-99`.
 
   `getComputedStyle(document.body).userSelect` returns `auto`, so dragging
@@ -955,7 +955,7 @@ a desktop application.
   Verify: drag across the groups page and select nothing; drag across a log
   line and select the message. **Good first issue.**
 
-- [ ] **The WebView's own context menu is reachable.**
+- [x] **The WebView's own context menu is reachable.**
 
   No `contextmenu` handler anywhere in the frontend, so right-clicking opens
   the platform WebView's menu — reload, back, inspect, depending on the

@@ -28,7 +28,7 @@ function App() {
   if (hydrateError) {
     return (
       <main className="flex min-h-dvh items-center justify-center p-8">
-        <div className="max-w-md space-y-3" role="alert">
+        <div className="max-w-md space-y-3" data-selectable role="alert">
           <h1 className="type-display text-[20px] leading-none text-primary">{t('startup.title')}</h1>
           <p className="text-[13px] leading-5 text-bad">{hydrateError.message}</p>
           <p className="type-meta">{hydrateError.dataDir ? t('startup.recover', { dir: hydrateError.dataDir }) : t('startup.recoverNoDir')}</p>
