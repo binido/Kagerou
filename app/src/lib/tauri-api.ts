@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { appDataDir } from '@tauri-apps/api/path'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
 
 import type {
@@ -55,6 +56,7 @@ export type TrafficEvent =
  * tests) can depend on this instead of scattering string literals. */
 export const kagerouApi = {
   getAppState: () => invoke<AppSnapshot>('get_app_state'),
+  appDataDir: () => appDataDir(),
   checkForUpdate: () => invoke<UpdateInfo | null>('check_for_update'),
   connect: () => invoke<void>('connect'),
   disconnect: () => invoke<void>('disconnect'),

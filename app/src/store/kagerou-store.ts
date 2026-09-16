@@ -123,6 +123,7 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
 
   return {
     hydrated: false,
+    hydrateError: null,
     sidebarCollapsed: false,
     connected: false,
     activeProfileId: '',
@@ -161,7 +162,16 @@ export const useKagerouStore = create<KagerouStore>((set, get) => {
 
     hydrate: async () => {
       subscribeToBackendEvents()
-      const snapshot = await kagerouApi.getAppState()
+      let snapshot
+      try {
+        snapshot = await kagerouApi.getAppState()
+      } catch (error) {
+        // Without this the window paints nothing at all: App renders null until
+        // `hydrated` flips, and the rejection lands in a console nobody opens.
+        const dataDir = await kagerouApi.appDataDir().catch(() => '')
+        set({ hydrated: true, hydrateError: { dataDir, message: backendErrorMessage(error, i18n.t('common:feedback.startupFailed')) } })
+        return
+      }
       set({ ...applySnapshot(snapshot), hydrated: true })
       // Deliberately not awaited: a slow or unreachable GitHub must not hold
       // up the first paint, and the command never rejects.

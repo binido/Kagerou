@@ -76,6 +76,12 @@
     "groupTestClearFailed": "Could not clear the test results.",
     "deleteUnavailableFailed": "Could not delete the unavailable profiles.",
     "importFailed": "Could not add these VPNs.",
-    "subscriptionDeleteFailed": "Could not delete the subscription."
+    "subscriptionDeleteFailed": "Could not delete the subscription.",
+    "startupFailed": "Could not read the app data."
+  },
+  "startup": {
+    "title": "Kagerou could not start",
+    "recover": "Its data lives in {{dir}}. Deleting kagerou.sqlite3 there starts over with an empty app — the profiles and settings in it are lost.",
+    "recoverNoDir": "Deleting kagerou.sqlite3 from Kagerou's data folder starts over with an empty app — the profiles and settings in it are lost."
   }
 }

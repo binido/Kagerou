@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -13,7 +14,9 @@ import { useKagerouStore } from '@/store/kagerou-store'
 import { ThemeProvider } from '@/themes/ThemeProvider'
 
 function App() {
+  const { t } = useTranslation('common')
   const hydrated = useKagerouStore((state) => state.hydrated)
+  const hydrateError = useKagerouStore((state) => state.hydrateError)
   const hydrate = useKagerouStore((state) => state.hydrate)
 
   useEffect(() => {
@@ -21,6 +24,18 @@ function App() {
   }, [hydrate])
 
   if (!hydrated) return null
+
+  if (hydrateError) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center p-8">
+        <div className="max-w-md space-y-3" role="alert">
+          <h1 className="type-display text-[20px] leading-none text-primary">{t('startup.title')}</h1>
+          <p className="text-[13px] leading-5 text-bad">{hydrateError.message}</p>
+          <p className="type-meta">{hydrateError.dataDir ? t('startup.recover', { dir: hydrateError.dataDir }) : t('startup.recoverNoDir')}</p>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <ThemeProvider>

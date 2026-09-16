@@ -321,7 +321,7 @@ user needs to know about.
   **Discuss first** — this changes how every light theme looks, and the call
   between "darken the accents" and "swap the ramp only" is a design decision.
 
-- [ ] **A backend error leaves a permanently blank window.**
+- [x] **A backend error leaves a permanently blank window.**
   `app/src/App.tsx:20-25`, `app/src/store/kagerou-store.ts:134-141`.
 
   `hydrate()` awaits `get_app_state` with no `catch`, and `App` returns
