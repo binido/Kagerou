@@ -18,6 +18,7 @@ use crate::storage::models::{
 use crate::storage::{groups, profiles, routing, settings, sources, Db};
 use crate::subscription;
 use crate::updates;
+use crate::usecase::core::{self, CoreSpec};
 
 fn to_err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -130,34 +131,12 @@ fn to_dashboard_event(
 /// the next connection.
 pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Result<(), String> {
     let stored = settings::get(&state.db).map_err(to_err)?;
-    let tun = stored.tun_mode;
-    let all_profiles = profiles::list_all(&state.db).map_err(to_err)?;
-    let routing_rules = routing::list_rules(&state.db).map_err(to_err)?;
-    let active_profile_id = settings::get_active_profile_id(&state.db)
-        .map_err(to_err)?
-        .unwrap_or_default();
-
-    let config = singbox::generate(&singbox::ConfigInput {
-        profiles: &all_profiles,
-        active_profile_id: &active_profile_id,
-        routing_rules: &routing_rules,
-        mixed_listen_port: state.paths.mixed_listen_port,
-        clash_api_listen: &state.paths.clash_api_listen,
-        log_level: &stored.log_level,
-        tun,
-        system_proxy: stored.system_proxy,
-    })
+    core::start(
+        &state.db,
+        &mut state.supervisor.lock().unwrap(),
+        &CoreSpec::connection(&state.paths, &stored),
+    )
     .map_err(to_err)?;
-
-    let config_bytes = serde_json::to_vec_pretty(&config).map_err(to_err)?;
-    std::fs::write(&state.paths.config_path, config_bytes).map_err(to_err)?;
-
-    state
-        .supervisor
-        .lock()
-        .unwrap()
-        .start(&state.paths.config_path, tun)
-        .map_err(to_err)?;
 
     let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
     *state.clash.lock().unwrap() = Some(clash.clone());
@@ -574,40 +553,13 @@ async fn clash_for_test(
         return Ok(clash);
     }
 
-    let all_profiles = profiles::list_all(&state.db).map_err(to_err)?;
-    if all_profiles.is_empty() {
-        return Err("nothing to test: no profiles".to_string());
-    }
-    let routing_rules = routing::list_rules(&state.db).map_err(to_err)?;
     let stored = settings::get(&state.db).map_err(to_err)?;
-    let active_profile_id = settings::get_active_profile_id(&state.db)
-        .map_err(to_err)?
-        .unwrap_or_default();
-
-    let config = singbox::generate(&singbox::ConfigInput {
-        profiles: &all_profiles,
-        active_profile_id: &active_profile_id,
-        routing_rules: &routing_rules,
-        mixed_listen_port: state.paths.test_mixed_listen_port,
-        clash_api_listen: &state.paths.test_clash_api_listen,
-        log_level: &stored.log_level,
-        // Never for a test core: creating a TUN interface asks for a
-        // password and rewrites the machine's routing, which is not
-        // something a delay test is allowed to do.
-        tun: false,
-        // Nor the OS proxy: that belongs to the main core.
-        system_proxy: false,
-    })
+    core::start(
+        &state.db,
+        &mut state.test_supervisor.lock().unwrap(),
+        &CoreSpec::test(&state.paths, &stored),
+    )
     .map_err(to_err)?;
-    let config_bytes = serde_json::to_vec_pretty(&config).map_err(to_err)?;
-    std::fs::write(&state.paths.test_config_path, config_bytes).map_err(to_err)?;
-
-    state
-        .test_supervisor
-        .lock()
-        .unwrap()
-        .start(&state.paths.test_config_path, false)
-        .map_err(to_err)?;
 
     let clash = ClashApiClient::new(format!("http://{}", state.paths.test_clash_api_listen));
     // The API is not up the instant the process is: poll until it answers,

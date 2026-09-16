@@ -1,4 +1,3 @@
-
 use super::{test_core_is_idle, to_dashboard_event, DashboardTrafficEvent};
 use crate::clash_api::model::{
     ConnectionInfo, ConnectionMetadata, ConnectionsResponse, TrafficSample,

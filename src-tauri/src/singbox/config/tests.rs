@@ -1,4 +1,3 @@
-
 use super::*;
 use crate::storage::models::{Protocol, TestResult, Tone};
 

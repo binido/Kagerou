@@ -1,4 +1,3 @@
-
 /// A link that carries only `host=` still expects that name in the TLS
 /// handshake. Losing it makes sing-box offer the server address instead,
 /// which is usually a bare IP and gets the connection rejected.

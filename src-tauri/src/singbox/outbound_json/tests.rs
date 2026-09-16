@@ -1,4 +1,3 @@
-
 use super::*;
 use crate::subscription::model::{Hysteria2Outbound, VlessOutbound};
 

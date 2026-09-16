@@ -1,4 +1,3 @@
-
 use super::*;
 
 fn kind(raw: &str) -> MatchKind {

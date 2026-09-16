@@ -10,6 +10,7 @@ pub mod storage;
 pub mod subscription;
 pub mod tray;
 pub mod updates;
+pub mod usecase;
 
 use tauri::{Manager, WindowEvent};
 use tauri_plugin_autostart::MacosLauncher;

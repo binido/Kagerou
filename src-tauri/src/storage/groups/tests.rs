@@ -1,4 +1,3 @@
-
 use super::*;
 
 fn group(id: &str, label: &str, kind: &str) -> NewProfileGroup {

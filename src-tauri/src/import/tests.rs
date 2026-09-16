@@ -1,4 +1,3 @@
-
 use super::*;
 
 const TOKYO: &str = "vless://uuid@tokyo.example:443?security=tls&sni=tokyo.example#Tokyo";

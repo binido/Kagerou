@@ -52,6 +52,19 @@ pub struct ChildHandle {
 }
 
 impl ChildHandle {
+    /// The only way to build one: `kill` is private, so a `Launcher` living
+    /// outside this module (the fake one the tests use) has to come through
+    /// here.
+    pub fn new(
+        events: Receiver<ProcessEvent>,
+        kill: impl FnMut() -> Result<(), ProcessError> + Send + 'static,
+    ) -> Self {
+        Self {
+            events,
+            kill: Box::new(kill),
+        }
+    }
+
     /// Stops the process and waits until it is actually gone.
     ///
     /// The waiting is the point: the kill itself is carried out by the
@@ -302,20 +315,17 @@ impl Launcher for SidecarLauncher {
             let _ = tx.send(ProcessEvent::Exited { code });
         });
 
-        Ok(ChildHandle {
-            events: rx,
-            kill: Box::new(move || {
-                // For an elevated launch this is the stop signal that
-                // actually lands: killing our own child only reaches the
-                // osascript/pkexec wrapper, while the root sing-box under
-                // it is watching this file. Unprivileged it just retires
-                // the record, so a later startup has nothing to reap.
-                let _ = std::fs::remove_file(&run_file);
-                kill_tx
-                    .send(())
-                    .map_err(|e| ProcessError::KillFailed(e.to_string()))
-            }),
-        })
+        Ok(ChildHandle::new(rx, move || {
+            // For an elevated launch this is the stop signal that
+            // actually lands: killing our own child only reaches the
+            // osascript/pkexec wrapper, while the root sing-box under
+            // it is watching this file. Unprivileged it just retires
+            // the record, so a later startup has nothing to reap.
+            let _ = std::fs::remove_file(&run_file);
+            kill_tx
+                .send(())
+                .map_err(|e| ProcessError::KillFailed(e.to_string()))
+        }))
     }
 }
 
