@@ -469,7 +469,7 @@ user needs to know about.
   nothing. The delete button added alongside edit would otherwise have made
   the nesting worse, not better.
 
-- [ ] **Fonts are fetched from Google at every launch.**
+- [x] **Fonts are fetched from Google at every launch.**
   `app/src/index.css:1`.
 
   ```css
