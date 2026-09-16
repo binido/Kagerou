@@ -5,3 +5,4 @@
 //! reached without an `AppHandle` and so went untested.
 
 pub mod core;
+pub mod events;

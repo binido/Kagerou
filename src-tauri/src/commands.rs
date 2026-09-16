@@ -1,11 +1,10 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Manager, State};
 use tokio::sync::watch;
 
 use crate::app_state::AppState;
-use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
 use crate::geo;
 use crate::import::{self, ImportOutcome, Pasted};
@@ -19,6 +18,7 @@ use crate::storage::{groups, profiles, routing, settings, sources, Db};
 use crate::subscription;
 use crate::updates;
 use crate::usecase::core::{self, CoreSpec};
+use crate::usecase::events::{AppEvent, DashboardTrafficEvent, Events, TestFinished, TestProgress};
 
 fn to_err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -86,45 +86,6 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
 // Connection lifecycle
 // ---------------------------------------------------------------------
 
-/// What the dashboard actually receives on `kagerou://traffic`: the raw
-/// `/traffic` sample plus, when the Clash API answered, the session-wide
-/// byte totals from `/connections`. Backend-sourced totals survive a
-/// frontend reload mid-session (sing-box keeps counting while the WebView
-/// is gone); a client-side accumulator would not. A failed `/connections`
-/// fetch yields `None` fields and the UI keeps its previous totals — one
-/// API hiccup must not blank the panel.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
-pub enum DashboardTrafficEvent {
-    #[serde(rename_all = "camelCase")]
-    Sample {
-        up: u64,
-        down: u64,
-        upload_total: Option<u64>,
-        download_total: Option<u64>,
-        active_connections: Option<usize>,
-    },
-    Disconnected,
-    Reconnecting,
-}
-
-fn to_dashboard_event(
-    event: &TrafficEvent,
-    totals: Option<&ConnectionsResponse>,
-) -> DashboardTrafficEvent {
-    match event {
-        TrafficEvent::Sample(sample) => DashboardTrafficEvent::Sample {
-            up: sample.up,
-            down: sample.down,
-            upload_total: totals.map(|t| t.upload_total),
-            download_total: totals.map(|t| t.download_total),
-            active_connections: totals.map(|t| t.connections.len()),
-        },
-        TrafficEvent::Disconnected => DashboardTrafficEvent::Disconnected,
-        TrafficEvent::Reconnecting => DashboardTrafficEvent::Reconnecting,
-    }
-}
-
 /// The body of the `connect` command, shared with the startup auto-connect
 /// so the two can never drift. TUN and the log level are stored preferences,
 /// not per-call arguments: they are toggled in settings, and take effect on
@@ -155,9 +116,9 @@ pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Resul
             } else {
                 None
             };
-            let _ = traffic_app.emit(
-                "kagerou://traffic",
-                to_dashboard_event(&event, totals.as_ref()),
+            Events::emit(
+                &traffic_app,
+                AppEvent::Traffic(DashboardTrafficEvent::new(&event, totals.as_ref())),
             );
         }
     });
@@ -183,14 +144,14 @@ pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Resul
                 &logs[..]
             };
             for line in new_lines {
-                let _ = log_app.emit("kagerou://log", line);
+                Events::emit(&log_app, AppEvent::Log(line.clone()));
             }
             forwarded = logs.len();
             if let singbox::Status::Crashed { exit_code } = status {
                 *state.connected_since.lock().unwrap() = None;
-                let _ = log_app.emit("kagerou://connection-changed", false);
+                Events::emit(&log_app, AppEvent::ConnectionChanged(false));
                 crate::tray::refresh(&log_app, false);
-                let _ = log_app.emit("kagerou://crashed", exit_code);
+                Events::emit(&log_app, AppEvent::Crashed { exit_code });
                 break;
             }
             if matches!(status, singbox::Status::Stopped) {
@@ -200,7 +161,7 @@ pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Resul
     });
 
     *state.connected_since.lock().unwrap() = Some(SystemTime::now());
-    let _ = app.emit("kagerou://connection-changed", true);
+    Events::emit(app, AppEvent::ConnectionChanged(true));
     crate::tray::refresh(app, true);
     Ok(())
 }
@@ -279,7 +240,7 @@ pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<()
     *state.clash.lock().unwrap() = None;
     *state.connected_since.lock().unwrap() = None;
     state.supervisor.lock().unwrap().stop().map_err(to_err)?;
-    let _ = app.emit("kagerou://connection-changed", false);
+    Events::emit(&app, AppEvent::ConnectionChanged(false));
     crate::tray::refresh(&app, false);
     Ok(())
 }
@@ -316,24 +277,6 @@ pub fn rename_profile(id: String, name: String, state: State<AppState>) -> Resul
 #[tauri::command]
 pub fn delete_profile(id: String, state: State<AppState>) -> Result<(), String> {
     profiles::delete(&state.db, &id).map_err(to_err)
-}
-
-/// One profile's result, as a group run produces them.
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TestProgress {
-    pub profile_id: String,
-    pub result: TestResult,
-    pub done: usize,
-    pub total: usize,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TestFinished {
-    pub done: usize,
-    pub total: usize,
-    pub cancelled: bool,
 }
 
 /// Tests every profile in `group_id`, or the whole app when it is `None`,
@@ -400,25 +343,25 @@ pub async fn start_group_test(
                 let _ = profiles::set_test_result(&state.db, &profile_id, &result);
             }
             done += 1;
-            let _ = run_app.emit(
-                "kagerou://test-progress",
-                TestProgress {
+            Events::emit(
+                &run_app,
+                AppEvent::TestProgress(TestProgress {
                     profile_id,
                     result,
                     done,
                     total,
-                },
+                }),
             );
         }
 
         *state.test_run_cancel.lock().unwrap() = None;
-        let _ = run_app.emit(
-            "kagerou://test-finished",
-            TestFinished {
+        Events::emit(
+            &run_app,
+            AppEvent::TestFinished(TestFinished {
                 done,
                 total,
                 cancelled,
-            },
+            }),
         );
     });
 
