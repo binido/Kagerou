@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toast } from 'sonner'
 
+import en from '@/locales/en/common.json'
 import type { AppSnapshot, TrafficEvent } from '@/lib/tauri-api'
 import type { ExitLocation, ImportOutcome, Profile, ProfileGroup, RoutingRule, TestResult } from '@/types/kagerou'
 import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
@@ -153,22 +154,22 @@ describe('hydrate', () => {
   })
 
   it('flips hydrated with an error to show when the snapshot fails, so the window is never left blank', async () => {
-    api.getAppState.mockRejectedValue('database is locked')
+    api.getAppState.mockRejectedValue({ code: 'storage', detail: 'database is locked' })
 
     await useKagerouStore.getState().hydrate()
 
     const state = useKagerouStore.getState()
     expect(state.hydrated).toBe(true)
-    expect(state.hydrateError).toEqual({ dataDir: '/data/kagerou', message: 'database is locked' })
+    expect(state.hydrateError).toEqual({ dataDir: '/data/kagerou', message: en.errors.storage })
   })
 
   it('still reports the failure when the data directory cannot be read either', async () => {
-    api.getAppState.mockRejectedValue('database is locked')
+    api.getAppState.mockRejectedValue({ code: 'storage', detail: 'database is locked' })
     api.appDataDir.mockRejectedValue(new Error('no ipc'))
 
     await useKagerouStore.getState().hydrate()
 
-    expect(useKagerouStore.getState().hydrateError).toEqual({ dataDir: '', message: 'database is locked' })
+    expect(useKagerouStore.getState().hydrateError).toEqual({ dataDir: '', message: en.errors.storage })
   })
 
   it('subscribes to backend events exactly once even across repeated hydrate calls', async () => {
@@ -258,9 +259,9 @@ describe('toggleConnection', () => {
 
   it('does not throw when the backend call rejects', async () => {
     useKagerouStore.setState({ connected: false })
-    api.connect.mockRejectedValue(new Error('sing-box not running'))
+    api.connect.mockRejectedValue({ code: 'coreFailed', detail: 'sing-box not running' })
     await expect(useKagerouStore.getState().toggleConnection()).resolves.toBeUndefined()
-    expect(toast.error).toHaveBeenCalledWith('sing-box not running')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.coreFailed)
   })
 })
 
@@ -289,12 +290,12 @@ describe('selectProfile', () => {
 
   it('re-syncs from the backend if the switch fails server-side', async () => {
     useKagerouStore.setState({ profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b' })] })
-    api.selectProfile.mockRejectedValue(new Error('not found'))
+    api.selectProfile.mockRejectedValue({ code: 'notFound', detail: 'not found' })
     api.getAppState.mockResolvedValue({ ...emptySnapshot, activeProfileId: 'a', profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b' })] })
 
     await useKagerouStore.getState().selectProfile('b')
 
-    expect(toast.error).toHaveBeenCalledWith('not found')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.notFound)
     expect(api.getAppState).toHaveBeenCalled()
     expect(useKagerouStore.getState().activeProfileId).toBe('a')
   })
@@ -394,10 +395,10 @@ describe('group test run', () => {
   })
 
   it('clears the run when the backend refuses to start one', async () => {
-    api.startGroupTest.mockRejectedValue('a test run is already in progress')
+    api.startGroupTest.mockRejectedValue({ code: 'testRunInProgress', detail: 'already running' })
     await useKagerouStore.getState().startGroupTest('g1')
     expect(useKagerouStore.getState().testRun).toBeNull()
-    expect(toast.error).toHaveBeenCalledWith('a test run is already in progress')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.testRunInProgress)
   })
 
   it('a progress event advances the count and applies the profile result', async () => {
@@ -478,12 +479,12 @@ describe('clearGroupTestResults', () => {
   it('keeps state when the backend call fails', async () => {
     const original = [profile({ id: 'p1' })]
     useKagerouStore.setState({ profiles: original })
-    api.clearGroupTestResults.mockRejectedValue(new Error('boom'))
+    api.clearGroupTestResults.mockRejectedValue({ code: 'storage', detail: 'boom' })
 
     await useKagerouStore.getState().clearGroupTestResults('g1')
 
     expect(useKagerouStore.getState().profiles).toEqual(original)
-    expect(toast.error).toHaveBeenCalledWith('boom')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 })
 
@@ -502,13 +503,13 @@ describe('deleteUnavailableProfiles', () => {
   it('returns 0 and keeps state when the backend call fails', async () => {
     const original = [profile({ id: 'p1' })]
     useKagerouStore.setState({ profiles: original })
-    api.deleteUnavailableProfiles.mockRejectedValue(new Error('boom'))
+    api.deleteUnavailableProfiles.mockRejectedValue({ code: 'storage', detail: 'boom' })
 
     const deleted = await useKagerouStore.getState().deleteUnavailableProfiles('g1')
 
     expect(deleted).toBe(0)
     expect(useKagerouStore.getState().profiles).toEqual(original)
-    expect(toast.error).toHaveBeenCalledWith('boom')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 })
 
@@ -547,41 +548,41 @@ describe('backend failure reporting', () => {
   })
 
   it('reports a failed profile deletion', async () => {
-    api.deleteProfile.mockRejectedValue('the profile is in use')
+    api.deleteProfile.mockRejectedValue({ code: 'activeProfileInUse', detail: 'in use' })
     await useKagerouStore.getState().deleteProfile('p1')
-    expect(toast.error).toHaveBeenCalledWith('the profile is in use')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.activeProfileInUse)
   })
 
   it('reports a failed test cancellation', async () => {
-    api.cancelGroupTest.mockRejectedValue('no test run')
+    api.cancelGroupTest.mockRejectedValue({ code: 'storage', detail: 'no test run' })
     await useKagerouStore.getState().cancelGroupTest()
-    expect(toast.error).toHaveBeenCalledWith('no test run')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 
   it('rolls the group panel back from the snapshot when the open state fails to persist', async () => {
     const stored: ProfileGroup[] = [{ id: 'g1', label: 'G1', kind: 'custom', profileIds: [], open: false }]
     useKagerouStore.setState({ profileGroups: [{ ...stored[0] }] })
-    api.setProfileGroupOpen.mockRejectedValue(new Error('db locked'))
+    api.setProfileGroupOpen.mockRejectedValue({ code: 'storage', detail: 'db locked' })
     api.getAppState.mockResolvedValue({ ...emptySnapshot, profileGroups: stored })
 
     useKagerouStore.getState().setProfileGroupOpen('g1', true)
     expect(useKagerouStore.getState().profileGroups[0].open).toBe(true)
 
     await vi.waitFor(() => expect(useKagerouStore.getState().profileGroups[0].open).toBe(false))
-    expect(toast.error).toHaveBeenCalledWith('db locked')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 
   it('rolls the preset toggle back from the snapshot when persistence fails', async () => {
     const stored = [{ id: 'bypass-lan', label: 'Bypass LAN', description: 'Private ranges go direct', enabled: false }]
     useKagerouStore.setState({ routingPresets: [{ ...stored[0] }] })
-    api.setPreset.mockRejectedValue(new Error('db locked'))
+    api.setPreset.mockRejectedValue({ code: 'storage', detail: 'db locked' })
     api.getAppState.mockResolvedValue({ ...emptySnapshot, routingPresets: stored })
 
     useKagerouStore.getState().setPreset('bypass-lan', true)
     expect(useKagerouStore.getState().routingPresets[0].enabled).toBe(true)
 
     await vi.waitFor(() => expect(useKagerouStore.getState().routingPresets[0].enabled).toBe(false))
-    expect(toast.error).toHaveBeenCalledWith('db locked')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 
   it('reverts the rule selection from the snapshot when the backend refuses it', async () => {
@@ -590,20 +591,20 @@ describe('backend failure reporting', () => {
       { id: 'r2', match: 'b.com', outbound: 'Proxy', selected: false },
     ]
     useKagerouStore.setState({ routingRules: stored.map((rule) => ({ ...rule })) })
-    api.selectRule.mockRejectedValue(new Error('db locked'))
+    api.selectRule.mockRejectedValue({ code: 'storage', detail: 'db locked' })
     api.getAppState.mockResolvedValue({ ...emptySnapshot, routingRules: stored })
 
     useKagerouStore.getState().selectRule('r2')
     expect(useKagerouStore.getState().routingRules.find((rule) => rule.id === 'r2')?.selected).toBe(true)
 
     await vi.waitFor(() => expect(useKagerouStore.getState().routingRules.find((rule) => rule.id === 'r1')?.selected).toBe(true))
-    expect(toast.error).toHaveBeenCalledWith('db locked')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 
   it('rolls the rule and the pending-changes flag back when the update fails to persist', async () => {
     const stored: RoutingRule[] = [{ id: 'r1', match: 'a.com', outbound: 'Direct', selected: false }]
     useKagerouStore.setState({ routingRules: stored.map((rule) => ({ ...rule })), connected: true, rulesChangedSinceConnect: false })
-    api.updateRule.mockRejectedValue(new Error('db locked'))
+    api.updateRule.mockRejectedValue({ code: 'storage', detail: 'db locked' })
     api.getAppState.mockResolvedValue({ ...emptySnapshot, routingRules: stored, connected: true })
 
     useKagerouStore.getState().updateRule('r1', { outbound: 'Block' })
@@ -612,12 +613,12 @@ describe('backend failure reporting', () => {
 
     await vi.waitFor(() => expect(useKagerouStore.getState().rulesChangedSinceConnect).toBe(false))
     expect(useKagerouStore.getState().routingRules[0].outbound).toBe('Direct')
-    expect(toast.error).toHaveBeenCalledWith('db locked')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 
   it('reverts the theme and the persisted id when the backend refuses the change', async () => {
     useKagerouStore.setState({ settings: { ...initialState.settings, theme: 'catppuccin-mocha' } })
-    api.setTheme.mockRejectedValue(new Error('db locked'))
+    api.setTheme.mockRejectedValue({ code: 'storage', detail: 'db locked' })
     api.getAppState.mockResolvedValue({ ...emptySnapshot, settings: { ...emptySnapshot.settings, theme: 'catppuccin-mocha' } })
 
     useKagerouStore.getState().setTheme('kanagawa-wave')
@@ -625,19 +626,19 @@ describe('backend failure reporting', () => {
 
     await vi.waitFor(() => expect(useKagerouStore.getState().settings.theme).toBe('catppuccin-mocha'))
     expect(persistThemeId).toHaveBeenLastCalledWith('catppuccin-mocha')
-    expect(toast.error).toHaveBeenCalledWith('db locked')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 
   it('rolls the settings back from the snapshot when persistence fails', async () => {
     useKagerouStore.setState({ settings: { ...initialState.settings, testUrl: 'http://changed.example/204' } })
-    api.updateSettings.mockRejectedValue(new Error('db locked'))
+    api.updateSettings.mockRejectedValue({ code: 'storage', detail: 'db locked' })
     api.getAppState.mockResolvedValue(emptySnapshot)
 
     useKagerouStore.getState().updateSettings({ testUrl: 'http://changed.example/204' })
     expect(useKagerouStore.getState().settings.testUrl).toBe('http://changed.example/204')
 
     await vi.waitFor(() => expect(useKagerouStore.getState().settings.testUrl).toBe('http://www.gstatic.com/generate_204'))
-    expect(toast.error).toHaveBeenCalledWith('db locked')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.storage)
   })
 })
 
@@ -901,11 +902,11 @@ describe('importing pasted text', () => {
   })
 
   it('hands the text back with the backend reason when the import fails', async () => {
-    api.importFromText.mockRejectedValue('could not recognize subscription format')
+    api.importFromText.mockRejectedValue({ code: 'subscriptionInvalid', detail: 'unrecognized format' })
 
     const attempt = await useKagerouStore.getState().importText('garbage')
 
-    expect(attempt).toEqual({ status: 'failed', text: 'garbage', error: 'could not recognize subscription format' })
+    expect(attempt).toEqual({ status: 'failed', text: 'garbage', error: en.errors.subscriptionInvalid })
     expect(api.getAppState).not.toHaveBeenCalled()
     expect(toast.error).not.toHaveBeenCalled()
   })
@@ -962,12 +963,12 @@ describe('subscription actions', () => {
   it('deleteSubscription reports the backend reason and keeps the group', async () => {
     const group: ProfileGroup = { id: 'sub', label: 'Work', kind: 'subscription', profileIds: ['p1'], open: true, sourceId: 's1' }
     useKagerouStore.setState({ profileGroups: [group] })
-    api.deleteSubscription.mockRejectedValue('switch to a VPN outside this subscription or disconnect before deleting it')
+    api.deleteSubscription.mockRejectedValue({ code: 'activeProfileInUse', detail: 'switch away first' })
 
     const ok = await useKagerouStore.getState().deleteSubscription('sub')
 
     expect(ok).toBe(false)
-    expect(toast.error).toHaveBeenCalledWith('switch to a VPN outside this subscription or disconnect before deleting it')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.activeProfileInUse)
     expect(useKagerouStore.getState().profileGroups).toEqual([group])
   })
 })

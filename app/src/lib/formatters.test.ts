@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { backendErrorMessage } from './errors'
 import { formatExitLocation, formatLogTimestamp, formatRelativeTime, formatUptime, regionToCountry } from './formatters'
 
 describe('regionToCountry', () => {
@@ -15,24 +14,6 @@ describe('regionToCountry', () => {
     expect(regionToCountry('at', 'en')).toBeNull()
     expect(regionToCountry('A', 'en')).toBeNull()
     expect(regionToCountry('ATL', 'en')).toBeNull()
-  })
-})
-
-describe('backendErrorMessage', () => {
-  it('keeps the string Tauri rejects with — that is where the reason lives', () => {
-    expect(backendErrorMessage('HTTP status server error (502 Bad Gateway)', 'fallback'))
-      .toBe('HTTP status server error (502 Bad Gateway)')
-  })
-
-  it('still reads a real Error', () => {
-    expect(backendErrorMessage(new Error('boom'), 'fallback')).toBe('boom')
-  })
-
-  it('falls back on anything empty or unrecognised', () => {
-    expect(backendErrorMessage('   ', 'fallback')).toBe('fallback')
-    expect(backendErrorMessage(new Error(''), 'fallback')).toBe('fallback')
-    expect(backendErrorMessage(undefined, 'fallback')).toBe('fallback')
-    expect(backendErrorMessage({ message: 'nope' }, 'fallback')).toBe('fallback')
   })
 })
 

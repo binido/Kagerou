@@ -1,5 +1,6 @@
 use rusqlite::{params, OptionalExtension};
 
+use super::groups;
 use super::models::{NewProfile, Profile, Protocol, TestOutcome};
 use super::{Db, StorageError};
 
@@ -283,6 +284,71 @@ pub fn reorder(db: &Db, group_id: &str, ordered_ids: &[String]) -> Result<(), St
     }
     tx.commit()?;
     Ok(())
+}
+
+/// Which way a profile is being nudged within its group.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction {
+    Up,
+    Down,
+}
+
+impl std::str::FromStr for Direction {
+    type Err = StorageError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "up" => Ok(Self::Up),
+            "down" => Ok(Self::Down),
+            other => Err(StorageError::InvalidInput(format!(
+                "unknown direction: {other}"
+            ))),
+        }
+    }
+}
+
+/// Moves a profile one place within its own group. At the end it is already
+/// at, this does nothing: a list's first row has nowhere to go up to, and
+/// saying so is not worth an error.
+pub fn move_within_group(db: &Db, id: &str, direction: Direction) -> Result<(), StorageError> {
+    let profile = get(db, id)?;
+    let group = groups::get(db, &profile.group_id)?;
+    let index = group
+        .profile_ids
+        .iter()
+        .position(|candidate| candidate == id)
+        .ok_or(StorageError::NotFound)?;
+    let target = match direction {
+        Direction::Up => index.checked_sub(1),
+        Direction::Down => index
+            .checked_add(1)
+            .filter(|i| *i < group.profile_ids.len()),
+    };
+    let Some(target) = target else {
+        return Ok(());
+    };
+    let mut ordered = group.profile_ids;
+    ordered.swap(index, target);
+    reorder(db, &group.id, &ordered)
+}
+
+/// Lifts a profile out of its position and drops it where another one sits,
+/// shifting the rest along. Both have to be in the same group.
+pub fn move_before(db: &Db, from_id: &str, to_id: &str) -> Result<(), StorageError> {
+    let from = get(db, from_id)?;
+    let group = groups::get(db, &from.group_id)?;
+    let mut ordered = group.profile_ids;
+    let from_index = ordered
+        .iter()
+        .position(|c| c == from_id)
+        .ok_or(StorageError::NotFound)?;
+    let to_index = ordered
+        .iter()
+        .position(|c| c == to_id)
+        .ok_or(StorageError::NotFound)?;
+    let id = ordered.remove(from_index);
+    ordered.insert(to_index, id);
+    reorder(db, &group.id, &ordered)
 }
 
 #[cfg(test)]

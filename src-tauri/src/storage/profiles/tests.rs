@@ -455,3 +455,68 @@ fn reorder_rejects_an_id_from_a_different_group() {
     let err = reorder(&db, "default", &["p1".into(), "p2".into()]).unwrap_err();
     assert!(matches!(err, StorageError::InvalidInput(_)));
 }
+
+fn ordered_ids(db: &Db, group_id: &str) -> Vec<String> {
+    groups::get(db, group_id).unwrap().profile_ids
+}
+
+#[test]
+fn moving_up_swaps_a_profile_with_the_one_above_it() {
+    let db = seeded_db();
+    for id in ["p1", "p2", "p3"] {
+        insert(&db, &new_profile(id, "default")).unwrap();
+    }
+
+    move_within_group(&db, "p3", Direction::Up).unwrap();
+
+    assert_eq!(ordered_ids(&db, "default"), ["p1", "p3", "p2"]);
+}
+
+/// Pressing "move up" on the first row is what any list does: nothing. It
+/// used to be an error, which the interface then had to swallow.
+#[test]
+fn moving_past_either_end_changes_nothing_and_is_not_an_error() {
+    let db = seeded_db();
+    for id in ["p1", "p2"] {
+        insert(&db, &new_profile(id, "default")).unwrap();
+    }
+
+    move_within_group(&db, "p1", Direction::Up).unwrap();
+    move_within_group(&db, "p2", Direction::Down).unwrap();
+
+    assert_eq!(ordered_ids(&db, "default"), ["p1", "p2"]);
+}
+
+#[test]
+fn a_profile_dropped_onto_another_takes_its_place_and_shifts_the_rest() {
+    let db = seeded_db();
+    for id in ["p1", "p2", "p3", "p4"] {
+        insert(&db, &new_profile(id, "default")).unwrap();
+    }
+
+    move_before(&db, "p4", "p2").unwrap();
+
+    assert_eq!(ordered_ids(&db, "default"), ["p1", "p4", "p2", "p3"]);
+}
+
+#[test]
+fn a_drop_onto_a_profile_in_another_group_is_refused() {
+    let db = seeded_db();
+    insert(&db, &new_profile("p1", "default")).unwrap();
+    insert(&db, &new_profile("elsewhere", "custom")).unwrap();
+
+    assert!(matches!(
+        move_before(&db, "p1", "elsewhere"),
+        Err(StorageError::NotFound)
+    ));
+}
+
+#[test]
+fn only_up_and_down_are_directions() {
+    assert_eq!("up".parse::<Direction>().unwrap(), Direction::Up);
+    assert_eq!("down".parse::<Direction>().unwrap(), Direction::Down);
+    assert!(matches!(
+        "sideways".parse::<Direction>(),
+        Err(StorageError::InvalidInput(_))
+    ));
+}

@@ -10,6 +10,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
 
 use super::core::{self, CoreSpec};
+use super::error::AppError;
 use super::events::{AppEvent, DashboardTrafficEvent, Events};
 use crate::app_state::AppState;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
@@ -26,14 +27,13 @@ const TRAFFIC_RECONNECT_DELAY: Duration = Duration::from_secs(2);
 ///
 /// TUN and the log level are stored preferences, not per-call arguments:
 /// they are toggled in settings and take effect on the next connection.
-pub async fn connect(app: &AppHandle, state: &AppState) -> Result<(), String> {
-    let stored = settings::get(&state.db).map_err(|e| e.to_string())?;
+pub async fn connect(app: &AppHandle, state: &AppState) -> Result<(), AppError> {
+    let stored = settings::get(&state.db)?;
     core::start(
         &state.db,
         &mut state.supervisor.lock().unwrap(),
         &CoreSpec::connection(&state.paths, &stored),
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
     *state.clash.lock().unwrap() = Some(clash.clone());
@@ -47,18 +47,13 @@ pub async fn connect(app: &AppHandle, state: &AppState) -> Result<(), String> {
     Ok(())
 }
 
-pub fn disconnect(app: &AppHandle, state: &AppState) -> Result<(), String> {
+pub fn disconnect(app: &AppHandle, state: &AppState) -> Result<(), AppError> {
     if let Some(stop) = state.traffic_stop.lock().unwrap().take() {
         let _ = stop.send(true);
     }
     *state.clash.lock().unwrap() = None;
     *state.connected_since.lock().unwrap() = None;
-    state
-        .supervisor
-        .lock()
-        .unwrap()
-        .stop()
-        .map_err(|e| e.to_string())?;
+    state.supervisor.lock().unwrap().stop()?;
     Events::emit(app, AppEvent::ConnectionChanged(false));
     crate::tray::refresh(app, false);
     Ok(())
@@ -74,14 +69,10 @@ fn worth_auto_connecting(active_profile_id: &str, profile_count: usize) -> bool 
 /// calls this when it is on, so the remaining job is to skip quietly when
 /// there is nothing to connect to and otherwise take the path the connect
 /// command takes.
-pub async fn auto_connect(app: &AppHandle) -> Result<(), String> {
+pub async fn auto_connect(app: &AppHandle) -> Result<(), AppError> {
     let state = app.state::<AppState>();
-    let active_profile_id = settings::get_active_profile_id(&state.db)
-        .map_err(|e| e.to_string())?
-        .unwrap_or_default();
-    let profile_count = profiles::list_all(&state.db)
-        .map_err(|e| e.to_string())?
-        .len();
+    let active_profile_id = settings::get_active_profile_id(&state.db)?.unwrap_or_default();
+    let profile_count = profiles::list_all(&state.db)?.len();
     if !worth_auto_connecting(&active_profile_id, profile_count) {
         return Ok(());
     }

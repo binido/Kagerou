@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::watch;
 
 use super::core::{self, CoreSpec};
+use super::error::{AppError, ErrorCode};
 use super::events::{AppEvent, Events, TestFinished, TestProgress};
 use crate::app_state::RuntimePaths;
 use crate::clash_api::ClashApiClient;
@@ -182,9 +183,13 @@ pub async fn run_group<E, F, Fut>(
 
 /// Claims the run slot for `profile_ids`, or reports that one is already
 /// under way.
-pub fn begin_run(core: &TestCore) -> Result<watch::Receiver<bool>, String> {
-    core.begin_run()
-        .ok_or_else(|| "a test run is already in progress".to_string())
+pub fn begin_run(core: &TestCore) -> Result<watch::Receiver<bool>, AppError> {
+    core.begin_run().ok_or_else(|| {
+        AppError::new(
+            ErrorCode::TestRunInProgress,
+            "a test run is already in progress",
+        )
+    })
 }
 
 /// Brings the core up if it is not already, and hands back a client for it.
@@ -192,7 +197,7 @@ pub async fn ensure_running(
     db: &Db,
     paths: &RuntimePaths,
     core: &Arc<TestCore>,
-) -> Result<ClashApiClient, String> {
+) -> Result<ClashApiClient, AppError> {
     *core.last_request_at.lock().unwrap() = Some(Instant::now());
 
     // One starter at a time: a group test fires dozens of these at once.
@@ -201,13 +206,12 @@ pub async fn ensure_running(
         return Ok(clash);
     }
 
-    let stored = settings::get(db).map_err(|e| e.to_string())?;
+    let stored = settings::get(db)?;
     core::start(
         db,
         &mut core.supervisor.lock().unwrap(),
         &CoreSpec::test(paths, &stored),
-    )
-    .map_err(|e| e.to_string())?;
+    )?;
 
     let clash = ClashApiClient::new(format!("http://{}", paths.test_clash_api_listen));
     // The API is not up the instant the process is: poll until it answers,
@@ -221,7 +225,10 @@ pub async fn ensure_running(
     .await;
     if ready.is_err() {
         let _ = core.supervisor.lock().unwrap().stop();
-        return Err("the proxy core did not come up for testing".to_string());
+        return Err(AppError::new(
+            ErrorCode::CoreFailed,
+            "the proxy core did not come up for testing",
+        ));
     }
 
     *core.clash.lock().unwrap() = Some(clash.clone());
@@ -237,8 +244,8 @@ pub async fn measure_profile(
     socks_port: u16,
     clash: &ClashApiClient,
     profile_id: &str,
-) -> Result<TestOutcome, String> {
-    let test_url = settings::get(db).map_err(|e| e.to_string())?.test_url;
+) -> Result<TestOutcome, AppError> {
+    let test_url = settings::get(db)?.test_url;
     if clash.select_outbound("proxy", profile_id).await.is_err() {
         return Ok(TestOutcome::Unavailable);
     }

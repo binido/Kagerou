@@ -14,12 +14,9 @@ use crate::storage::models::{
 use crate::storage::{groups, profiles, routing, settings, sources};
 use crate::updates;
 use crate::usecase::connection;
+use crate::usecase::error::{AppError, ErrorCode};
 use crate::usecase::subscriptions;
 use crate::usecase::testing;
-
-fn to_err(e: impl std::fmt::Display) -> String {
-    e.to_string()
-}
 
 fn new_id(prefix: &str) -> String {
     format!("{prefix}-{}", uuid::Uuid::new_v4())
@@ -45,7 +42,7 @@ pub struct AppSnapshot {
 }
 
 #[tauri::command]
-pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
+pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, AppError> {
     // The connection-changed event fires before the WebView is listening
     // when the startup auto-connect wins the race (and on a mid-session
     // reload), so the snapshot carries the supervisor's own status as the
@@ -56,15 +53,13 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
         connected_since: connected
             .then(|| connection::connected_since_millis(&state))
             .flatten(),
-        active_profile_id: settings::get_active_profile_id(&state.db)
-            .map_err(to_err)?
-            .unwrap_or_default(),
-        profiles: profiles::list_all(&state.db).map_err(to_err)?,
-        profile_groups: groups::list_all(&state.db).map_err(to_err)?,
-        sources: sources::list_all(&state.db).map_err(to_err)?,
-        routing_presets: routing::list_presets(&state.db).map_err(to_err)?,
-        routing_rules: routing::list_rules(&state.db).map_err(to_err)?,
-        settings: settings::get(&state.db).map_err(to_err)?,
+        active_profile_id: settings::get_active_profile_id(&state.db)?.unwrap_or_default(),
+        profiles: profiles::list_all(&state.db)?,
+        profile_groups: groups::list_all(&state.db)?,
+        sources: sources::list_all(&state.db)?,
+        routing_presets: routing::list_presets(&state.db)?,
+        routing_rules: routing::list_rules(&state.db)?,
+        settings: settings::get(&state.db)?,
     })
 }
 
@@ -73,12 +68,12 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
 // ---------------------------------------------------------------------
 
 #[tauri::command]
-pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), AppError> {
     connection::connect(&app, state.inner()).await
 }
 
 #[tauri::command]
-pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<(), AppError> {
     connection::disconnect(&app, state.inner())
 }
 
@@ -95,8 +90,8 @@ const GEO_LOOKUP_RETRY_DELAY: Duration = Duration::from_secs(2);
 #[tauri::command]
 pub async fn lookup_exit_location(
     state: State<'_, AppState>,
-) -> Result<Option<geo::ExitLocation>, String> {
-    if !settings::get(&state.db).map_err(to_err)?.geo_lookup {
+) -> Result<Option<geo::ExitLocation>, AppError> {
+    if !settings::get(&state.db)?.geo_lookup {
         return Ok(None);
     }
     if !state.is_connected() {
@@ -104,7 +99,7 @@ pub async fn lookup_exit_location(
     }
 
     let socks = format!("127.0.0.1:{}", state.paths.mixed_listen_port);
-    let client = geo::GeoClient::through_socks(&socks).map_err(to_err)?;
+    let client = geo::GeoClient::through_socks(&socks)?;
 
     // `connect` announces the connection as soon as the process is spawned,
     // so this runs while sing-box is still opening its inbound and the first
@@ -118,7 +113,7 @@ pub async fn lookup_exit_location(
             Err(error) if attempts < GEO_LOOKUP_ATTEMPTS && geo::is_transient(&error) => {
                 tokio::time::sleep(GEO_LOOKUP_RETRY_DELAY).await;
             }
-            Err(error) => return Err(to_err(error)),
+            Err(error) => return Err(error.into()),
         }
     }
 }
@@ -132,9 +127,9 @@ pub async fn select_profile(
     id: String,
     app: AppHandle,
     state: State<'_, AppState>,
-) -> Result<(), String> {
-    profiles::select_profile(&state.db, &id).map_err(to_err)?;
-    settings::set_active_profile_id(&state.db, Some(&id)).map_err(to_err)?;
+) -> Result<(), AppError> {
+    profiles::select_profile(&state.db, &id)?;
+    settings::set_active_profile_id(&state.db, Some(&id))?;
     // The recent list and which entry is greyed out both just changed.
     crate::tray::refresh(&app, state.clash_client().is_some());
 
@@ -148,13 +143,13 @@ pub async fn select_profile(
 }
 
 #[tauri::command]
-pub fn rename_profile(id: String, name: String, state: State<AppState>) -> Result<(), String> {
-    profiles::rename(&state.db, &id, &name).map_err(to_err)
+pub fn rename_profile(id: String, name: String, state: State<AppState>) -> Result<(), AppError> {
+    profiles::rename(&state.db, &id, &name).map_err(AppError::from)
 }
 
 #[tauri::command]
-pub fn delete_profile(id: String, state: State<AppState>) -> Result<(), String> {
-    profiles::delete(&state.db, &id).map_err(to_err)
+pub fn delete_profile(id: String, state: State<AppState>) -> Result<(), AppError> {
+    profiles::delete(&state.db, &id).map_err(AppError::from)
 }
 
 /// Tests every profile in `group_id`, or the whole app when it is `None`,
@@ -169,11 +164,10 @@ pub async fn start_group_test(
     group_id: Option<String>,
     app: AppHandle,
     state: State<'_, AppState>,
-) -> Result<usize, String> {
+) -> Result<usize, AppError> {
     let profile_ids: Vec<String> = match &group_id {
-        Some(id) => groups::get(&state.db, id).map_err(to_err)?.profile_ids,
-        None => profiles::list_all(&state.db)
-            .map_err(to_err)?
+        Some(id) => groups::get(&state.db, id)?.profile_ids,
+        None => profiles::list_all(&state.db)?
             .into_iter()
             .map(|p| p.id)
             .collect(),
@@ -216,26 +210,26 @@ pub async fn start_group_test(
 }
 
 #[tauri::command]
-pub fn cancel_group_test(state: State<AppState>) -> Result<(), String> {
+pub fn cancel_group_test(state: State<AppState>) -> Result<(), AppError> {
     state.test_core.cancel_run();
     Ok(())
 }
 
 #[tauri::command]
-pub fn clear_test_results(group_id: String, state: State<AppState>) -> Result<(), String> {
-    profiles::clear_test_results(&state.db, &group_id).map_err(to_err)
+pub fn clear_test_results(group_id: String, state: State<AppState>) -> Result<(), AppError> {
+    profiles::clear_test_results(&state.db, &group_id).map_err(AppError::from)
 }
 
 #[tauri::command]
 pub fn delete_unavailable_profiles(
     group_id: String,
     state: State<AppState>,
-) -> Result<usize, String> {
+) -> Result<usize, AppError> {
     // The active profile is skipped at the command layer: storage stays
     // ignorant of settings, and generate()'s silent fallback to the first
     // profile never gets a chance to happen.
-    let active = settings::get_active_profile_id(&state.db).map_err(to_err)?;
-    profiles::delete_unavailable(&state.db, &group_id, active.as_deref()).map_err(to_err)
+    let active = settings::get_active_profile_id(&state.db)?;
+    profiles::delete_unavailable(&state.db, &group_id, active.as_deref()).map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -243,32 +237,17 @@ pub fn move_profile_to_group(
     profile_id: String,
     target_group_id: String,
     state: State<AppState>,
-) -> Result<(), String> {
-    profiles::move_to_group(&state.db, &profile_id, &target_group_id).map_err(to_err)
+) -> Result<(), AppError> {
+    profiles::move_to_group(&state.db, &profile_id, &target_group_id).map_err(AppError::from)
 }
 
 #[tauri::command]
-pub fn move_profile(id: String, direction: String, state: State<AppState>) -> Result<(), String> {
-    let profile = profiles::get(&state.db, &id).map_err(to_err)?;
-    let group = groups::get(&state.db, &profile.group_id).map_err(to_err)?;
-    let index = group
-        .profile_ids
-        .iter()
-        .position(|candidate| candidate == &id)
-        .ok_or("profile not found in its own group")?;
-    let target_index = if direction == "up" {
-        index.checked_sub(1)
-    } else {
-        index
-            .checked_add(1)
-            .filter(|i| *i < group.profile_ids.len())
-    };
-    let Some(target_index) = target_index else {
-        return Err("cannot move past the edge of the group".to_string());
-    };
-    let mut ordered = group.profile_ids;
-    ordered.swap(index, target_index);
-    profiles::reorder(&state.db, &group.id, &ordered).map_err(to_err)
+pub fn move_profile(id: String, direction: String, state: State<AppState>) -> Result<(), AppError> {
+    Ok(profiles::move_within_group(
+        &state.db,
+        &id,
+        direction.parse()?,
+    )?)
 }
 
 #[tauri::command]
@@ -276,28 +255,15 @@ pub fn reorder_profiles(
     from_id: String,
     to_id: String,
     state: State<AppState>,
-) -> Result<(), String> {
-    let from = profiles::get(&state.db, &from_id).map_err(to_err)?;
-    let group = groups::get(&state.db, &from.group_id).map_err(to_err)?;
-    let mut ordered = group.profile_ids;
-    let from_index = ordered
-        .iter()
-        .position(|c| c == &from_id)
-        .ok_or("profile not in group")?;
-    let to_index = ordered
-        .iter()
-        .position(|c| c == &to_id)
-        .ok_or("target profile not in the same group")?;
-    let id = ordered.remove(from_index);
-    ordered.insert(to_index, id);
-    profiles::reorder(&state.db, &group.id, &ordered).map_err(to_err)
+) -> Result<(), AppError> {
+    Ok(profiles::move_before(&state.db, &from_id, &to_id)?)
 }
 
 #[tauri::command]
 pub async fn run_profile_test(
     profile_id: String,
     state: State<'_, AppState>,
-) -> Result<TestResult, String> {
+) -> Result<TestResult, AppError> {
     let clash = testing::ensure_running(&state.db, &state.paths, &state.test_core).await?;
     let outcome = testing::measure_profile(
         &state.db,
@@ -319,12 +285,12 @@ pub fn set_profile_group_open(
     id: String,
     open: bool,
     state: State<AppState>,
-) -> Result<(), String> {
-    groups::set_open(&state.db, &id, open).map_err(to_err)
+) -> Result<(), AppError> {
+    groups::set_open(&state.db, &id, open).map_err(AppError::from)
 }
 
 #[tauri::command]
-pub fn add_profile_group(label: String, state: State<AppState>) -> Result<String, String> {
+pub fn add_profile_group(label: String, state: State<AppState>) -> Result<String, AppError> {
     let id = new_id("group");
     groups::insert(
         &state.db,
@@ -334,8 +300,7 @@ pub fn add_profile_group(label: String, state: State<AppState>) -> Result<String
             kind: "custom".to_string(),
             source_id: None,
         },
-    )
-    .map_err(to_err)?;
+    )?;
     Ok(id)
 }
 
@@ -344,8 +309,8 @@ pub fn rename_profile_group(
     id: String,
     label: String,
     state: State<AppState>,
-) -> Result<(), String> {
-    groups::rename(&state.db, &id, &label).map_err(to_err)
+) -> Result<(), AppError> {
+    groups::rename(&state.db, &id, &label).map_err(AppError::from)
 }
 
 // ---------------------------------------------------------------------
@@ -364,29 +329,31 @@ pub fn update_source(
     id: String,
     patch: UpdateSourceInput,
     state: State<AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     subscriptions::update_source(
         &state.db,
         &id,
         patch.name.as_deref(),
         patch.value.as_deref(),
     )
-    .map_err(to_err)
+    .map_err(AppError::from)
 }
 
 #[tauri::command]
-pub async fn refresh_source(id: String, state: State<'_, AppState>) -> Result<(), String> {
-    subscriptions::refresh(&state.db, &id).await.map_err(to_err)
+pub async fn refresh_source(id: String, state: State<'_, AppState>) -> Result<(), AppError> {
+    subscriptions::refresh(&state.db, &id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
 pub async fn import_from_text(
     text: String,
     state: State<'_, AppState>,
-) -> Result<ImportOutcome, String> {
+) -> Result<ImportOutcome, AppError> {
     subscriptions::import_text(&state.db, &text)
         .await
-        .map_err(to_err)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -394,11 +361,10 @@ pub fn delete_subscription(
     group_id: String,
     app: AppHandle,
     state: State<AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     let connected = state.is_connected();
-    let active = settings::get_active_profile_id(&state.db).map_err(to_err)?;
-    import::remove_subscription(&state.db, &group_id, active.as_deref(), connected)
-        .map_err(to_err)?;
+    let active = settings::get_active_profile_id(&state.db)?;
+    import::remove_subscription(&state.db, &group_id, active.as_deref(), connected)?;
     // The recent list in the tray may have just lost entries.
     crate::tray::refresh(&app, connected);
     Ok(())
@@ -409,13 +375,13 @@ pub fn delete_subscription(
 // ---------------------------------------------------------------------
 
 #[tauri::command]
-pub fn set_preset(id: String, enabled: bool, state: State<AppState>) -> Result<(), String> {
-    routing::set_preset(&state.db, &id, enabled).map_err(to_err)
+pub fn set_preset(id: String, enabled: bool, state: State<AppState>) -> Result<(), AppError> {
+    routing::set_preset(&state.db, &id, enabled).map_err(AppError::from)
 }
 
 #[tauri::command]
-pub fn select_rule(id: String, state: State<AppState>) -> Result<(), String> {
-    routing::select_rule(&state.db, &id).map_err(to_err)
+pub fn select_rule(id: String, state: State<AppState>) -> Result<(), AppError> {
+    routing::select_rule(&state.db, &id).map_err(AppError::from)
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -431,7 +397,7 @@ pub fn update_rule(
     id: String,
     patch: RulePatchInput,
     state: State<AppState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     routing::update_rule(
         &state.db,
         &id,
@@ -440,7 +406,7 @@ pub fn update_rule(
             outbound: patch.outbound.as_deref(),
         },
     )
-    .map_err(to_err)
+    .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -448,7 +414,7 @@ pub fn add_routing_rule(
     match_value: String,
     outbound: String,
     state: State<AppState>,
-) -> Result<String, String> {
+) -> Result<String, AppError> {
     let id = new_id("rule");
     routing::insert_rule(
         &state.db,
@@ -457,8 +423,7 @@ pub fn add_routing_rule(
             match_value,
             outbound,
         },
-    )
-    .map_err(to_err)?;
+    )?;
     Ok(id)
 }
 
@@ -470,8 +435,8 @@ pub fn analyze_rule_match(value: String) -> singbox::match_spec::MatchAnalysis {
 }
 
 #[tauri::command]
-pub fn delete_routing_rule(id: String, state: State<AppState>) -> Result<(), String> {
-    routing::delete_rule(&state.db, &id).map_err(to_err)
+pub fn delete_routing_rule(id: String, state: State<AppState>) -> Result<(), AppError> {
+    routing::delete_rule(&state.db, &id).map_err(AppError::from)
 }
 
 // ---------------------------------------------------------------------
@@ -479,7 +444,7 @@ pub fn delete_routing_rule(id: String, state: State<AppState>) -> Result<(), Str
 // ---------------------------------------------------------------------
 
 #[tauri::command]
-pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), String> {
+pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), AppError> {
     settings::update(
         &state.db,
         &settings::SettingsPatch {
@@ -487,7 +452,7 @@ pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), String>
             ..Default::default()
         },
     )
-    .map_err(to_err)
+    .map_err(AppError::from)
 }
 
 /// Silent by design: a failed check is not something to surface, and before
@@ -520,16 +485,20 @@ pub struct SettingsPatchInput {
 /// the reconcile at startup or the next toggle converges on the DB. No-op in
 /// dev — `tauri dev` would otherwise register the debug binary as a real
 /// login item.
-pub fn apply_startup_flag(app: &AppHandle, enabled: bool) -> Result<(), String> {
+pub fn apply_startup_flag(app: &AppHandle, enabled: bool) -> Result<(), AppError> {
     if tauri::is_dev() {
         return Ok(());
     }
     use tauri_plugin_autostart::ManagerExt;
     let autostart = app.autolaunch();
     if enabled {
-        autostart.enable().map_err(to_err)
+        autostart
+            .enable()
+            .map_err(|e| AppError::new(ErrorCode::SystemSetting, e))
     } else {
-        autostart.disable().map_err(to_err)
+        autostart
+            .disable()
+            .map_err(|e| AppError::new(ErrorCode::SystemSetting, e))
     }
 }
 
@@ -538,7 +507,7 @@ pub fn update_settings(
     patch: SettingsPatchInput,
     state: State<AppState>,
     app: AppHandle,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     settings::update(
         &state.db,
         &settings::SettingsPatch {
@@ -557,8 +526,7 @@ pub fn update_settings(
             log_level: patch.log_level.as_deref(),
             test_url: patch.test_url.as_deref(),
         },
-    )
-    .map_err(to_err)?;
+    )?;
     if let Some(startup) = patch.startup {
         apply_startup_flag(&app, startup)?;
     }
