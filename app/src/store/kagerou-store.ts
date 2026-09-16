@@ -45,7 +45,7 @@ export const subscribeToBackendEvents = () => {
 
   // The event fires in the same breath as the backend's own stamp, so
   // `Date.now()` here and `connectedSince` in the snapshot agree to within
-  // a millisecond — and the snapshot is what a reload reads, which is the
+  // a millisecond - and the snapshot is what a reload reads, which is the
   // case the frontend clock cannot serve on its own. Going down clears the
   // history so the sparkline stops drawing the previous session's shape.
   void kagerouApi.onConnectionChanged((connected) => {
@@ -53,7 +53,7 @@ export const subscribeToBackendEvents = () => {
       ? { connected, connectedSince: Date.now(), rulesChangedSinceConnect: false }
       : { connected, connectedSince: null, trafficHistory: [], activeConnections: null })
     // The exit only exists while the core does, so this is one of the two
-    // moments worth asking — the other is a profile switch.
+    // moments worth asking - the other is a profile switch.
     if (connected) void getState().refreshExitLocation()
   })
 
@@ -67,7 +67,7 @@ export const subscribeToBackendEvents = () => {
       // the previous count rather than blanking the readout.
       activeConnections: event.activeConnections ?? state.activeConnections,
       // A null total means the backend's `/connections` fetch failed for
-      // this sample — keep the previous value rather than blanking it.
+      // this sample - keep the previous value rather than blanking it.
       sessionTraffic:
         event.downloadTotal !== null && event.uploadTotal !== null
           ? { download: event.downloadTotal, upload: event.uploadTotal }

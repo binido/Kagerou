@@ -48,7 +48,7 @@ describe('formatExitLocation', () => {
     expect(formatExitLocation({ ...exit, city: '' }, 'en')).toBe('🇬🇧 United Kingdom')
   })
 
-  it('falls back to the service’s own country name when the code is unusable', () => {
+  it("falls back to the service's own country name when the code is unusable", () => {
     expect(formatExitLocation({ ...exit, countryCode: '' }, 'en')).toBe('London, United Kingdom')
   })
 })

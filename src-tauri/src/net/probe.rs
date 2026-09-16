@@ -1,20 +1,3 @@
-//! Measures how long a proxy takes to answer, the way a user experiences it:
-//! by sending real traffic through the tunnel.
-//!
-//! sing-box's Clash `/delay` endpoint was doing this job and answering two
-//! different questions badly. It times the whole path — the TCP connect, the
-//! TLS or REALITY handshake, the proxy's own dial to the target — so its
-//! number is several times the round trip and comparable to no other client.
-//! Worse, it reports working servers as dead: a hysteria2 node in the
-//! subscription this was built against failed it at 5, 10 and 20 second
-//! timeouts while answering through the tunnel in 53 ms, five times running,
-//! and its three siblings differing only by IP passed throughout.
-//!
-//! This measures what NekoBox's `speedtest.UrlTest` measures in its RTT mode:
-//! the request is sent twice over one kept-alive connection and the second is
-//! timed. The handshakes are paid once, by the warm-up, and excluded from the
-//! result — and a result at all means the tunnel carried a real request.
-
 use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -28,12 +11,16 @@ pub enum ProbeError {
 
 /// Sends `url` through the SOCKS5 proxy at `socks_addr` twice and reports the
 /// round trip of the second, in milliseconds.
+///
+/// Twice over one kept-alive connection, so the TCP connect and the TLS or
+/// REALITY handshake are paid by the warm-up and excluded from the result.
+/// A result at all means the tunnel carried a real request.
 pub async fn rtt_through_socks(
     socks_addr: &str,
     url: &str,
     timeout: Duration,
 ) -> Result<u32, ProbeError> {
-    // socks5h, not socks5: the proxy resolves the name at the far end, which
+    // socks5h, not socks5. The proxy resolves the name at the far end, which
     // is what carrying real traffic through it looks like.
     let proxy = reqwest::Proxy::all(format!("socks5h://{socks_addr}"))
         .map_err(|_| ProbeError::Unreachable)?;

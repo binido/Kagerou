@@ -47,7 +47,7 @@ fn an_unreadable_tag_is_ignored_rather_than_guessed_at() {
 }
 
 /// The version Tauri hands us is 0.0.0 until the first release is cut, so
-/// every real tag must read as newer — including a pre-release.
+/// every real tag must read as newer - including a pre-release.
 #[test]
 fn anything_released_beats_the_unreleased_default() {
     let unreleased = Version::parse("0.0.0").unwrap();

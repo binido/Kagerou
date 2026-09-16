@@ -1,11 +1,3 @@
-//! Answers "where does the internet think I am", the way a user checks it on
-//! 2ip: by asking a public service what it sees, over the tunnel.
-//!
-//! The proxy is the whole point. The same request sent directly reports the
-//! user's real country while looking exactly as convincing on screen, so
-//! `through_socks` is the only constructor the app uses and the socks address
-//! is not optional.
-
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -80,7 +72,7 @@ fn to_location(body: Response) -> Result<ExitLocation, GeoError> {
 /// Whether another attempt could plausibly answer differently. The core is
 /// started and the connection announced in the same breath, so the first
 /// lookup after connecting routinely arrives before sing-box has its inbound
-/// listening — that refusal is a starting proxy, not a verdict. An HTTP status
+/// listening - that refusal is a starting proxy, not a verdict. An HTTP status
 /// or a refusal from the service itself is an answer, and repeating the
 /// request would only ask the same question again.
 pub fn is_transient(error: &GeoError) -> bool {
@@ -93,9 +85,14 @@ pub struct GeoClient {
 }
 
 impl GeoClient {
-    /// The only constructor the app uses: every lookup goes through the
-    /// running core's mixed inbound. `socks5h`, not `socks5`, so the name is
-    /// resolved at the far end like the rest of the tunnel's traffic.
+    /// Builds a client whose every request goes through the running core's
+    /// mixed inbound.
+    ///
+    /// The only constructor the app uses. The same request sent directly
+    /// reports the user's real country while looking exactly as convincing on
+    /// screen, which is why the socks address is not optional here.
+    /// `socks5h`, not `socks5`, so the name is resolved at the far end like
+    /// the rest of the tunnel's traffic.
     pub fn through_socks(socks_addr: &str) -> Result<Self, GeoError> {
         let proxy = reqwest::Proxy::all(format!("socks5h://{socks_addr}"))
             .map_err(|e| GeoError::Unreachable(e.to_string()))?;
@@ -109,8 +106,8 @@ impl GeoClient {
         })
     }
 
-    /// Lets the tests point a plain client at a local mock, which is the only
-    /// way to exercise the response handling without a live tunnel.
+    /// Points a plain client at a given URL. Lets the tests exercise the
+    /// response handling without a live tunnel, which nothing else can do.
     pub fn with_config(client: reqwest::Client, url: impl Into<String>) -> Self {
         Self {
             client,
@@ -119,9 +116,8 @@ impl GeoClient {
     }
 
     pub async fn lookup(&self, timeout: Duration) -> Result<ExitLocation, GeoError> {
-        // Our own timeout rather than reqwest's, for the reason the Clash API
-        // client documents: the client-level one does not reliably surface as
-        // `is_timeout()` on the hyper 1.x backend.
+        // Our own timeout rather than reqwest's. The client-level one does
+        // not reliably surface as `is_timeout()` on the hyper 1.x backend.
         let response = tokio::time::timeout(timeout, self.client.get(&self.url).send())
             .await
             .map_err(|_| GeoError::Timeout)?

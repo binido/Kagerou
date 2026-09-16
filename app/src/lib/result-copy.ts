@@ -20,6 +20,6 @@ export const resultLabel = (outcome: TestOutcome, translate: TFunction<'common'>
 }
 
 /** Whether the profile failed to answer at all. A slow server answered, so
- * it is not one of these — "remove unavailable" must not take it. */
+ * it is not one of these - "remove unavailable" must not take it. */
 export const isUnreachable = (outcome: TestOutcome) =>
   outcome.kind === 'timeout' || outcome.kind === 'noResponse' || outcome.kind === 'unavailable'

@@ -131,8 +131,8 @@ fn parse_vless(line: &str) -> Result<VlessOutbound, SubscriptionError> {
         ),
         // `host` is the fallback SNI, as it already is for VMess above:
         // a link that carries only `host=` still expects that name in the
-        // TLS handshake, and without it sing-box sends the server address —
-        // an IP, usually — which the server rejects.
+        // TLS handshake, and without it sing-box sends the server address -
+        // an IP, usually - which the server rejects.
         sni: params
             .get("sni")
             .or_else(|| params.get("host"))
@@ -360,11 +360,13 @@ fn opt(value: &Option<String>) -> String {
     value.clone().unwrap_or_default()
 }
 
-/// Serializes a parsed outbound back into a subscription URI, carrying
-/// every field `parse_uri` understands — TLS/REALITY, flow, SNI, transport
-/// — so `parse_uri(to_uri(x)) == x`. This is what gets stored as a
-/// profile's key, and `singbox::config::generate` re-parses it to build the
-/// outbound, so anything dropped here is silently dropped from the tunnel.
+/// Serializes a parsed outbound back into a subscription URI, carrying every
+/// field `parse_uri` understands (TLS/REALITY, flow, SNI, transport) so that
+/// `parse_uri(to_uri(x)) == x`.
+///
+/// This is what gets stored as a profile's key, and
+/// `singbox::config::generate` re-parses it to build the outbound, so
+/// anything dropped here is silently dropped from the tunnel.
 pub fn to_uri(outbound: &ParsedOutbound) -> String {
     match outbound {
         ParsedOutbound::Vless(o) => {

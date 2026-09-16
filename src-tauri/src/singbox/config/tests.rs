@@ -199,7 +199,7 @@ fn classifies_cidr_localhost_and_domain_rules_correctly() {
 
 /// Domain rules match on a name nobody has read out of the request until
 /// something sniffs for it, so the sniff rule has to be there and has to be
-/// first — rules run in order.
+/// first - rules run in order.
 #[test]
 fn sniffing_comes_before_the_rules_that_depend_on_it() {
     let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
@@ -304,7 +304,7 @@ fn an_imported_reality_subscription_still_generates_a_reality_outbound() {
 }
 
 /// Observed live: with TUN on and this missing, sing-box dialled its own
-/// proxy server through its own tunnel — 13k connections, 0 bytes moved.
+/// proxy server through its own tunnel - 13k connections, 0 bytes moved.
 #[test]
 fn route_binds_outbounds_to_the_default_interface() {
     let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
@@ -341,7 +341,7 @@ fn clash_api_controller_uses_the_given_listen_address() {
 /// Opt-in smoke test against the real bundled binary (fetched by
 /// `scripts/fetch-singbox.mjs`, copied into the target dir by
 /// tauri-build): `cargo test -- --ignored`. Catches config-schema drift
-/// when the pinned sing-box version moves — something no amount of
+/// when the pinned sing-box version moves - something no amount of
 /// JSON-shape assertions above can notice.
 #[test]
 #[ignore = "needs the bundled sing-box binary; run with --ignored"]

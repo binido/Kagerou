@@ -69,7 +69,7 @@ impl ChildHandle {
     ///
     /// The waiting is the point: the kill itself is carried out by the
     /// watcher thread, so returning as soon as the request was queued is
-    /// what let sing-box outlive the app — at shutdown that thread dies
+    /// what let sing-box outlive the app - at shutdown that thread dies
     /// with the process and the kill is never delivered.
     pub fn kill(&mut self) -> Result<(), ProcessError> {
         (self.kill)()?;
@@ -92,7 +92,7 @@ impl ChildHandle {
 
 pub trait Launcher: Send + Sync {
     /// `tun` says the process needs to create a TUN device, which needs
-    /// privileges the app itself doesn't have — see `crate::privilege`.
+    /// privileges the app itself doesn't have - see `crate::privilege`.
     fn launch(&self, config_path: &Path, tun: bool) -> Result<ChildHandle, ProcessError>;
 }
 
@@ -128,7 +128,7 @@ pub struct SidecarLauncher {
     pub binary_path: PathBuf,
     /// Where to keep the run-file sentinel for an elevated launch. Its own
     /// directory rather than a fixed path so a leftover from a previous run
-    /// can be spotted and cleared at startup — see [`clear_run_files`].
+    /// can be spotted and cleared at startup - see [`clear_run_files`].
     pub run_dir: PathBuf,
     /// The mixed inbound port this core listens on. A system proxy pointing
     /// at it is cleared once the process exits; see [`system_proxy`]. Each
@@ -144,7 +144,7 @@ const RUN_FILE_SUFFIX: &str = ".run";
 
 /// Reaps whatever a previous session left running and clears its sentinels.
 /// Call it at startup: a crash, a force-quit or a SIGTERM can always strand
-/// a sing-box, and until it goes it holds the proxy ports — or, elevated,
+/// a sing-box, and until it goes it holds the proxy ports - or, elevated,
 /// the TUN device and with it the machine's whole network.
 ///
 /// The two kinds of leftover need opposite treatment. An elevated one is
@@ -227,7 +227,7 @@ impl SidecarLauncher {
     /// Without TUN the binary runs as-is and stays our own child. With it,
     /// the launch goes through `privilege::plan_launch`, which wraps it in
     /// the platform's privilege-escalation command (UAC / osascript /
-    /// pkexec) — and `run_file` is how we ask that unreachable process to
+    /// pkexec) - and `run_file` is how we ask that unreachable process to
     /// stop, since we can no longer signal it.
     fn command_for(&self, config_path: &Path, run_file: Option<&Path>) -> Command {
         let args = vec![
@@ -252,7 +252,7 @@ impl SidecarLauncher {
                 &privilege::plan_launch(os, &self.binary_path, &args, has_cap),
                 run_file,
             ),
-            // ponytail: unknown OS — no escalation strategy to pick, so run
+            // ponytail: unknown OS - no escalation strategy to pick, so run
             // it plainly and let sing-box report the permission failure.
             None => plain(),
         }
@@ -368,7 +368,7 @@ fn spawn_line_forwarder(
 }
 
 /// Owns the lifecycle of a single sing-box process: starting, stopping,
-/// and reacting to an unexpected exit. Not internally thread-safe — like
+/// and reacting to an unexpected exit. Not internally thread-safe - like
 /// `storage::Db`, callers share one instance behind a `Mutex` so every
 /// transition (start/stop/poll) is serialized rather than racing.
 pub struct Supervisor<L: Launcher> {

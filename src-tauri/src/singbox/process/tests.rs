@@ -215,7 +215,7 @@ fn every_launch_gets_its_own_run_file() {
 /// Deliberately not exercised by letting a real TUN launch fail:
 /// spawning the elevation command would raise an actual password prompt
 /// on the developer's machine. This covers the half reachable without
-/// one — the launch gives up before spawning anything.
+/// one - the launch gives up before spawning anything.
 #[test]
 fn a_tun_launch_that_cannot_create_its_run_file_fails_before_spawning() {
     let dir = tempfile::tempdir().unwrap();
@@ -253,7 +253,7 @@ fn a_recorded_pid_that_is_no_longer_sing_box_is_left_alone() {
 
 /// And it must actually reap a real one. `ps` reports the name the
 /// process was executed under, so something launched via a path ending
-/// in `sing-box` is indistinguishable to the check — which is the point:
+/// in `sing-box` is indistinguishable to the check - which is the point:
 /// this exercises the guard, not just the kill.
 ///
 /// A symlink, not a copy: copying opens the destination for writing, and
@@ -343,7 +343,7 @@ fn clearing_a_directory_that_does_not_exist_is_not_an_error() {
 
 /// The regression this whole change exists for: `stop` used to return
 /// as soon as the kill was queued, so the app could finish exiting
-/// before its watcher thread ever delivered it — leaving sing-box
+/// before its watcher thread ever delivered it - leaving sing-box
 /// orphaned and still holding the tunnel.
 #[test]
 fn stop_waits_until_the_process_is_actually_gone() {

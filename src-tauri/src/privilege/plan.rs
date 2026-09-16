@@ -28,7 +28,7 @@ impl TargetOs {
 #[derive(Debug, Clone, PartialEq)]
 pub enum LaunchPlan {
     /// Already sufficiently privileged (Linux with `CAP_NET_ADMIN` already
-    /// set on the binary) — just run it.
+    /// set on the binary) - just run it.
     Direct { program: PathBuf, args: Vec<String> },
     /// Windows: relaunch through PowerShell's `Start-Process -Verb RunAs`,
     /// which triggers the UAC consent prompt.
@@ -44,7 +44,7 @@ pub enum LaunchPlan {
 /// Decides how sing-box should be launched for TUN mode. `linux_has_cap_net_admin`
 /// is the caller's answer to "does the sing-box binary already have
 /// CAP_NET_ADMIN set" (see `caps::parse_cap_net_admin` for how to compute
-/// it) — irrelevant on the other two platforms, which always need a
+/// it) - irrelevant on the other two platforms, which always need a
 /// per-run privilege prompt.
 pub fn plan_launch(
     os: TargetOs,
@@ -89,8 +89,8 @@ fn posix_shell_quote(s: &str) -> String {
 /// privileges to a process that is reparented away from us, so an
 /// unprivileged `kill` from the app can never reach it (this is exactly how
 /// a root sing-box used to survive the app and keep the machine offline).
-/// Instead the privileged side watches a file the app owns: deleting it —
-/// on disconnect, on shutdown, or on the next startup after a crash — is
+/// Instead the privileged side watches a file the app owns: deleting it -
+/// on disconnect, on shutdown, or on the next startup after a crash - is
 /// the stop signal, and needs no second password prompt.
 fn posix_watchdog(program: &Path, args: &[String], run_file: &Path) -> String {
     let command = std::iter::once(program.to_string_lossy().into_owned())
@@ -112,7 +112,7 @@ fn posix_watchdog(program: &Path, args: &[String], run_file: &Path) -> String {
 pub fn to_command(plan: &LaunchPlan, run_file: &Path) -> Command {
     match plan {
         // Already privileged, so this one really is our own child and a
-        // plain kill reaches it — no sentinel needed.
+        // plain kill reaches it - no sentinel needed.
         LaunchPlan::Direct { program, args } => {
             let mut command = Command::new(program);
             command.args(args);

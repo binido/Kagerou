@@ -1,9 +1,3 @@
-//! Adding and refreshing subscriptions: the network half of `import`.
-//!
-//! `import` decides what pasted text means and writes the result; this
-//! module is what goes and gets the text first, and what replaces a
-//! subscription group's contents when it is refreshed.
-
 use std::collections::HashMap;
 
 use thiserror::Error;

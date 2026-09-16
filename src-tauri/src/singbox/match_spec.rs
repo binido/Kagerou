@@ -1,16 +1,3 @@
-//! What a routing rule's single match string means.
-//!
-//! `classify_match` is total: anything that is not `localhost` and does not
-//! parse as an address falls through to `domain_suffix` verbatim. That is what
-//! the generator wants — it must always produce something — but it is useless
-//! as an answer to "did the user type a sensible pattern?", because it says
-//! "domain suffix" just as cheerfully for `*.example.com` or a pasted URL,
-//! and those match nothing at all while sitting in the UI looking configured.
-//!
-//! So plausibility lives here as its own notion, next to the classifier rather
-//! than mirrored in TypeScript: a second parser on a traffic path would drift
-//! from this one silently, and silent is the expensive failure in this repo.
-
 use std::net::IpAddr;
 
 use serde::Serialize;
@@ -21,6 +8,12 @@ pub enum Matcher {
     IpCidr(String),
 }
 
+/// Decides what a rule's match string means to the generator.
+///
+/// Total by design, because the generator always has to produce something:
+/// anything that is not `localhost` and does not parse as an address becomes
+/// a `domain_suffix` verbatim. That makes it useless as an answer to whether
+/// the user typed a sensible pattern, which is what `analyze` is for.
 pub fn classify_match(raw: &str) -> Matcher {
     if raw.eq_ignore_ascii_case("localhost") {
         return Matcher::Domain(raw.to_string());
@@ -71,11 +64,20 @@ pub struct MatchAnalysis {
 /// A leading dot is how people write a suffix, and it is exactly what
 /// `domain_suffix` already means, so it is dropped rather than carried into
 /// the config where it would match nothing.
+/// Strips what the user may have typed around a pattern. A leading dot is
+/// how people write a suffix, and sing-box does not want it.
 pub fn normalize(raw: &str) -> String {
     let trimmed = raw.trim();
     trimmed.strip_prefix('.').unwrap_or(trimmed).to_string()
 }
 
+/// Reports what the generator will make of `raw`, and whether it is likely
+/// to match anything.
+///
+/// `*.example.com` and a pasted URL both classify as a domain suffix and then
+/// match nothing at all, while sitting in the interface looking configured.
+/// The check lives next to the classifier rather than in TypeScript, because
+/// a second parser on a traffic path drifts from this one silently.
 pub fn analyze(raw: &str) -> MatchAnalysis {
     let normalized = normalize(raw);
     let (kind, cidr_prefix) = match classify_match(&normalized) {

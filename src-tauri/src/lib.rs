@@ -24,7 +24,7 @@ fn launched_by_autostart() -> bool {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        // Must be the first plugin registered — see the plugin's docs.
+        // Must be the first plugin registered - see the plugin's docs.
         // A second copy would drive a second sing-box and fight over the
         // ports; put the original window in front instead of exiting
         // silently, or the user gets no feedback at all.
@@ -58,8 +58,8 @@ pub fn run() {
             std::fs::create_dir_all(&app_data_dir)?;
 
             // A crash or a force-quit can strand an elevated sing-box from a
-            // previous session, and it holds the TUN device — and with it
-            // the machine's whole network — until it goes. Dropping its run
+            // previous session, and it holds the TUN device - and with it
+            // the machine's whole network - until it goes. Dropping its run
             // file is how we ask it to exit; see singbox::process.
             singbox::clear_run_files(&app_data_dir);
 
@@ -92,7 +92,7 @@ pub fn run() {
 
                 // Spawned, not awaited: connecting can take seconds or ask
                 // for an admin password, and a slow setup means a late
-                // window. A failed connect is logged and otherwise ignored —
+                // window. A failed connect is logged and otherwise ignored -
                 // the app still starts, just disconnected.
                 if settings.auto_connect {
                     let handle = app.handle().clone();

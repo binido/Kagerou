@@ -11,7 +11,7 @@ interface StatusFooterProps {
 }
 
 /** Reference information, not a reason to open the app: one line, no card.
- * Deliberately counts rather than refresh timestamps — the backend stores
+ * Deliberately counts rather than refresh timestamps - the backend stores
  * those as English prose, and re-displaying them here would spread a known
  * localisation hole to a second screen. */
 export function StatusFooter({ presets, rules, sources, className }: StatusFooterProps) {

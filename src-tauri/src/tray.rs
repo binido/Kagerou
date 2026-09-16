@@ -1,10 +1,3 @@
-//! The tray icon: the app's other face, for when its window is closed.
-//!
-//! A VPN client spends most of its life not being looked at, so closing the
-//! window hides it here rather than dropping the connection. What the menu
-//! offers is what someone would open the window for anyway — connect, switch
-//! to one of the servers they actually use, get the window back.
-
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};

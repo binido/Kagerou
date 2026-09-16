@@ -16,7 +16,7 @@ pub enum TrafficEvent {
 
 /// A live handle to a background task streaming `/traffic` samples from
 /// the Clash API over WebSocket. Dropping or calling `stop()` ends the
-/// background task; a connection drop is not fatal — the task reports
+/// background task; a connection drop is not fatal - the task reports
 /// `Disconnected`/`Reconnecting` and keeps retrying on `reconnect_delay`
 /// until stopped.
 pub struct TrafficWatcher {

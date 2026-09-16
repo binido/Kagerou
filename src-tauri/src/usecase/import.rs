@@ -1,14 +1,3 @@
-//! What "add from clipboard" does with the text it is handed.
-//!
-//! The user used to pick "subscription URL" or "single key" before pasting,
-//! and picking was the part people got wrong. The text decides now: an
-//! http(s) URL is a subscription and gets a group that refreshes from it;
-//! anything the subscription parser accepts is profiles, a lone one going to
-//! Default and several becoming a static group of their own.
-//!
-//! Fetching the URL stays in `usecase::subscriptions`, so everything here
-//! runs against text and an in-memory database.
-
 use std::collections::{HashMap, HashSet};
 
 use base64::Engine;
@@ -52,6 +41,11 @@ pub fn is_subscription_url(text: &str) -> bool {
         && url::Url::parse(trimmed).is_ok_and(|url| matches!(url.scheme(), "http" | "https"))
 }
 
+/// Decides what a piece of pasted text is.
+///
+/// An http(s) URL is a subscription. Anything the subscription parser
+/// accepts is profiles. The user used to pick between the two before
+/// pasting, and picking was the part people got wrong.
 pub fn classify(text: &str) -> Result<Pasted, ImportError> {
     let trimmed = text.trim();
     if is_subscription_url(trimmed) {

@@ -33,7 +33,7 @@ export const asBackendError = (error: unknown): BackendError | null =>
  * The backend's code picks the sentence, so it arrives in their language;
  * `fallback` names what was being attempted and covers a rejection that did
  * not come from a command. The backend's own English wording goes to the
- * console — it can name a host or a path, which is not something to put in
+ * console - it can name a host or a path, which is not something to put in
  * front of someone. */
 export const backendErrorMessage = (error: unknown, fallback: string): string => {
   const backend = asBackendError(error)

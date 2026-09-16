@@ -35,11 +35,11 @@ export type Language = 'en' | 'ru'
 export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
 export type SubscriptionUpdateInterval = '5' | '10' | '15' | '30' | '60' | 'custom'
 export type GroupSortMode = 'ping' | 'name' | 'protocol'
-/** sing-box's config log levels — deliberately not the display `LogLevel` above. */
+/** sing-box's config log levels - deliberately not the display `LogLevel` above. */
 export type SingBoxLogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'panic'
 
 /** Mirrors `storage::models::TestOutcome`: what measuring a profile
- * produced. A kind and, for a latency, a number — not a sentence, so
+ * produced. A kind and, for a latency, a number - not a sentence, so
  * sorting has something to compare and this side has something to
  * translate. */
 export type TestOutcome =

@@ -1,10 +1,3 @@
-//! Bringing the user's tunnel up and down, and keeping the window told
-//! about it while it is up.
-//!
-//! Two background pumps run for the life of a connection: one turns the
-//! Clash API's traffic samples into dashboard events, the other forwards the
-//! core's log output and notices when the core dies on its own.
-
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Manager};

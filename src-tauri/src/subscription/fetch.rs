@@ -1,8 +1,3 @@
-//! Pulling a subscription's body off the network.
-//!
-//! Separate from the parsers so everything that reads a subscription can be
-//! tested against text, and only this file needs a server.
-
 use std::time::Duration;
 
 use thiserror::Error;

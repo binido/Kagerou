@@ -2,7 +2,7 @@
 const CAP_NET_ADMIN_BIT: u32 = 12;
 
 /// Parses the `CapEff:` line of a Linux `/proc/<pid>/status` file to check
-/// whether the effective capability set includes `CAP_NET_ADMIN` — the
+/// whether the effective capability set includes `CAP_NET_ADMIN` - the
 /// capability that lets sing-box create a TUN device without running as
 /// root or going through `pkexec` every launch (set once at install time
 /// via `setcap cap_net_admin+ep <binary>`).

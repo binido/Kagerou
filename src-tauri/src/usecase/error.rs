@@ -1,11 +1,3 @@
-//! What a failed command tells the frontend.
-//!
-//! Every command used to answer with a bare `String`, so the window had the
-//! backend's own English sentence and nothing else: it was shown as-is, in
-//! whatever language the backend happened to write it in, and a Russian user
-//! got "database error: no such table". A code is something the frontend can
-//! translate; the sentence stays as `detail`, for the console.
-
 use serde::Serialize;
 
 use crate::net::geo::GeoError;
@@ -55,8 +47,8 @@ pub enum ErrorCode {
 #[serde(rename_all = "camelCase")]
 pub struct AppError {
     pub code: ErrorCode,
-    /// The backend's own wording. Not shown to the user — it is English and
-    /// can name a path or a host — but kept so a report has something in it.
+    /// The backend's own wording. Not shown to the user - it is English and
+    /// can name a path or a host - but kept so a report has something in it.
     pub detail: String,
 }
 

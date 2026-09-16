@@ -1,6 +1,6 @@
 import type { ExitLocation } from '@/types/kagerou'
 
-/** Bytes/sec (what the Clash API reports) → Mbit/s with one decimal,
+/** Bytes/sec (what the Clash API reports) -> Mbit/s with one decimal,
  * matching the dashboard readout's fixed "Mbps" unit label. */
 export const formatSpeedMbps = (bytesPerSecond: number): string => ((bytesPerSecond * 8) / 1_000_000).toFixed(1)
 
@@ -18,8 +18,8 @@ export const formatBytes = (bytes: number): { value: string; unit: string } => {
 }
 
 /** An ISO 3166-1 alpha-2 region code (what the backend's region_from_name
- * emits) → "🇦🇹 Austria"-style display string, localized via Intl.
- * Anything else ("", "Local profile", garbage) → null. */
+ * emits) -> "🇦🇹 Austria"-style display string, localized via Intl.
+ * Anything else ("", "Local profile", garbage) -> null. */
 export const regionToFlag = (region: string): string | null =>
   /^[A-Z]{2}$/.test(region)
     ? String.fromCodePoint(...[...region].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
@@ -44,7 +44,7 @@ export const formatExitLocation = (exit: ExitLocation, language: string): string
   return flag ? `${flag} ${place}` : place
 }
 
-/** Elapsed milliseconds → "h:mm:ss" past the first hour, "m:ss" before it.
+/** Elapsed milliseconds -> "h:mm:ss" past the first hour, "m:ss" before it.
  * Anything negative (a clock nudged backwards mid-session) reads as zero
  * rather than as a countdown. */
 export const formatUptime = (elapsedMs: number): string => {

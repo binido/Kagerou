@@ -13,7 +13,7 @@ import type { ExitLocation, SessionTraffic, TestResult, TrafficSample } from '@/
 
 /** Ticks once a second while connected, and not at all otherwise. The
  * stored `now` is whatever the last tick saw, so the first second after a
- * connection reads as 0:00 — which is what it is. */
+ * connection reads as 0:00 - which is what it is. */
 function useUptime(connectedSince: number | null) {
   const [now, setNow] = useState(() => Date.now())
 

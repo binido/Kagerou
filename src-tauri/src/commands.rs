@@ -84,7 +84,7 @@ const GEO_LOOKUP_ATTEMPTS: u32 = 4;
 const GEO_LOOKUP_RETRY_DELAY: Duration = Duration::from_secs(2);
 
 /// Asks a public service, through the running tunnel, where the exit node
-/// appears to be. `None` — rather than an error — when there is nothing to
+/// appears to be. `None` - rather than an error - when there is nothing to
 /// ask through or the user has turned the lookup off: neither is a failure,
 /// and the UI falls back to the profile's own flag in both cases.
 #[tauri::command]
@@ -465,7 +465,7 @@ pub async fn check_for_update(app: AppHandle) -> Option<updates::UpdateInfo> {
 /// Makes the OS launch-at-login registration agree with `enabled`. The DB is
 /// the source of truth: a failure here leaves the two briefly out of sync and
 /// the reconcile at startup or the next toggle converges on the DB. No-op in
-/// dev — `tauri dev` would otherwise register the debug binary as a real
+/// dev - `tauri dev` would otherwise register the debug binary as a real
 /// login item.
 pub fn apply_startup_flag(app: &AppHandle, enabled: bool) -> Result<(), AppError> {
     if tauri::is_dev() {

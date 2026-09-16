@@ -1,11 +1,3 @@
-//! Measuring profiles: the short-lived core that answers latency tests, and
-//! the run that walks a group through it.
-//!
-//! Never the connection's own core, even when one is running. Aiming a test
-//! at a particular server means pointing the selector at it, and doing that
-//! to a live tunnel would silently reroute the user's traffic through
-//! whatever is being measured.
-
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -135,8 +127,8 @@ impl Measured {
 /// profile, so they cannot overlap, and a sequence of hundreds needs
 /// somewhere to report progress from and something to stop it with.
 ///
-/// `measure` is a parameter so the walk itself — cancellation, counting,
-/// which results are worth storing — can be tested without a core.
+/// `measure` is a parameter so the walk itself - cancellation, counting,
+/// which results are worth storing - can be tested without a core.
 pub async fn run_group<E, F, Fut>(
     db: &Db,
     core: &TestCore,
@@ -192,7 +184,13 @@ pub fn begin_run(core: &TestCore) -> Result<watch::Receiver<bool>, AppError> {
     })
 }
 
-/// Brings the core up if it is not already, and hands back a client for it.
+/// Brings the test core up if it is not already, and hands back a client
+/// for it.
+///
+/// Never the connection's own core, even when one is running. Aiming a test
+/// at a particular server means pointing the selector at it, and doing that
+/// to a live tunnel would silently reroute the user's traffic through
+/// whatever is being measured.
 pub async fn ensure_running(
     db: &Db,
     paths: &RuntimePaths,

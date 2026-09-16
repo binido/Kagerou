@@ -48,8 +48,8 @@ export function DashboardPage() {
   const ping = activeProfile?.url ?? UNTESTED
 
   // The quick list ranks the active profile's own group. Without a single
-  // measured latency the ranking is meaningless — every profile ties at
-  // infinity — so the card offers the test instead of an arbitrary slice.
+  // measured latency the ranking is meaningless - every profile ties at
+  // infinity - so the card offers the test instead of an arbitrary slice.
   const groupProfiles = group ? profiles.filter((profile) => profile.groupId === group.id) : []
   const ranked = groupProfiles.some((profile) => latencyOf(profile) !== null)
 

@@ -106,7 +106,7 @@ pub struct RulePatch<'a> {
 }
 
 /// General partial update for a rule's match pattern and/or outbound.
-/// Selection state is intentionally not patchable here — use
+/// Selection state is intentionally not patchable here - use
 /// `select_rule`, which enforces the single-selected-rule invariant.
 pub fn update_rule(db: &Db, id: &str, patch: &RulePatch) -> Result<(), StorageError> {
     if let Some(m) = patch.match_value {

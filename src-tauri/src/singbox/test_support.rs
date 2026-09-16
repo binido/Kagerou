@@ -1,7 +1,3 @@
-//! A `Launcher` that answers like a real sing-box child without spawning
-//! one, so supervisor behaviour and everything built on top of it can be
-//! tested without a process, a config the core would accept, or root.
-
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
@@ -50,6 +46,9 @@ impl FakeControl {
     }
 }
 
+/// A `Launcher` that answers like a real sing-box child without spawning
+/// one, so supervisor behaviour and everything built on it can be tested
+/// without a process, a config the core would accept, or root.
 pub(crate) struct FakeLauncher(FakeControl);
 
 impl Launcher for FakeLauncher {

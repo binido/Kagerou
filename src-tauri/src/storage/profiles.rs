@@ -255,7 +255,7 @@ pub fn move_to_group(db: &Db, id: &str, target_group_id: &str) -> Result<(), Sto
 /// order of `ordered_ids`. Used to implement both "move up/down" (compute
 /// the swapped order, then reorder) and drag-to-reorder in one primitive
 /// rather than two position-swap-specific queries. Rejects the whole
-/// operation — no partial reorder — if `ordered_ids` doesn't contain
+/// operation - no partial reorder - if `ordered_ids` doesn't contain
 /// exactly the profiles currently in that group.
 pub fn reorder(db: &Db, group_id: &str, ordered_ids: &[String]) -> Result<(), StorageError> {
     let mut conn = db.lock();

@@ -1,7 +1,7 @@
 import type { GroupSortMode, Profile } from '@/types/kagerou'
 
 /** The measured latency in ms, or `null` when the profile is untested or
- * failed — neither yields a number. */
+ * failed - neither yields a number. */
 export const latencyOf = (profile: Profile): number | null =>
   profile.url.kind === 'latency' ? profile.url.millis : null
 

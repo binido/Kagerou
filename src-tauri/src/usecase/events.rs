@@ -1,15 +1,3 @@
-//! Everything the backend pushes into the window, named in one place.
-//!
-//! The names used to be string literals spread across the commands and the
-//! tray, with the frontend's listeners (`app/src/lib/tauri-api.ts`) as the
-//! only record of the full list. They are an enum now, so a payload that
-//! changes shape is a type error rather than an event the UI quietly stops
-//! understanding.
-//!
-//! `Events` is the seam: the app emits through Tauri, tests collect into a
-//! vector, and the logic that decides *what* to emit no longer needs a
-//! window to run.
-
 use serde::Serialize;
 
 use crate::clash_api::model::ConnectionsResponse;
@@ -73,6 +61,10 @@ pub struct TestFinished {
     pub cancelled: bool,
 }
 
+/// Everything the backend pushes into the window.
+///
+/// The other half of this list is the frontend's listener table in
+/// `app/src/lib/tauri-api.ts`, and a test below pins the names against it.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppEvent {
     ConnectionChanged(bool),

@@ -6,7 +6,7 @@ use tokio::net::TcpListener;
 /// no-auth greeting, accepts any CONNECT, then answers HTTP requests with
 /// a canned response. `replies` is a budget shared across every
 /// connection, so a budget of one models a server that dies after a single
-/// request rather than one that merely drops the pooled connection —
+/// request rather than one that merely drops the pooled connection -
 /// reqwest would silently reconnect for the latter.
 async fn spawn_socks_mock(replies: usize) -> String {
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -120,7 +120,7 @@ async fn a_proxy_that_refuses_the_connect_is_unreachable() {
 async fn an_https_url_is_carried_as_a_tunnel_rather_than_spoken_in_the_clear() {
     let addr = spawn_socks_mock(4).await;
     // The mock cannot complete a TLS handshake, so this must fail as
-    // unreachable — not succeed by sending plaintext to port 443.
+    // unreachable - not succeed by sending plaintext to port 443.
     assert_eq!(
         rtt_through_socks(&addr, "https://example.com/", Duration::from_secs(3)).await,
         Err(ProbeError::Unreachable)

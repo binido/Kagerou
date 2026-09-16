@@ -51,7 +51,7 @@ export type TrafficEvent =
   | { kind: 'disconnected' }
   | { kind: 'reconnecting' }
 
-/** Thin, typed wrapper around `invoke`/`listen` — the only place in the
+/** Thin, typed wrapper around `invoke`/`listen` - the only place in the
  * frontend that knows the Tauri command/event names, so the store (and any
  * tests) can depend on this instead of scattering string literals. */
 export const kagerouApi = {

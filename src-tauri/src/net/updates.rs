@@ -1,10 +1,3 @@
-//! Checks GitHub for a newer release than the one running.
-//!
-//! Deliberately silent on failure: an update check that cannot reach the
-//! network is not something to put in front of the user, and until the
-//! project cuts its first release the endpoint answers 404, which is a
-//! perfectly ordinary "nothing newer" rather than an error.
-
 use std::time::Duration;
 
 use semver::Version;
@@ -42,8 +35,13 @@ fn newer_than(current: &Version, release: &GithubRelease) -> Option<UpdateInfo> 
     })
 }
 
-/// `None` covers every uninteresting outcome alike: no releases yet, nothing
-/// newer, no network, a tag we can't read.
+/// Reports a GitHub release newer than `current`, if there is one.
+///
+/// `None` covers every uninteresting outcome alike - no releases yet, nothing
+/// newer, no network, a tag that will not parse. Until the project cuts its
+/// first release the endpoint answers 404, which is an ordinary "nothing
+/// newer" rather than a failure, and an unreachable network is not something
+/// to put in front of the user either.
 pub async fn check(current: &Version) -> Option<UpdateInfo> {
     let client = reqwest::Client::builder()
         // GitHub rejects requests without one.
