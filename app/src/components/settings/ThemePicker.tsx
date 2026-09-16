@@ -15,7 +15,8 @@ interface ThemePickerProps {
   onChange: (themeId: ThemeId) => void
 }
 
-const getReducedMotionPreference = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const getReducedMotionPreference = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 export function ThemePicker({ value, onChange }: ThemePickerProps) {
   const { t } = useTranslation('settings')
@@ -28,14 +29,22 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
 
   useEffect(() => {
     const controls = chevronRef.current
-      ? animate(chevronRef.current, { rotate: open ? 180 : 0 }, { duration: getReducedMotionPreference() ? 0 : 0.12, ease: 'easeOut' })
+      ? animate(
+          chevronRef.current,
+          { rotate: open ? 180 : 0 },
+          { duration: getReducedMotionPreference() ? 0 : 0.12, ease: 'easeOut' },
+        )
       : null
     return () => controls?.stop()
   }, [open])
 
   useEffect(() => {
     if (!open || !contentRef.current) return
-    const controls = animate(contentRef.current, { opacity: [0, 1], y: [-4, 0] }, { duration: getReducedMotionPreference() ? 0 : 0.12, ease: 'easeOut' })
+    const controls = animate(
+      contentRef.current,
+      { opacity: [0, 1], y: [-4, 0] },
+      { duration: getReducedMotionPreference() ? 0 : 0.12, ease: 'easeOut' },
+    )
     return () => controls.stop()
   }, [open])
 
@@ -85,11 +94,20 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
         >
           <SemanticSwatchStrip theme={activeTheme} />
           <span className="min-w-0 flex-1 truncate text-left text-[13px] font-medium text-primary">
-            <span className="mr-1.5 text-[11px] font-normal text-muted-copy">{activeTheme.packName} /</span>
+            <span className="mr-1.5 text-[11px] font-normal text-muted-copy">
+              {activeTheme.packName} /
+            </span>
             {activeTheme.name}
           </span>
-          <span className="w-10 shrink-0 font-mono text-[10px] text-muted-copy">{activeTheme.isDark ? t('theme.dark') : t('theme.light')}</span>
-          <ChevronDown ref={chevronRef} aria-hidden="true" className="size-4 shrink-0 text-muted-copy" strokeWidth={1.8} />
+          <span className="w-10 shrink-0 font-mono text-[10px] text-muted-copy">
+            {activeTheme.isDark ? t('theme.dark') : t('theme.light')}
+          </span>
+          <ChevronDown
+            ref={chevronRef}
+            aria-hidden="true"
+            className="size-4 shrink-0 text-muted-copy"
+            strokeWidth={1.8}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -102,8 +120,18 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
           {themePacks.map((pack) => (
             <section aria-labelledby={`${pack.id}-theme-pack`} key={pack.id}>
               <div className="flex h-[50px] items-center justify-between border-b border-hairline px-4">
-                <div className="flex items-center gap-2.5"><span className="size-2 rounded-full bg-lavender" /><p className="type-display text-[14px] text-primary" id={`${pack.id}-theme-pack`}>{pack.name}</p></div>
-                <span className="font-mono text-[10px] text-muted-copy">{t('theme.installed', { installed: pack.themes.length, total: pack.themes.length })}</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="size-2 rounded-full bg-lavender" />
+                  <p className="type-display text-[14px] text-primary" id={`${pack.id}-theme-pack`}>
+                    {pack.name}
+                  </p>
+                </div>
+                <span className="font-mono text-[10px] text-muted-copy">
+                  {t('theme.installed', {
+                    installed: pack.themes.length,
+                    total: pack.themes.length,
+                  })}
+                </span>
               </div>
               <div aria-label={pack.name} className="p-2" role="radiogroup">
                 {pack.themes.map((theme, packIndex) => {
@@ -116,7 +144,9 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
                       key={theme.id}
                       onKeyDown={(event) => handleRowKeyDown(event, themeIndex)}
                       onSelect={onChange}
-                      ref={(element) => { rowRefs.current[theme.id] = element }}
+                      ref={(element) => {
+                        rowRefs.current[theme.id] = element
+                      }}
                       theme={theme}
                     />
                   )
@@ -124,7 +154,9 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
               </div>
             </section>
           ))}
-          <div className="flex h-7 items-center border-t border-hairline px-4 font-mono text-[9px] text-quiet max-[640px]:hidden">{t('theme.keyboard')}</div>
+          <div className="flex h-7 items-center border-t border-hairline px-4 font-mono text-[9px] text-quiet max-[640px]:hidden">
+            {t('theme.keyboard')}
+          </div>
         </div>
       </PopoverContent>
     </Popover>

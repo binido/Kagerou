@@ -2,7 +2,14 @@ import { useTranslation } from 'react-i18next'
 import { ArrowRight, Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import type { Outbound, RoutingRule } from '@/types/kagerou'
 
@@ -27,18 +34,85 @@ export function RoutingRulesTable({ rules, onSelect, onEdit, onDelete }: Routing
   return (
     <div className="overflow-x-auto rounded-[10px] bg-surface ring-1 ring-inset ring-hairline/55">
       <Table className="min-w-[620px]">
-        <TableHeader><TableRow className="border-b border-hairline/55 hover:bg-transparent"><TableHead className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-copy">{t('table.match')}</TableHead><TableHead className="w-[72px] px-2 text-center"><span className="sr-only">{t('table.direction')}</span></TableHead><TableHead className="w-[180px] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-copy">{t('table.outbound')}</TableHead><TableHead className="w-20 px-3 py-3"><span className="sr-only">{t('table.edit')}</span></TableHead></TableRow></TableHeader>
+        <TableHeader>
+          <TableRow className="border-b border-hairline/55 hover:bg-transparent">
+            <TableHead className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-copy">
+              {t('table.match')}
+            </TableHead>
+            <TableHead className="w-[72px] px-2 text-center">
+              <span className="sr-only">{t('table.direction')}</span>
+            </TableHead>
+            <TableHead className="w-[180px] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-copy">
+              {t('table.outbound')}
+            </TableHead>
+            <TableHead className="w-20 px-3 py-3">
+              <span className="sr-only">{t('table.edit')}</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
         <TableBody>
           {rules.map((rule) => (
-            <TableRow className={cn('group h-[46px] border-b border-hairline/55 text-[13px] text-body transition-colors hover:bg-row-hover', rule.selected && 'bg-selected text-primary hover:bg-selected')} key={rule.id}>
+            <TableRow
+              className={cn(
+                'group h-[46px] border-b border-hairline/55 text-[13px] text-body transition-colors hover:bg-row-hover',
+                rule.selected && 'bg-selected text-primary hover:bg-selected',
+              )}
+              key={rule.id}
+            >
               <TableCell className="px-5 py-2">
-                <button aria-current={rule.selected ? 'true' : undefined} className="block w-full truncate rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-lavender" onClick={() => onSelect(rule.id)} type="button">
-                  <span className={cn('truncate', rule.selected && 'font-medium')}>{rule.match}</span>
+                <button
+                  aria-current={rule.selected ? 'true' : undefined}
+                  className="block w-full truncate rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-lavender"
+                  onClick={() => onSelect(rule.id)}
+                  type="button"
+                >
+                  <span className={cn('truncate', rule.selected && 'font-medium')}>
+                    {rule.match}
+                  </span>
                 </button>
               </TableCell>
-              <TableCell className={cn('px-2 text-center', rule.selected ? 'text-lavender-hi' : 'text-quiet')}><ArrowRight aria-hidden="true" className="mx-auto size-4" /></TableCell>
-              <TableCell className="px-3 py-2 text-body">{t(outboundKeys[rule.outbound])}</TableCell>
-              <TableCell className="px-3 py-2 text-right"><div className={cn('flex justify-end gap-0.5 transition-opacity', rule.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100')}><Button aria-label={t('table.editRule', { match: rule.match })} className="size-7 text-lavender-hi hover:bg-row-hover" onClick={() => onEdit(rule)} size="icon-xs" type="button" variant="ghost"><Pencil aria-hidden="true" className="size-3.5" strokeWidth={1.7} /></Button><Button aria-label={t('table.deleteRule', { match: rule.match })} className="size-7 text-quiet hover:bg-row-hover hover:text-bad" onClick={() => onDelete(rule)} size="icon-xs" type="button" variant="ghost"><Trash2 aria-hidden="true" className="size-3.5" strokeWidth={1.7} /></Button></div></TableCell>
+              <TableCell
+                className={cn(
+                  'px-2 text-center',
+                  rule.selected ? 'text-lavender-hi' : 'text-quiet',
+                )}
+              >
+                <ArrowRight aria-hidden="true" className="mx-auto size-4" />
+              </TableCell>
+              <TableCell className="px-3 py-2 text-body">
+                {t(outboundKeys[rule.outbound])}
+              </TableCell>
+              <TableCell className="px-3 py-2 text-right">
+                <div
+                  className={cn(
+                    'flex justify-end gap-0.5 transition-opacity',
+                    rule.selected
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100',
+                  )}
+                >
+                  <Button
+                    aria-label={t('table.editRule', { match: rule.match })}
+                    className="size-7 text-lavender-hi hover:bg-row-hover"
+                    onClick={() => onEdit(rule)}
+                    size="icon-xs"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Pencil aria-hidden="true" className="size-3.5" strokeWidth={1.7} />
+                  </Button>
+                  <Button
+                    aria-label={t('table.deleteRule', { match: rule.match })}
+                    className="size-7 text-quiet hover:bg-row-hover hover:text-bad"
+                    onClick={() => onDelete(rule)}
+                    size="icon-xs"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 aria-hidden="true" className="size-3.5" strokeWidth={1.7} />
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

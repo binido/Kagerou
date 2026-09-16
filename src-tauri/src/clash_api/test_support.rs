@@ -1,7 +1,3 @@
-//! Minimal single-connection HTTP mock server used only by this crate's
-//! own tests, so the Clash API client's error handling (bad status,
-//! malformed body, refused/dropped connections, timeouts) can be tested
-//! without a real sing-box process or an external mocking dependency.
 #![cfg(test)]
 
 use std::sync::Arc;
@@ -9,6 +5,11 @@ use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
+/// A single-connection HTTP mock server, so the Clash API client's error
+/// handling (bad status, malformed body, refused or dropped connections,
+/// timeouts) can be tested without a real sing-box process and without an
+/// external mocking dependency.
+///
 /// Spawns a background task that accepts connections forever, reading one
 /// HTTP request per connection (headers + body, if `Content-Length` is
 /// present) and handing the raw request text to `handler`, whose return

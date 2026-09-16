@@ -36,10 +36,81 @@ impl std::str::FromStr for Tone {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// What measuring a profile produced. A kind and, when there is one, a
+/// number: the interface's own sentence used to be what got stored, which
+/// meant sorting by latency parsed a number back out of it and translating
+/// it matched on English text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum TestOutcome {
+    NotTested,
+    Latency { millis: u32 },
+    Timeout,
+    NoResponse,
+    Unavailable,
+}
+
+impl TestOutcome {
+    /// How the result is coloured. Derived rather than stored: a tone that
+    /// disagreed with its own value was representable, and nothing could
+    /// have noticed.
+    pub fn tone(self) -> Tone {
+        match self {
+            Self::NotTested => Tone::Muted,
+            Self::Latency { millis } if millis < 150 => Tone::Good,
+            Self::Latency { millis } if millis < 400 => Tone::Warn,
+            Self::Latency { .. } | Self::Timeout | Self::NoResponse | Self::Unavailable => {
+                Tone::Bad
+            }
+        }
+    }
+
+    pub fn kind_str(self) -> &'static str {
+        match self {
+            Self::NotTested => "notTested",
+            Self::Latency { .. } => "latency",
+            Self::Timeout => "timeout",
+            Self::NoResponse => "noResponse",
+            Self::Unavailable => "unavailable",
+        }
+    }
+
+    pub fn millis(self) -> Option<u32> {
+        match self {
+            Self::Latency { millis } => Some(millis),
+            _ => None,
+        }
+    }
+
+    pub fn from_stored(kind: &str, millis: Option<u32>) -> Self {
+        match kind {
+            "latency" => Self::Latency {
+                millis: millis.unwrap_or(0),
+            },
+            "timeout" => Self::Timeout,
+            "noResponse" => Self::NoResponse,
+            "unavailable" => Self::Unavailable,
+            _ => Self::NotTested,
+        }
+    }
+}
+
+/// What crosses to the frontend: the outcome, plus the colour it implies so
+/// the thresholds live on one side only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TestResult {
-    pub value: String,
+    #[serde(flatten)]
+    pub outcome: TestOutcome,
     pub tone: Tone,
+}
+
+impl From<TestOutcome> for TestResult {
+    fn from(outcome: TestOutcome) -> Self {
+        Self {
+            tone: outcome.tone(),
+            outcome,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

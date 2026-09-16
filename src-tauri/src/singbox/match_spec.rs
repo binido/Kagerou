@@ -1,16 +1,3 @@
-//! What a routing rule's single match string means.
-//!
-//! `classify_match` is total: anything that is not `localhost` and does not
-//! parse as an address falls through to `domain_suffix` verbatim. That is what
-//! the generator wants — it must always produce something — but it is useless
-//! as an answer to "did the user type a sensible pattern?", because it says
-//! "domain suffix" just as cheerfully for `*.example.com` or a pasted URL,
-//! and those match nothing at all while sitting in the UI looking configured.
-//!
-//! So plausibility lives here as its own notion, next to the classifier rather
-//! than mirrored in TypeScript: a second parser on a traffic path would drift
-//! from this one silently, and silent is the expensive failure in this repo.
-
 use std::net::IpAddr;
 
 use serde::Serialize;
@@ -21,6 +8,12 @@ pub enum Matcher {
     IpCidr(String),
 }
 
+/// Decides what a rule's match string means to the generator.
+///
+/// Total by design, because the generator always has to produce something:
+/// anything that is not `localhost` and does not parse as an address becomes
+/// a `domain_suffix` verbatim. That makes it useless as an answer to whether
+/// the user typed a sensible pattern, which is what `analyze` is for.
 pub fn classify_match(raw: &str) -> Matcher {
     if raw.eq_ignore_ascii_case("localhost") {
         return Matcher::Domain(raw.to_string());
@@ -71,11 +64,20 @@ pub struct MatchAnalysis {
 /// A leading dot is how people write a suffix, and it is exactly what
 /// `domain_suffix` already means, so it is dropped rather than carried into
 /// the config where it would match nothing.
+/// Strips what the user may have typed around a pattern. A leading dot is
+/// how people write a suffix, and sing-box does not want it.
 pub fn normalize(raw: &str) -> String {
     let trimmed = raw.trim();
     trimmed.strip_prefix('.').unwrap_or(trimmed).to_string()
 }
 
+/// Reports what the generator will make of `raw`, and whether it is likely
+/// to match anything.
+///
+/// `*.example.com` and a pasted URL both classify as a domain suffix and then
+/// match nothing at all, while sitting in the interface looking configured.
+/// The check lives next to the classifier rather than in TypeScript, because
+/// a second parser on a traffic path drifts from this one silently.
 pub fn analyze(raw: &str) -> MatchAnalysis {
     let normalized = normalize(raw);
     let (kind, cidr_prefix) = match classify_match(&normalized) {
@@ -149,87 +151,4 @@ fn is_plausible_domain(value: &str) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn kind(raw: &str) -> MatchKind {
-        analyze(raw).kind
-    }
-
-    fn warning(raw: &str) -> Option<MatchWarning> {
-        analyze(raw).warning
-    }
-
-    #[test]
-    fn a_leading_dot_is_dropped_before_anything_else_looks_at_it() {
-        let analysis = analyze("  .example.com  ");
-        assert_eq!(analysis.normalized, "example.com");
-        assert_eq!(analysis.kind, MatchKind::DomainSuffix);
-        assert_eq!(analysis.warning, None);
-    }
-
-    #[test]
-    fn plain_names_and_addresses_classify_without_complaint() {
-        assert_eq!(kind("example.com"), MatchKind::DomainSuffix);
-        assert_eq!(kind("localhost"), MatchKind::Domain);
-        assert_eq!(kind("10.0.0.5"), MatchKind::IpCidr);
-        assert_eq!(kind("192.168.0.0/16"), MatchKind::IpCidr);
-        assert_eq!(kind("fd00::/8"), MatchKind::IpCidr);
-        for raw in ["example.com", "localhost", "10.0.0.5", "192.168.0.0/16"] {
-            assert_eq!(warning(raw), None, "{raw}");
-        }
-    }
-
-    #[test]
-    fn a_prefix_out_of_range_is_caught_rather_than_left_to_the_core() {
-        assert_eq!(warning("192.168.1.0/99"), Some(MatchWarning::InvalidPrefix));
-        assert_eq!(
-            warning("192.168.1.0/abc"),
-            Some(MatchWarning::InvalidPrefix)
-        );
-        assert_eq!(warning("fd00::/200"), Some(MatchWarning::InvalidPrefix));
-        // 128 is fine for v6 and would be out of range if the width were
-        // read off the wrong family.
-        assert_eq!(warning("fd00::/128"), None);
-    }
-
-    #[test]
-    fn the_two_mistakes_worth_naming_get_their_own_codes() {
-        assert_eq!(warning("*.example.com"), Some(MatchWarning::Wildcard));
-        assert_eq!(warning("https://example.com/foo"), Some(MatchWarning::Url));
-        assert_eq!(warning("example.com/foo"), Some(MatchWarning::Url));
-    }
-
-    #[test]
-    fn unicode_is_flagged_rather_than_converted() {
-        assert_eq!(warning("пример.рф"), Some(MatchWarning::NonAscii));
-    }
-
-    #[test]
-    fn nonsense_falls_back_to_the_generic_code() {
-        for raw in [
-            "example",
-            "exa mple.com",
-            "-example.com",
-            "example..com",
-            "",
-        ] {
-            assert_eq!(warning(raw), Some(MatchWarning::InvalidDomain), "{raw}");
-        }
-    }
-
-    #[test]
-    fn the_wire_format_is_codes_and_a_normalized_value() {
-        let value = serde_json::to_value(analyze(".Example.com")).unwrap();
-        assert_eq!(
-            value,
-            serde_json::json!({
-                "normalized": "Example.com",
-                "kind": "domain-suffix",
-                "warning": null,
-            })
-        );
-        let value = serde_json::to_value(analyze("*.example.com")).unwrap();
-        assert_eq!(value["warning"], "wildcard");
-    }
-}
+mod tests;

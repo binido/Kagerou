@@ -2,7 +2,13 @@ import { Copy, Eraser, Link2, MoreHorizontal, Pencil, Trash2, Waypoints } from '
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { ProfileGroup } from '@/types/kagerou'
 
 interface ProfileGroupActionsMenuProps {
@@ -17,7 +23,17 @@ interface ProfileGroupActionsMenuProps {
   onDeleteSubscription: () => void
 }
 
-export function ProfileGroupActionsMenu({ group, testRunning, onRename, onTestGroup, onClearResults, onDeleteUnavailable, onChangeUrl, onCopyUrl, onDeleteSubscription }: ProfileGroupActionsMenuProps) {
+export function ProfileGroupActionsMenu({
+  group,
+  testRunning,
+  onRename,
+  onTestGroup,
+  onClearResults,
+  onDeleteUnavailable,
+  onChangeUrl,
+  onCopyUrl,
+  onDeleteSubscription,
+}: ProfileGroupActionsMenuProps) {
   const { t } = useTranslation('profiles')
   const canRename = group.kind !== 'default'
   const isSubscription = group.kind === 'subscription'
@@ -26,11 +42,21 @@ export function ProfileGroupActionsMenu({ group, testRunning, onRename, onTestGr
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button aria-label={t('menu.more', { name: groupLabel })} className="size-9 text-muted-copy hover:bg-raised hover:text-primary" size="icon" type="button" variant="ghost">
+        <Button
+          aria-label={t('menu.more', { name: groupLabel })}
+          className="size-9 text-muted-copy hover:bg-raised hover:text-primary"
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
           <MoreHorizontal aria-hidden="true" className="size-[18px]" strokeWidth={1.7} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52 border-hairline bg-popover p-1.5 text-[11px]" sideOffset={8}>
+      <DropdownMenuContent
+        align="end"
+        className="w-52 border-hairline bg-popover p-1.5 text-[11px]"
+        sideOffset={8}
+      >
         <DropdownMenuItem disabled={!canRename} onSelect={onRename}>
           <Pencil aria-hidden="true" className="size-3.5" />
           <span>{canRename ? t('menu.renameGroup') : t('menu.defaultRenameDisabled')}</span>
@@ -56,14 +82,21 @@ export function ProfileGroupActionsMenu({ group, testRunning, onRename, onTestGr
           <Eraser aria-hidden="true" className="size-3.5" />
           <span>{t('menu.clearResults')}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="text-bad focus:bg-bad/10 focus:text-bad" disabled={testRunning} onSelect={onDeleteUnavailable}>
+        <DropdownMenuItem
+          className="text-bad focus:bg-bad/10 focus:text-bad"
+          disabled={testRunning}
+          onSelect={onDeleteUnavailable}
+        >
           <Trash2 aria-hidden="true" className="size-3.5" />
           <span>{t('menu.deleteUnavailable')}</span>
         </DropdownMenuItem>
         {isSubscription ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-bad focus:bg-bad/10 focus:text-bad" onSelect={onDeleteSubscription}>
+            <DropdownMenuItem
+              className="text-bad focus:bg-bad/10 focus:text-bad"
+              onSelect={onDeleteSubscription}
+            >
               <Trash2 aria-hidden="true" className="size-3.5" />
               <span>{t('menu.deleteSubscription')}</span>
             </DropdownMenuItem>

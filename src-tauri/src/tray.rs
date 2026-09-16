@@ -1,10 +1,3 @@
-//! The tray icon: the app's other face, for when its window is closed.
-//!
-//! A VPN client spends most of its life not being looked at, so closing the
-//! window hides it here rather than dropping the connection. What the menu
-//! offers is what someone would open the window for anyway — connect, switch
-//! to one of the servers they actually use, get the window back.
-
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
@@ -12,6 +5,7 @@ use tauri::{AppHandle, Manager, Runtime};
 
 use crate::app_state::AppState;
 use crate::storage::profiles;
+use crate::usecase::events::{AppEvent, Events};
 
 /// How many recently used profiles the menu offers. Enough for the handful
 /// someone rotates between, short enough to stay a menu.
@@ -155,24 +149,11 @@ fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
         // it. Nothing is saved on the way: every mutation is already written
         // when it happens.
         ID_QUIT => app.exit(0),
-        ID_TOGGLE => emit_intent(app, "kagerou://tray-toggle-connection", ()),
+        ID_TOGGLE => Events::emit(app, AppEvent::TrayToggleConnection),
         _ => {
             if let Some(profile_id) = id.strip_prefix(PROFILE_PREFIX) {
-                emit_intent(app, "kagerou://tray-select-profile", profile_id.to_string());
+                Events::emit(app, AppEvent::TraySelectProfile(profile_id.to_string()));
             }
         }
     }
-}
-
-/// The tray asks the frontend to act rather than acting itself. Connecting and
-/// switching profiles are already implemented there, on top of the same
-/// commands, and a second path through the backend would be a second set of
-/// bugs.
-fn emit_intent<R: Runtime, T: serde::Serialize + Clone>(
-    app: &AppHandle<R>,
-    event: &str,
-    payload: T,
-) {
-    use tauri::Emitter;
-    let _ = app.emit(event, payload);
 }

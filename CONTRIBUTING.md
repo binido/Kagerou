@@ -49,16 +49,16 @@ cd src-tauri && cargo test -- --ignored # plus the smoke test against the real s
 cd app && pnpm test                     # frontend store logic (Vitest)
 ```
 
-New backend logic should ship with tests covering edge cases and error paths, not just the happy path — see the existing `#[cfg(test)] mod tests` blocks in `src-tauri/src/` for the pattern (mocked launchers/HTTP servers instead of touching a real sing-box process). Frontend tests target the Zustand store's business logic, not component rendering.
+New backend logic should ship with tests covering edge cases and error paths, not just the happy path — see the existing `tests.rs` sibling modules in `src-tauri/src/` for the pattern (each one is the `#[cfg(test)] mod tests;` of the file next to it, so tests still reach private items) (mocked launchers/HTTP servers instead of touching a real sing-box process). Frontend tests target the Zustand store's business logic, not component rendering.
 
 ## Code style
 
 - Rust: run `cargo fmt` and `cargo clippy --all-targets` before committing; both should be clean.
-- Frontend: `pnpm lint` (oxlint) and `pnpm build` (runs `tsc -b`) should both be clean.
+- Frontend: `pnpm format` (Prettier), `pnpm lint` (oxlint) and `pnpm build` (runs `tsc -b`) should all be clean. Prettier runs with its defaults apart from three lines in `app/.prettierrc.json`: no semicolons and single quotes, which is what the codebase already used, and a 100-column width, because Tailwind class strings make 80 impractical.
 
 ## What CI checks
 
-Every pull request runs the commands above — `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (plus the `--ignored` smoke test against the real sing-box binary), and `pnpm lint` / `test` / `build`. Run them locally first; the workflow is `.github/workflows/ci.yml`.
+Every pull request runs the commands above — `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (plus the `--ignored` smoke test against the real sing-box binary), and `pnpm format:check` / `lint` / `test` / `build`. Run them locally first; the workflow is `.github/workflows/ci.yml`.
 
 The backend job runs on Linux only. The per-OS privilege logic takes the target OS as an argument rather than being `cfg`-gated, so all three branches are exercised from a single host.
 

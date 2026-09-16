@@ -34,14 +34,12 @@
     "disconnectedState": "Disconnected",
     "on": "On",
     "off": "Off",
-    "checking": "Checking…",
     "running": "Running…",
     "notTested": "Not tested",
     "unavailable": "Unavailable",
     "timeout": "Timeout",
     "noResponse": "No response",
-    "ok": "200 OK",
-    "notApplicable": "n/a"
+    "latency": "{{millis}} ms"
   },
   "counts": {
     "vpnOne": "{{count}} VPN",
@@ -83,5 +81,20 @@
     "title": "Kagerou could not start",
     "recover": "Its data lives in {{dir}}. Deleting kagerou.sqlite3 there starts over with an empty app — the profiles and settings in it are lost.",
     "recoverNoDir": "Deleting kagerou.sqlite3 from Kagerou's data folder starts over with an empty app — the profiles and settings in it are lost."
+  },
+  "errors": {
+    "storage": "The app could not read or write its own data.",
+    "notFound": "That is not there any more — the list may be out of date.",
+    "invalidInput": "That value cannot be used.",
+    "configInvalid": "The proxy configuration could not be built. One of the VPNs may have a damaged key.",
+    "coreFailed": "The proxy core would not start.",
+    "network": "Nothing answered. Check the connection and the address.",
+    "subscriptionInvalid": "That address answered with something that is not a subscription.",
+    "notASubscriptionUrl": "A subscription address has to be an http or https link.",
+    "notASubscription": "That group is not a subscription, so there is nothing to refresh.",
+    "activeProfileInUse": "The VPN in use belongs to this subscription. Switch to another one or disconnect first.",
+    "testRunInProgress": "A test is already running. Wait for it or stop it first.",
+    "lookupFailed": "The location could not be looked up through the tunnel.",
+    "systemSetting": "The system refused that change."
   }
 }

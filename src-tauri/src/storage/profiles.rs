@@ -1,11 +1,12 @@
 use rusqlite::{params, OptionalExtension};
 
-use super::models::{NewProfile, Profile, Protocol, TestResult, Tone};
+use super::groups;
+use super::models::{NewProfile, Profile, Protocol, TestOutcome};
 use super::{Db, StorageError};
 
 fn row_to_profile(row: &rusqlite::Row) -> rusqlite::Result<Profile> {
     let protocol: String = row.get("protocol")?;
-    let url_tone: String = row.get("url_tone")?;
+    let url_kind: String = row.get("url_kind")?;
     Ok(Profile {
         id: row.get("id")?,
         name: row.get("name")?,
@@ -15,10 +16,7 @@ fn row_to_profile(row: &rusqlite::Row) -> rusqlite::Result<Profile> {
         group_id: row.get("group_id")?,
         source_id: row.get("source_id")?,
         selected: row.get::<_, i64>("selected")? != 0,
-        url: TestResult {
-            value: row.get("url_value")?,
-            tone: url_tone.parse().unwrap_or(Tone::Muted),
-        },
+        url: TestOutcome::from_stored(&url_kind, row.get("url_millis")?).into(),
         key: row.get("key")?,
     })
 }
@@ -26,7 +24,7 @@ fn row_to_profile(row: &rusqlite::Row) -> rusqlite::Result<Profile> {
 pub fn list_all(db: &Db) -> Result<Vec<Profile>, StorageError> {
     let conn = db.lock();
     let mut stmt = conn.prepare(
-        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key
+        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key
          FROM profiles ORDER BY group_id, position",
     )?;
     let rows = stmt.query_map([], row_to_profile)?;
@@ -37,7 +35,7 @@ pub fn list_all(db: &Db) -> Result<Vec<Profile>, StorageError> {
 pub fn get(db: &Db, id: &str) -> Result<Profile, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key
+        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key
          FROM profiles WHERE id = ?1",
         params![id],
         row_to_profile,
@@ -55,8 +53,8 @@ pub fn insert(db: &Db, profile: &NewProfile) -> Result<(), StorageError> {
         |row| row.get(0),
     )?;
     conn.execute(
-        "INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key, position)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, 'Not tested', 'muted', ?8, ?9)",
+        "INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key, position)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, 'notTested', NULL, ?8, ?9)",
         params![
             profile.id,
             profile.name,
@@ -127,11 +125,11 @@ pub fn delete(db: &Db, id: &str) -> Result<(), StorageError> {
     Ok(())
 }
 
-pub fn set_test_result(db: &Db, id: &str, result: &TestResult) -> Result<(), StorageError> {
+pub fn set_test_outcome(db: &Db, id: &str, outcome: TestOutcome) -> Result<(), StorageError> {
     let conn = db.lock();
     let affected = conn.execute(
-        "UPDATE profiles SET url_value = ?1, url_tone = ?2 WHERE id = ?3",
-        params![result.value, result.tone.as_str(), id],
+        "UPDATE profiles SET url_kind = ?1, url_millis = ?2 WHERE id = ?3",
+        params![outcome.kind_str(), outcome.millis(), id],
     )?;
     if affected == 0 {
         return Err(StorageError::NotFound);
@@ -146,7 +144,7 @@ pub fn set_test_result(db: &Db, id: &str, result: &TestResult) -> Result<(), Sto
 pub fn recently_selected(db: &Db, limit: usize) -> Result<Vec<Profile>, StorageError> {
     let conn = db.lock();
     let mut stmt = conn.prepare(
-        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key
+        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key
          FROM profiles
          WHERE last_selected_at IS NOT NULL
          ORDER BY last_selected_at DESC, name ASC
@@ -164,17 +162,21 @@ pub fn clear_test_results(db: &Db, group_id: &str) -> Result<(), StorageError> {
     let conn = db.lock();
     conn.execute(
         "UPDATE profiles
-         SET url_value = 'Not tested', url_tone = 'muted'
+         SET url_kind = 'notTested', url_millis = NULL
          WHERE group_id = ?1",
         params![group_id],
     )?;
     Ok(())
 }
 
-/// Deletes every profile in `group_id` whose stored test result carries the
-/// `bad` tone — the ones that failed their last test. `skip_id`
+/// Deletes every profile in `group_id` that did not answer its last test.
+///
+/// Not answering is what "unavailable" means here: a timeout, no response,
+/// or a selector the core refused. A server that answered slowly is
+/// available, and used to be deleted alongside them because the filter was
+/// the display colour, which a latency over 400ms also carries. `skip_id`
 /// (the active profile) is never deleted, and untested profiles survive by
-/// construction: their tone is `muted`. Returns how many rows were deleted.
+/// construction. Returns how many rows were deleted.
 pub fn delete_unavailable(
     db: &Db,
     group_id: &str,
@@ -183,11 +185,14 @@ pub fn delete_unavailable(
     let conn = db.lock();
     let affected = match skip_id {
         Some(skip) => conn.execute(
-            "DELETE FROM profiles WHERE group_id = ?1 AND url_tone = 'bad' AND id != ?2",
+            "DELETE FROM profiles
+             WHERE group_id = ?1 AND url_kind IN ('timeout', 'noResponse', 'unavailable')
+               AND id != ?2",
             params![group_id, skip],
         )?,
         None => conn.execute(
-            "DELETE FROM profiles WHERE group_id = ?1 AND url_tone = 'bad'",
+            "DELETE FROM profiles
+             WHERE group_id = ?1 AND url_kind IN ('timeout', 'noResponse', 'unavailable')",
             params![group_id],
         )?,
     };
@@ -250,7 +255,7 @@ pub fn move_to_group(db: &Db, id: &str, target_group_id: &str) -> Result<(), Sto
 /// order of `ordered_ids`. Used to implement both "move up/down" (compute
 /// the swapped order, then reorder) and drag-to-reorder in one primitive
 /// rather than two position-swap-specific queries. Rejects the whole
-/// operation — no partial reorder — if `ordered_ids` doesn't contain
+/// operation - no partial reorder - if `ordered_ids` doesn't contain
 /// exactly the profiles currently in that group.
 pub fn reorder(db: &Db, group_id: &str, ordered_ids: &[String]) -> Result<(), StorageError> {
     let mut conn = db.lock();
@@ -281,452 +286,70 @@ pub fn reorder(db: &Db, group_id: &str, ordered_ids: &[String]) -> Result<(), St
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::storage::groups;
-    use crate::storage::models::NewProfileGroup;
+/// Which way a profile is being nudged within its group.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction {
+    Up,
+    Down,
+}
 
-    /// The base migration already seeds a `default` group; this only adds
-    /// the extra `custom` one these tests need.
-    fn seeded_db() -> Db {
-        let db = Db::open_in_memory().unwrap();
-        groups::insert(
-            &db,
-            &NewProfileGroup {
-                id: "custom".into(),
-                label: "Custom".into(),
-                kind: "custom".into(),
-                source_id: None,
-            },
-        )
-        .unwrap();
-        db
-    }
+impl std::str::FromStr for Direction {
+    type Err = StorageError;
 
-    fn new_profile(id: &str, group_id: &str) -> NewProfile {
-        NewProfile {
-            id: id.into(),
-            name: format!("Profile {id}"),
-            region: "local".into(),
-            protocol: Protocol::VLESS,
-            origin: "local".into(),
-            group_id: group_id.into(),
-            source_id: None,
-            key: format!("vless://{id}"),
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "up" => Ok(Self::Up),
+            "down" => Ok(Self::Down),
+            other => Err(StorageError::InvalidInput(format!(
+                "unknown direction: {other}"
+            ))),
         }
-    }
-
-    #[test]
-    fn insert_then_get_round_trips_all_fields() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        let profile = get(&db, "p1").unwrap();
-        assert_eq!(profile.name, "Profile p1");
-        assert_eq!(profile.group_id, "default");
-        assert_eq!(profile.protocol, Protocol::VLESS);
-        assert!(!profile.selected);
-        assert_eq!(profile.url.value, "Not tested");
-    }
-
-    #[test]
-    fn get_unknown_profile_returns_not_found() {
-        let db = seeded_db();
-        assert!(matches!(get(&db, "missing"), Err(StorageError::NotFound)));
-    }
-
-    #[test]
-    fn insert_rejects_duplicate_ids() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        let err = insert(&db, &new_profile("p1", "default")).unwrap_err();
-        assert!(matches!(err, StorageError::Sqlite(_)));
-    }
-
-    #[test]
-    fn insert_rejects_profile_referencing_an_unknown_group() {
-        let db = seeded_db();
-        let err = insert(&db, &new_profile("p1", "no-such-group")).unwrap_err();
-        assert!(matches!(err, StorageError::Sqlite(_)));
-    }
-
-    #[test]
-    fn inserted_profiles_are_appended_in_order_within_a_group() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-        insert(&db, &new_profile("p3", "default")).unwrap();
-        let ids: Vec<_> = list_all(&db).unwrap().into_iter().map(|p| p.id).collect();
-        assert_eq!(ids, vec!["p1", "p2", "p3"]);
-    }
-
-    #[test]
-    fn select_profile_makes_it_the_only_selected_one() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-        select_profile(&db, "p1").unwrap();
-        select_profile(&db, "p2").unwrap();
-
-        let profiles = list_all(&db).unwrap();
-        let selected: Vec<_> = profiles
-            .iter()
-            .filter(|p| p.selected)
-            .map(|p| p.id.clone())
-            .collect();
-        assert_eq!(selected, vec!["p2"]);
-    }
-
-    #[test]
-    fn select_profile_on_unknown_id_leaves_selection_unchanged() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        select_profile(&db, "p1").unwrap();
-
-        let err = select_profile(&db, "does-not-exist").unwrap_err();
-        assert!(matches!(err, StorageError::NotFound));
-
-        let profile = get(&db, "p1").unwrap();
-        assert!(
-            profile.selected,
-            "original selection must survive a failed re-selection"
-        );
-    }
-
-    #[test]
-    fn rename_rejects_blank_and_whitespace_only_names() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        assert!(matches!(
-            rename(&db, "p1", "   ").unwrap_err(),
-            StorageError::InvalidInput(_)
-        ));
-        assert_eq!(get(&db, "p1").unwrap().name, "Profile p1");
-    }
-
-    #[test]
-    fn rename_unknown_profile_is_not_found() {
-        let db = seeded_db();
-        assert!(matches!(
-            rename(&db, "missing", "New name").unwrap_err(),
-            StorageError::NotFound
-        ));
-    }
-
-    #[test]
-    fn deleting_a_group_cascades_to_its_profiles() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "custom")).unwrap();
-        groups::delete(&db, "custom").unwrap();
-        assert!(matches!(get(&db, "p1"), Err(StorageError::NotFound)));
-    }
-
-    #[test]
-    fn move_to_group_rejects_an_unknown_target_group() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        let err = move_to_group(&db, "p1", "ghost-group").unwrap_err();
-        assert!(matches!(err, StorageError::InvalidInput(_)));
-        assert_eq!(get(&db, "p1").unwrap().group_id, "default");
-    }
-
-    fn add_subscription_group(db: &Db) {
-        groups::insert(
-            db,
-            &NewProfileGroup {
-                id: "sub".into(),
-                label: "Sub".into(),
-                kind: "subscription".into(),
-                source_id: None,
-            },
-        )
-        .unwrap();
-    }
-
-    #[test]
-    fn move_to_group_refuses_a_subscription_group_as_the_target() {
-        let db = seeded_db();
-        add_subscription_group(&db);
-        insert(&db, &new_profile("p1", "default")).unwrap();
-
-        let err = move_to_group(&db, "p1", "sub").unwrap_err();
-
-        assert!(matches!(err, StorageError::InvalidInput(_)));
-        assert_eq!(get(&db, "p1").unwrap().group_id, "default");
-    }
-
-    #[test]
-    fn move_to_group_refuses_to_take_a_profile_out_of_a_subscription() {
-        let db = seeded_db();
-        add_subscription_group(&db);
-        insert(&db, &new_profile("p1", "sub")).unwrap();
-
-        let err = move_to_group(&db, "p1", "custom").unwrap_err();
-
-        assert!(matches!(err, StorageError::InvalidInput(_)));
-        assert_eq!(get(&db, "p1").unwrap().group_id, "sub");
-    }
-
-    #[test]
-    fn move_to_group_on_an_unknown_profile_is_not_found() {
-        let db = seeded_db();
-        assert!(matches!(
-            move_to_group(&db, "ghost", "custom").unwrap_err(),
-            StorageError::NotFound
-        ));
-    }
-
-    #[test]
-    fn move_to_group_appends_at_the_end_of_the_target_group() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "custom")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-        move_to_group(&db, "p2", "custom").unwrap();
-        let ids: Vec<_> = list_all(&db)
-            .unwrap()
-            .into_iter()
-            .filter(|p| p.group_id == "custom")
-            .map(|p| p.id)
-            .collect();
-        assert_eq!(ids, vec!["p1", "p2"]);
-    }
-
-    #[test]
-    fn recently_selected_is_newest_first_and_skips_the_never_chosen() {
-        let db = seeded_db();
-        for id in ["p1", "p2", "p3"] {
-            insert(&db, &new_profile(id, "default")).unwrap();
-        }
-        // unixepoch() has one-second resolution, so order is forced by hand
-        // rather than by racing the clock.
-        select_profile(&db, "p1").unwrap();
-        stamp(&db, "p1", 100);
-        select_profile(&db, "p2").unwrap();
-        stamp(&db, "p2", 300);
-
-        let recent = recently_selected(&db, 5).unwrap();
-
-        let ids: Vec<_> = recent.iter().map(|p| p.id.as_str()).collect();
-        assert_eq!(
-            ids,
-            vec!["p2", "p1"],
-            "newest first, and p3 was never selected"
-        );
-    }
-
-    #[test]
-    fn recently_selected_honours_its_limit() {
-        let db = seeded_db();
-        for (n, id) in ["p1", "p2", "p3"].iter().enumerate() {
-            insert(&db, &new_profile(id, "default")).unwrap();
-            select_profile(&db, id).unwrap();
-            stamp(&db, id, 100 + n as i64);
-        }
-        assert_eq!(recently_selected(&db, 2).unwrap().len(), 2);
-        assert!(recently_selected(&db, 0).unwrap().is_empty());
-    }
-
-    #[test]
-    fn selecting_again_moves_a_profile_back_to_the_front() {
-        let db = seeded_db();
-        for id in ["p1", "p2"] {
-            insert(&db, &new_profile(id, "default")).unwrap();
-            select_profile(&db, id).unwrap();
-        }
-        stamp(&db, "p1", 100);
-        stamp(&db, "p2", 200);
-        assert_eq!(recently_selected(&db, 2).unwrap()[0].id, "p2");
-
-        select_profile(&db, "p1").unwrap();
-
-        assert_eq!(
-            recently_selected(&db, 2).unwrap()[0].id,
-            "p1",
-            "reselecting has to restamp, or the list freezes"
-        );
-    }
-
-    fn stamp(db: &Db, id: &str, at: i64) {
-        db.lock()
-            .execute(
-                "UPDATE profiles SET last_selected_at = ?1 WHERE id = ?2",
-                params![at, id],
-            )
-            .unwrap();
-    }
-
-    #[test]
-    fn set_test_result_stores_the_value_and_its_tone() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        set_test_result(
-            &db,
-            "p1",
-            &TestResult {
-                value: "42 ms".into(),
-                tone: Tone::Good,
-            },
-        )
-        .unwrap();
-        let profile = get(&db, "p1").unwrap();
-        assert_eq!(profile.url.value, "42 ms");
-        assert_eq!(profile.url.tone, Tone::Good);
-    }
-
-    fn fail(db: &Db, id: &str) {
-        set_test_result(
-            db,
-            id,
-            &TestResult {
-                value: "No response".into(),
-                tone: Tone::Bad,
-            },
-        )
-        .unwrap();
-    }
-
-    #[test]
-    fn clear_test_results_resets_only_the_target_group() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-        insert(&db, &new_profile("p3", "custom")).unwrap();
-        fail(&db, "p1");
-        fail(&db, "p2");
-        fail(&db, "p3");
-
-        clear_test_results(&db, "default").unwrap();
-
-        for id in ["p1", "p2"] {
-            let profile = get(&db, id).unwrap();
-            assert_eq!(profile.url.value, "Not tested");
-            assert_eq!(profile.url.tone, Tone::Muted);
-        }
-        let untouched = get(&db, "p3").unwrap();
-        assert_eq!(untouched.url.value, "No response");
-        assert_eq!(untouched.url.tone, Tone::Bad);
-    }
-
-    #[test]
-    fn clear_test_results_is_idempotent_on_untested_profiles() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        clear_test_results(&db, "default").unwrap();
-        clear_test_results(&db, "no-such-group").unwrap();
-        assert_eq!(get(&db, "p1").unwrap().url.value, "Not tested");
-    }
-
-    #[test]
-    fn delete_unavailable_deletes_only_failed_rows_of_the_target_group() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-        insert(&db, &new_profile("p3", "default")).unwrap();
-        insert(&db, &new_profile("p4", "custom")).unwrap();
-        fail(&db, "p1");
-        fail(&db, "p4");
-
-        let deleted = delete_unavailable(&db, "default", None).unwrap();
-
-        assert_eq!(deleted, 1);
-        assert!(matches!(get(&db, "p1"), Err(StorageError::NotFound)));
-        assert!(
-            get(&db, "p3").is_ok(),
-            "never-tested profile survives by construction"
-        );
-        assert!(get(&db, "p4").is_ok(), "other groups are untouched");
-    }
-
-    #[test]
-    fn delete_unavailable_never_deletes_the_skipped_profile() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-        fail(&db, "p1");
-        fail(&db, "p2");
-
-        let deleted = delete_unavailable(&db, "default", Some("p1")).unwrap();
-
-        assert_eq!(deleted, 1);
-        assert!(get(&db, "p1").is_ok());
-        assert!(matches!(get(&db, "p2"), Err(StorageError::NotFound)));
-    }
-
-    #[test]
-    fn delete_unavailable_on_an_unknown_group_deletes_nothing() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        fail(&db, "p1");
-
-        assert_eq!(delete_unavailable(&db, "ghost", None).unwrap(), 0);
-        assert!(get(&db, "p1").is_ok());
-    }
-
-    #[test]
-    fn concurrent_inserts_with_the_same_id_leave_exactly_one_row() {
-        use std::sync::Arc;
-        use std::thread;
-
-        let db = Arc::new(seeded_db());
-        let mut handles = Vec::new();
-        for _ in 0..8 {
-            let db = Arc::clone(&db);
-            handles.push(thread::spawn(move || {
-                insert(&db, &new_profile("race", "default"))
-            }));
-        }
-        let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
-        let ok_count = results.iter().filter(|r| r.is_ok()).count();
-        assert_eq!(
-            ok_count, 1,
-            "exactly one concurrent insert of the same id should succeed"
-        );
-
-        let count: i64 = db
-            .lock()
-            .query_row(
-                "SELECT COUNT(*) FROM profiles WHERE id = 'race'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap();
-        assert_eq!(count, 1);
-    }
-
-    #[test]
-    fn reorder_applies_the_given_order() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-        insert(&db, &new_profile("p3", "default")).unwrap();
-
-        reorder(&db, "default", &["p3".into(), "p1".into(), "p2".into()]).unwrap();
-
-        let ids: Vec<_> = list_all(&db).unwrap().into_iter().map(|p| p.id).collect();
-        assert_eq!(ids, vec!["p3", "p1", "p2"]);
-    }
-
-    #[test]
-    fn reorder_rejects_a_set_that_omits_a_profile_in_the_group() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "default")).unwrap();
-
-        let err = reorder(&db, "default", &["p1".into()]).unwrap_err();
-        assert!(matches!(err, StorageError::InvalidInput(_)));
-
-        // Nothing should have changed.
-        let ids: Vec<_> = list_all(&db).unwrap().into_iter().map(|p| p.id).collect();
-        assert_eq!(ids, vec!["p1", "p2"]);
-    }
-
-    #[test]
-    fn reorder_rejects_an_id_from_a_different_group() {
-        let db = seeded_db();
-        insert(&db, &new_profile("p1", "default")).unwrap();
-        insert(&db, &new_profile("p2", "custom")).unwrap();
-
-        let err = reorder(&db, "default", &["p1".into(), "p2".into()]).unwrap_err();
-        assert!(matches!(err, StorageError::InvalidInput(_)));
     }
 }
+
+/// Moves a profile one place within its own group. At the end it is already
+/// at, this does nothing: a list's first row has nowhere to go up to, and
+/// saying so is not worth an error.
+pub fn move_within_group(db: &Db, id: &str, direction: Direction) -> Result<(), StorageError> {
+    let profile = get(db, id)?;
+    let group = groups::get(db, &profile.group_id)?;
+    let index = group
+        .profile_ids
+        .iter()
+        .position(|candidate| candidate == id)
+        .ok_or(StorageError::NotFound)?;
+    let target = match direction {
+        Direction::Up => index.checked_sub(1),
+        Direction::Down => index
+            .checked_add(1)
+            .filter(|i| *i < group.profile_ids.len()),
+    };
+    let Some(target) = target else {
+        return Ok(());
+    };
+    let mut ordered = group.profile_ids;
+    ordered.swap(index, target);
+    reorder(db, &group.id, &ordered)
+}
+
+/// Lifts a profile out of its position and drops it where another one sits,
+/// shifting the rest along. Both have to be in the same group.
+pub fn move_before(db: &Db, from_id: &str, to_id: &str) -> Result<(), StorageError> {
+    let from = get(db, from_id)?;
+    let group = groups::get(db, &from.group_id)?;
+    let mut ordered = group.profile_ids;
+    let from_index = ordered
+        .iter()
+        .position(|c| c == from_id)
+        .ok_or(StorageError::NotFound)?;
+    let to_index = ordered
+        .iter()
+        .position(|c| c == to_id)
+        .ok_or(StorageError::NotFound)?;
+    let id = ordered.remove(from_index);
+    ordered.insert(to_index, id);
+    reorder(db, &group.id, &ordered)
+}
+
+#[cfg(test)]
+mod tests;

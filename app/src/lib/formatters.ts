@@ -1,8 +1,9 @@
 import type { ExitLocation } from '@/types/kagerou'
 
-/** Bytes/sec (what the Clash API reports) → Mbit/s with one decimal,
+/** Bytes/sec (what the Clash API reports) -> Mbit/s with one decimal,
  * matching the dashboard readout's fixed "Mbps" unit label. */
-export const formatSpeedMbps = (bytesPerSecond: number): string => ((bytesPerSecond * 8) / 1_000_000).toFixed(1)
+export const formatSpeedMbps = (bytesPerSecond: number): string =>
+  ((bytesPerSecond * 8) / 1_000_000).toFixed(1)
 
 /** Splits a byte count into a value + unit pair so the UI can style the
  * unit separately from the number. */
@@ -18,8 +19,8 @@ export const formatBytes = (bytes: number): { value: string; unit: string } => {
 }
 
 /** An ISO 3166-1 alpha-2 region code (what the backend's region_from_name
- * emits) → "🇦🇹 Austria"-style display string, localized via Intl.
- * Anything else ("", "Local profile", garbage) → null. */
+ * emits) -> "🇦🇹 Austria"-style display string, localized via Intl.
+ * Anything else ("", "Local profile", garbage) -> null. */
 export const regionToFlag = (region: string): string | null =>
   /^[A-Z]{2}$/.test(region)
     ? String.fromCodePoint(...[...region].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
@@ -44,7 +45,7 @@ export const formatExitLocation = (exit: ExitLocation, language: string): string
   return flag ? `${flag} ${place}` : place
 }
 
-/** Elapsed milliseconds → "h:mm:ss" past the first hour, "m:ss" before it.
+/** Elapsed milliseconds -> "h:mm:ss" past the first hour, "m:ss" before it.
  * Anything negative (a clock nudged backwards mid-session) reads as zero
  * rather than as a countdown. */
 export const formatUptime = (elapsedMs: number): string => {
@@ -52,10 +53,17 @@ export const formatUptime = (elapsedMs: number): string => {
   const seconds = String(total % 60).padStart(2, '0')
   const minutes = Math.floor(total / 60) % 60
   const hours = Math.floor(total / 3600)
-  return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}`
+    : `${minutes}:${seconds}`
 }
 
-const logTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', hour12: false, minute: '2-digit', second: '2-digit' })
+const logTime = new Intl.DateTimeFormat(undefined, {
+  hour: '2-digit',
+  hour12: false,
+  minute: '2-digit',
+  second: '2-digit',
+})
 
 /** The ISO timestamp the store keeps to the `HH:MM:SS` the log column shows.
  * The entry keeps the ISO form: it is the sortable one, and it is what a copy
@@ -81,5 +89,7 @@ export const formatRelativeTime = (millis: string, language: string): string => 
   const elapsed = Math.max(0, Date.now() - stamp)
   const relative = new Intl.RelativeTimeFormat(language, { numeric: 'auto' })
   const unit = RELATIVE_UNITS.find(([, size]) => elapsed >= size)
-  return unit ? relative.format(-Math.round(elapsed / unit[1]), unit[0]) : relative.format(0, 'second')
+  return unit
+    ? relative.format(-Math.round(elapsed / unit[1]), unit[0])
+    : relative.format(0, 'second')
 }

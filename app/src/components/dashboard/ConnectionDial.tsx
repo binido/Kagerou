@@ -26,8 +26,17 @@ export function ConnectionDial({ connected, onToggle }: ConnectionDialProps) {
       type="button"
       variant="ghost"
     >
-      <span className={cn('flex size-full flex-col items-center justify-center rounded-full border border-hairline', connected ? 'bg-raised' : 'bg-surface')}>
-        <Power aria-hidden="true" className={cn('size-5', connected ? 'text-lavender-hi' : 'text-muted-copy')} strokeWidth={1.7} />
+      <span
+        className={cn(
+          'flex size-full flex-col items-center justify-center rounded-full border border-hairline',
+          connected ? 'bg-raised' : 'bg-surface',
+        )}
+      >
+        <Power
+          aria-hidden="true"
+          className={cn('size-5', connected ? 'text-lavender-hi' : 'text-muted-copy')}
+          strokeWidth={1.7}
+        />
         <span className="type-display mt-1.5 px-2 text-center text-[12px] leading-tight tracking-[-0.01em] text-primary">
           {stateLabel}
         </span>

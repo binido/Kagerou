@@ -1,12 +1,13 @@
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
-use std::time::{Instant, SystemTime};
+use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 
 use tokio::sync::watch;
 
 use crate::clash_api::ClashApiClient;
 use crate::singbox::{SidecarLauncher, Supervisor};
 use crate::storage::Db;
+use crate::usecase::testing::TestCore;
 
 /// Paths and network addresses resolved once at startup (sidecar binary
 /// location, where the generated sing-box config is written, and the
@@ -26,26 +27,15 @@ pub struct RuntimePaths {
 pub struct AppState {
     pub db: Db,
     pub supervisor: Mutex<Supervisor<SidecarLauncher>>,
-    /// Its own supervisor, not the connection's: tests must work while
-    /// connected, and must never take the user's tunnel down.
-    pub test_supervisor: Mutex<Supervisor<SidecarLauncher>>,
     pub clash: Mutex<Option<ClashApiClient>>,
     pub traffic_stop: Mutex<Option<watch::Sender<bool>>>,
     /// When the running connection came up, so the dashboard's uptime is
     /// measured by whoever kept counting rather than by the WebView, which
     /// forgets everything on a reload.
     pub connected_since: Mutex<Option<SystemTime>>,
-    /// Set while a core is running purely to serve delay tests, which is not
-    /// the same thing as being connected: no TUN, nothing announced to the
-    /// UI, and it shuts itself down once the tests stop coming.
-    pub test_clash: Mutex<Option<ClashApiClient>>,
-    pub last_test_at: Mutex<Option<Instant>>,
-    /// Serialises starting that core, so a group test firing dozens of
-    /// concurrent requests starts exactly one.
-    pub test_core_gate: tokio::sync::Mutex<()>,
-    /// Set while a group test is running; dropping it asks the run to stop
-    /// and doubles as the "already running" guard.
-    pub test_run_cancel: Mutex<Option<watch::Sender<bool>>>,
+    /// The core that answers latency tests. Its own process, its own ports,
+    /// and not the connection: see `usecase::testing`.
+    pub test_core: Arc<TestCore>,
     pub paths: RuntimePaths,
 }
 
@@ -75,18 +65,14 @@ impl AppState {
                 run_dir: run_dir.clone(),
                 system_proxy_port: paths.mixed_listen_port,
             })),
-            test_supervisor: Mutex::new(Supervisor::new(SidecarLauncher {
+            clash: Mutex::new(None),
+            traffic_stop: Mutex::new(None),
+            connected_since: Mutex::new(None),
+            test_core: Arc::new(TestCore::new(SidecarLauncher {
                 binary_path: sing_box_binary,
                 run_dir,
                 system_proxy_port: paths.test_mixed_listen_port,
             })),
-            clash: Mutex::new(None),
-            traffic_stop: Mutex::new(None),
-            connected_since: Mutex::new(None),
-            test_clash: Mutex::new(None),
-            last_test_at: Mutex::new(None),
-            test_core_gate: tokio::sync::Mutex::new(()),
-            test_run_cancel: Mutex::new(None),
             paths,
         }
     }
@@ -100,7 +86,12 @@ impl AppState {
         self.clash.lock().unwrap().clone()
     }
 
-    pub fn test_clash_client(&self) -> Option<ClashApiClient> {
-        self.test_clash.lock().unwrap().clone()
+    /// Whether the user's own core is up. Asked in several commands, and
+    /// worth one name: the test core being up is not the same thing.
+    pub fn is_connected(&self) -> bool {
+        matches!(
+            *self.supervisor.lock().unwrap().status(),
+            crate::singbox::Status::Running
+        )
     }
 }

@@ -24,7 +24,12 @@ type SidebarLabelKey =
   | 'sidebar.logs'
   | 'sidebar.settings'
 
-const navigation: Array<{ key: RouteKey; labelKey: SidebarLabelKey; to: string; icon: typeof LayoutDashboard }> = [
+const navigation: Array<{
+  key: RouteKey
+  labelKey: SidebarLabelKey
+  to: string
+  icon: typeof LayoutDashboard
+}> = [
   { key: 'dashboard', labelKey: 'sidebar.dashboard', to: '/dashboard', icon: LayoutDashboard },
   { key: 'groups', labelKey: 'sidebar.groups', to: '/groups', icon: Server },
   { key: 'routing-rules', labelKey: 'sidebar.routingRules', to: '/routing-rules', icon: Route },
@@ -48,10 +53,18 @@ export function Sidebar() {
         'max-[960px]:w-[68px] max-[960px]:px-3',
       )}
     >
-      <div className={cn('mb-11 flex items-center gap-3 px-3', collapsed && 'justify-center px-0', 'max-[960px]:justify-center max-[960px]:px-0')}>
+      <div
+        className={cn(
+          'mb-11 flex items-center gap-3 px-3',
+          collapsed && 'justify-center px-0',
+          'max-[960px]:justify-center max-[960px]:px-0',
+        )}
+      >
         <BrandMark />
         <span className={cn('min-w-0', collapsed && 'hidden', 'max-[960px]:hidden')}>
-          <span className="type-display block text-[18px] leading-none text-primary">{t('brand.name')}</span>
+          <span className="type-display block text-[18px] leading-none text-primary">
+            {t('brand.name')}
+          </span>
         </span>
       </div>
 
@@ -100,7 +113,9 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto space-y-3 pt-8">
-        {updateAvailable ? <SidebarUpdateNotice collapsed={collapsed} update={updateAvailable} /> : null}
+        {updateAvailable ? (
+          <SidebarUpdateNotice collapsed={collapsed} update={updateAvailable} />
+        ) : null}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -115,11 +130,19 @@ export function Sidebar() {
                 onClick={toggleSidebar}
                 type="button"
               >
-                {collapsed ? <PanelLeftOpen aria-hidden="true" className="size-[18px]" strokeWidth={1.7} /> : <PanelLeftClose aria-hidden="true" className="size-[18px]" strokeWidth={1.7} />}
-                <span className={cn(collapsed && 'hidden', 'max-[960px]:hidden')}>{collapsed ? t('sidebar.expand') : t('sidebar.collapse')}</span>
+                {collapsed ? (
+                  <PanelLeftOpen aria-hidden="true" className="size-[18px]" strokeWidth={1.7} />
+                ) : (
+                  <PanelLeftClose aria-hidden="true" className="size-[18px]" strokeWidth={1.7} />
+                )}
+                <span className={cn(collapsed && 'hidden', 'max-[960px]:hidden')}>
+                  {collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+                </span>
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">{collapsed ? t('sidebar.expand') : t('sidebar.collapse')}</TooltipContent>
+            <TooltipContent side="right">
+              {collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+            </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

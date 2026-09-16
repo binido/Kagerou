@@ -26,8 +26,10 @@ export const themePacks: readonly ThemePack[] = [
 export const themes: readonly Theme[] = themePacks.flatMap((pack) => pack.themes)
 export const themesById = new Map<ThemeId, Theme>(themes.map((theme) => [theme.id, theme]))
 
-export const getTheme = (themeId: string | null | undefined) => (themeId ? themesById.get(themeId) : undefined)
-export const isThemeId = (themeId: string | null | undefined): themeId is ThemeId => Boolean(getTheme(themeId))
+export const getTheme = (themeId: string | null | undefined) =>
+  themeId ? themesById.get(themeId) : undefined
+export const isThemeId = (themeId: string | null | undefined): themeId is ThemeId =>
+  Boolean(getTheme(themeId))
 export const getInitialThemeId = (): ThemeId => {
   if (typeof window === 'undefined') return DEFAULT_THEME_ID
   const storedThemeId = window.localStorage.getItem(THEME_STORAGE_KEY)

@@ -1,21 +1,10 @@
 import type { ThemeId } from '@/themes/types'
 
-export type RouteKey =
-  | 'dashboard'
-  | 'groups'
-  | 'routing-rules'
-  | 'logs'
-  | 'settings'
+export type RouteKey = 'dashboard' | 'groups' | 'routing-rules' | 'logs' | 'settings'
 
 export type ProfileOrigin = 'local' | 'imported'
 export type ProfileGroupKind = 'default' | 'custom' | 'subscription'
-export type ProfileProtocol =
-  | 'VLESS'
-  | 'VMess'
-  | 'Trojan'
-  | 'Shadowsocks'
-  | 'Hysteria2'
-  | 'Tuic'
+export type ProfileProtocol = 'VLESS' | 'VMess' | 'Trojan' | 'Shadowsocks' | 'Hysteria2' | 'Tuic'
 export type TestTone = 'good' | 'warn' | 'bad' | 'muted'
 export type SourceStatus = 'up-to-date' | 'ready' | 'refresh-due' | 'updating'
 export type Outbound = 'Direct' | 'Proxy' | 'Block'
@@ -35,13 +24,25 @@ export type Language = 'en' | 'ru'
 export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
 export type SubscriptionUpdateInterval = '5' | '10' | '15' | '30' | '60' | 'custom'
 export type GroupSortMode = 'ping' | 'name' | 'protocol'
-/** sing-box's config log levels — deliberately not the display `LogLevel` above. */
+/** sing-box's config log levels - deliberately not the display `LogLevel` above. */
 export type SingBoxLogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'panic'
 
-export interface TestResult {
-  value: string
-  tone: TestTone
-}
+/** Mirrors `storage::models::TestOutcome`: what measuring a profile
+ * produced. A kind and, for a latency, a number - not a sentence, so
+ * sorting has something to compare and this side has something to
+ * translate. */
+export type TestOutcome =
+  | { kind: 'notTested' }
+  | { kind: 'latency'; millis: number }
+  | { kind: 'timeout' }
+  | { kind: 'noResponse' }
+  | { kind: 'unavailable' }
+
+/** The outcome plus the colour it implies. The thresholds that decide the
+ * colour live in Rust, so the two can never disagree. */
+export type TestResult = TestOutcome & { tone: TestTone }
+
+export const UNTESTED: TestResult = { kind: 'notTested', tone: 'muted' }
 
 export interface Profile {
   id: string
@@ -91,8 +92,7 @@ export type ImportOutcome =
 /** A failed attempt carries its text back so it can be corrected by hand. An
  * empty `error` means there was nothing to import in the first place. */
 export type ImportAttempt =
-  | { status: 'imported'; outcome: ImportOutcome }
-  | { status: 'failed'; text: string; error: string }
+  { status: 'imported'; outcome: ImportOutcome } | { status: 'failed'; text: string; error: string }
 
 export interface RoutingPreset {
   id: string
@@ -168,64 +168,4 @@ export interface SettingsState {
   groupSort: GroupSortMode
   logLevel: SingBoxLogLevel
   testUrl: string
-}
-
-export interface KagerouStore {
-  hydrated: boolean
-  hydrateError: { message: string; dataDir: string } | null
-  sidebarCollapsed: boolean
-  connected: boolean
-  activeProfileId: string
-  profiles: Profile[]
-  profileGroups: ProfileGroup[]
-  sources: Source[]
-  routingPresets: RoutingPreset[]
-  routingRules: RoutingRule[]
-  /** Rules were edited after the current connection came up, so the running
-   * core is still on the config generated at connect time. */
-  rulesChangedSinceConnect: boolean
-  logs: LogEntry[]
-  trafficSample: TrafficSample
-  trafficHistory: TrafficSample[]
-  /** Live connections reported by the last sample; `null` before the first
-   * one arrives or when the Clash API fetch failed. */
-  activeConnections: number | null
-  /** Unix milliseconds the current connection came up, or `null` when down. */
-  connectedSince: number | null
-  exitLocation: ExitLocation | null
-  exitLocationPending: boolean
-  updateAvailable: UpdateInfo | null
-  testRun: TestRun | null
-  sessionTraffic: SessionTraffic
-  settings: SettingsState
-  hydrate: () => Promise<void>
-  toggleSidebar: () => void
-  toggleConnection: () => Promise<void>
-  setProfileGroupOpen: (id: string, open: boolean) => void
-  addProfileGroup: (label: string) => Promise<string | null>
-  renameProfileGroup: (id: string, label: string) => Promise<boolean>
-  selectProfile: (id: string) => Promise<void>
-  renameProfile: (id: string, name: string) => Promise<boolean>
-  deleteProfile: (id: string) => Promise<void>
-  moveProfileToGroup: (profileId: string, targetGroupId: string) => Promise<boolean>
-  moveProfile: (id: string, direction: 'up' | 'down') => Promise<boolean>
-  reorderProfiles: (fromId: string, toId: string) => Promise<boolean>
-  runProfileTest: (id: string) => Promise<TestResult | null>
-  startGroupTest: (groupId: string | null) => Promise<void>
-  cancelGroupTest: () => Promise<void>
-  clearGroupTestResults: (groupId: string) => Promise<void>
-  deleteUnavailableProfiles: (groupId: string) => Promise<number>
-  importText: (text: string) => Promise<ImportAttempt>
-  importFromClipboard: () => Promise<ImportAttempt>
-  updateSource: (id: string, patch: Partial<Pick<Source, 'name' | 'value'>>) => Promise<boolean>
-  refreshSource: (id: string) => Promise<void>
-  deleteSubscription: (groupId: string) => Promise<boolean>
-  setPreset: (id: string, enabled: boolean) => void
-  selectRule: (id: string) => void
-  updateRule: (id: string, patch: Partial<Pick<RoutingRule, 'match' | 'outbound'>>) => void
-  addRule: (match: string, outbound: Outbound) => Promise<string | null>
-  deleteRule: (id: string) => Promise<boolean>
-  setTheme: (themeId: ThemeId) => void
-  updateSettings: (patch: Partial<SettingsState>) => void
-  refreshExitLocation: () => Promise<void>
 }

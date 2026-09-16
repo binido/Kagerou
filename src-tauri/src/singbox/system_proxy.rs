@@ -1,23 +1,12 @@
-//! Clears a system proxy that sing-box set but could not undo.
-//!
-//! sing-box's `set_system_proxy` restores the OS setting only on a clean
-//! shutdown. On macOS and Linux the core is asked to exit with SIGTERM first
-//! (see `process::terminate_gracefully`), which is enough. Windows has no
-//! signal to send a windowless child, so there the proxy is reset from here
-//! once the core is gone: after every exit, and at startup for a session that
-//! crashed. Only a proxy pointing at our own listen port is touched, so one
-//! the user set up for something else survives.
-//!
-//! WinINet rather than the `Internet Settings` registry values: WinINet keeps
-//! its own per-connection blob, and writing the legacy values alone does not
-//! reliably take effect. This is also how sing-box sets the proxy itself.
-//!
-//! The Windows half is built from the WinINet docs and type-checked against
-//! the Windows target, but has not been run on a Windows host.
-
 /// Resets the system proxy to direct if it still points at the local mixed
-/// inbound on `port`. Best effort: a failure leaves the proxy as it was, and
-/// there is nothing more useful to do with it than there was before.
+/// inbound on `port`.
+///
+/// Windows has no signal to send a windowless child, so sing-box never gets
+/// to undo its own `set_system_proxy` there. This runs after every exit and
+/// again at startup, for a session that crashed. Only a proxy pointing at our
+/// own listen port is touched, so one the user set up for something else
+/// survives. Best effort - a failure leaves the proxy as it was, which is
+/// where it already was.
 #[cfg(windows)]
 pub fn clear_if_ours(port: u16) {
     if let Some(server) = wininet::enabled_proxy_server() {
@@ -27,7 +16,9 @@ pub fn clear_if_ours(port: u16) {
     }
 }
 
-/// sing-box undoes the proxy itself here; see the module docs.
+/// Nothing to do. sing-box restores the OS setting on a clean shutdown, and
+/// on macOS and Linux the core is asked to exit with SIGTERM first (see
+/// `process::terminate_gracefully`), which is clean enough to reach it.
 #[cfg(not(windows))]
 pub fn clear_if_ours(_port: u16) {}
 
@@ -45,6 +36,12 @@ fn points_at_local_port(server: &str, port: u16) -> bool {
     })
 }
 
+/// WinINet rather than the `Internet Settings` registry values. WinINet keeps
+/// its own per-connection blob, and writing the legacy values alone does not
+/// reliably take effect. This is also how sing-box sets the proxy itself.
+///
+/// Built from the WinINet docs and type-checked against the Windows target,
+/// but never run on a Windows host.
 #[cfg(windows)]
 mod wininet {
     use std::ffi::c_void;
@@ -135,30 +132,4 @@ mod wininet {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::points_at_local_port;
-
-    #[test]
-    fn a_bare_address_on_our_port_is_ours() {
-        assert!(points_at_local_port("127.0.0.1:2080", 2080));
-    }
-
-    #[test]
-    fn a_per_scheme_list_or_a_scheme_prefix_still_counts() {
-        assert!(points_at_local_port(
-            "http=127.0.0.1:2080;https=127.0.0.1:2080",
-            2080
-        ));
-        assert!(points_at_local_port("http://127.0.0.1:2080", 2080));
-        assert!(points_at_local_port("socks=127.0.0.1:2080", 2080));
-    }
-
-    #[test]
-    fn a_proxy_the_user_set_up_for_something_else_is_left_alone() {
-        assert!(!points_at_local_port("127.0.0.1:20800", 2080));
-        assert!(!points_at_local_port("127.0.0.1:8080", 2080));
-        assert!(!points_at_local_port("corp-proxy.example:2080", 2080));
-        assert!(!points_at_local_port("", 2080));
-        assert!(!points_at_local_port(";;=", 2080));
-    }
-}
+mod tests;
