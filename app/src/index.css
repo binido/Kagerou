@@ -171,7 +171,13 @@
 
 @layer components {
   .log-row-grid {
-    grid-template-columns: 186px 54px minmax(0, 1fr);
+    /* Off-screen rows skip layout and paint but stay in the DOM, so
+       find-in-page and text selection still reach them - which is what a
+       windowing library would take away. `auto` lets a stacked row that turned
+       out taller than one line keep its measured height. */
+    contain-intrinsic-size: auto 21px;
+    content-visibility: auto;
+    grid-template-columns: 70px 54px minmax(0, 1fr);
   }
 
   .log-toolbar-control {

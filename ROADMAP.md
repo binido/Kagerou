@@ -104,7 +104,7 @@ row.
 | Localisation | 🟡 | English and Russian. One hole: subscription refresh timestamps are stored as English prose by the backend, and the groups page translates only the one phrase it writes, so anything else reaches the screen untranslated — see [the timestamp row](#accessibility--ux-audit) in the audit. |
 | Live traffic telemetry | ✅ | Download and upload speed, session totals, live connection count and session uptime, read from sing-box's own traffic and connections endpoints so they survive a frontend reload. A sparkline plots the last minute of speed, scaled to the window's own peak with a 1 Mbit/s floor and that peak labelled, and absorbs whatever height the rest of the dashboard leaves it. |
 | Exit location lookup | ✅ | The dashboard names the exit country and city by asking a public service (ipwho.is), through the tunnel, what address it sees — replacing a guess made from the flag emoji in the profile's name, which most names do not carry. The exit IP sits beside it as the check that traffic really is leaving where it claims. A stored setting, on by default. With no lookup the line is simply absent — the flag it used to fall back to is already in the profile name above it — and the last session's location stays, unhighlighted, after disconnecting. Refreshed on connect, on a profile switch, and on demand, retrying a few times because the connection is announced while sing-box is still opening its inbound. |
-| Log viewer | 🟡 | Streams the core's output live, with level detection. Three defects found by the audit: the timestamp column prints a raw ISO string, the INFO level uses a hardcoded hex that ignores the theme, and 500 rows render unvirtualised on every incoming line. |
+| Log viewer | ✅ | Streams the core's output live, with level detection. The three defects the audit found are fixed: the column shows `HH:MM:SS` while the entry keeps its ISO timestamp, the INFO level uses `text-body` like the two levels below it, and rows carry `content-visibility: auto`, so off-screen ones skip layout and paint but stay in the DOM for find-in-page and selection. The audit's snippet put that property on the list container, which skips nothing — the container is the scrolled content and is never fully off screen; it belongs on the row, which is also what its intrinsic height describes. The same pass fixed a crash the audit had understated: the character class escaping the search query was malformed, so nothing was escaped and a query containing `(` or `[` threw inside render — with no error boundary above it, that empties the window. The escaping now lives in `app/src/lib/log-search.ts` with tests. |
 | Connection list | 📋 | The Clash API already reports every live connection (host, rule, upload, download, duration); nothing displays them. Include "close connection" and "close all". |
 | Embedded sing-box dashboard | 📋 | NekoBox bundles Yacd. The Clash API is already running and reachable, so this is mostly a window and a bundled static build. |
 | App icon | ✅ | `assets/icon-source.svg` is the source: the mark on a Catppuccin Mocha plate, drawn on Apple's macOS grid (an 824×824 rounded square inset in a 1024 canvas) so it sits the same size as its neighbours in the dock. Regenerate the platform icons with `pnpm tauri icon assets/icon-source.png`. The mark loses its detail below about 48px, which would need separate small-size artwork inside the `.ico` and `.icns` — `tauri icon` scales a single source, so that is a manual job nobody has judged worth doing. |
@@ -542,7 +542,7 @@ doing.
   Verify: Tab through the sidebar and see the ring on every item, including
   the active one, in all eight themes. **Good first issue.**
 
-- [ ] **Log rows print a raw ISO timestamp.**
+- [x] **Log rows print a raw ISO timestamp.**
   `app/src/components/logs/LogRow.tsx:28`, `app/src/store/kagerou-store.ts:46`.
 
   The store stores `new Date().toISOString()` and the row renders it
@@ -570,7 +570,7 @@ doing.
   instead of twenty-four — `app/src/index.css:159` has it at `186px`.
   **Good first issue.**
 
-- [ ] **A hardcoded hex colour in the log level palette.**
+- [x] **A hardcoded hex colour in the log level palette.**
   `app/src/components/logs/LogRow.tsx:5`.
 
   ```ts
@@ -585,7 +585,7 @@ doing.
   below already use `text-warn` and `text-bad` correctly.
   **Good first issue.**
 
-- [ ] **Five hundred log rows render unvirtualised.**
+- [x] **Five hundred log rows render unvirtualised.**
   `app/src/store/kagerou-store.ts:18`, `app/src/components/logs/LogViewer.tsx:18`.
 
   `MAX_LOG_ENTRIES = 500` and the viewer maps all of them. Each row then

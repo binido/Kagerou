@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { LogToolbar } from '@/components/logs/LogToolbar'
+import { formatLogTimestamp } from '@/lib/formatters'
 import { LogViewer } from '@/components/logs/LogViewer'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -13,7 +14,9 @@ export function LogsPage() {
   const [query, setQuery] = useState('')
   const normalizedQuery = query.trim().toLowerCase()
   const entries = useMemo(
-    () => logs.filter((entry) => `${entry.timestamp} ${entry.level} ${entry.message}`.toLowerCase().includes(normalizedQuery)),
+    // Both forms of the time: the formatted one is what the column shows and
+    // what a user types, the ISO one is the only place the date survives.
+    () => logs.filter((entry) => `${formatLogTimestamp(entry.timestamp)} ${entry.timestamp} ${entry.level} ${entry.message}`.toLowerCase().includes(normalizedQuery)),
     [logs, normalizedQuery],
   )
 
