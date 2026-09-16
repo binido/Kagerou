@@ -6,6 +6,13 @@
   "permissions": [
     "core:default",
     "autostart:default",
-    "clipboard-manager:allow-read-text"
+    "clipboard-manager:allow-read-text",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://github.com/binido/Kagerou" },
+        { "url": "https://github.com/binido/Kagerou/*" }
+      ]
+    }
   ]
 }

@@ -42,6 +42,10 @@ pub fn run() {
         // Windows, a paste callout on macOS and switched off by default in
         // WebKitGTK; the plugin reads it natively on all three.
         .plugin(tauri_plugin_clipboard_manager::init())
+        // Links to the repository and to a release have to leave the
+        // WebView: `target="_blank"` opens nothing in a bundled app, so the
+        // update notice arrived and then went nowhere.
+        .plugin(tauri_plugin_opener::init())
         // LaunchAgent writes a plist under the user's LaunchAgents directory;
         // the AppleScript route it competes with is unreliable on modern macOS.
         .plugin(tauri_plugin_autostart::init(
