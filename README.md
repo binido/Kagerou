@@ -10,7 +10,7 @@ Built with Rust and Tauri. Available for Windows, macOS, and Linux.
   <img src="assets/screenshots/dashboard.png" alt="Kagerou dashboard" width="100%" />
 </p>
 
-**[Features](#features)** · **[Supported protocols](#supported-protocols)** · **[Getting started](#getting-started)** · **[Development](#development)** · **[Roadmap](ROADMAP.md)** · **[Contributing](CONTRIBUTING.md)**
+**[Features](#features)** · **[Screenshots](#screenshots)** · **[Supported protocols](#supported-protocols)** · **[Getting started](#getting-started)** · **[Development](#development)** · **[Roadmap](ROADMAP.md)** · **[Contributing](CONTRIBUTING.md)**
 
 ## Why Kagerou
 
@@ -54,11 +54,38 @@ Most sing-box clients either expose a configuration file or hide the core behind
 ### Interface
 
 - English and Russian localisation.
-- Catppuccin and Kanagawa themes.
-- Dark, light, and system theme variants.
+- Seven built-in themes: four Catppuccin flavours and three Kanagawa variants, light and dark.
 - Native desktop window and tray integration.
 
 Kagerou is actively evolving. Some controls are already visible while their backend behaviour is still being completed. See [ROADMAP.md](ROADMAP.md) for the exact status of every feature.
+
+## Screenshots
+
+Every VPN, subscription group, and single pasted key on one page.
+
+<p align="center">
+  <img src="assets/screenshots/groups.png" alt="Group list with a subscription group, its profiles, and their latency" width="100%" />
+</p>
+
+Presets for the common cases, plus your own domain, suffix, and CIDR rules.
+
+<p align="center">
+  <img src="assets/screenshots/routing-rules.png" alt="Routing rules page with presets and custom traffic matches" width="100%" />
+</p>
+
+Connection, appearance, startup, and subscription settings, applied as you change them.
+
+<p align="center">
+  <img src="assets/screenshots/settings.png" alt="Settings page" width="100%" />
+</p>
+
+### Themes
+
+Four Catppuccin flavours and three Kanagawa variants, switched in Settings without a restart.
+
+<p align="center">
+  <img src="assets/screenshots/themes.png" alt="The dashboard in all seven themes" width="100%" />
+</p>
 
 ## Supported protocols
 
@@ -79,7 +106,7 @@ Kagerou is actively evolving. Some controls are already visible while their back
 
 Prebuilt bundles are published on the [Releases](https://github.com/binido/Kagerou/releases) page. If you want to run the latest code or build for an unsupported target, build Kagerou locally with Rust, Node.js, and pnpm.
 
-The latest release is [v0.4.0](https://github.com/binido/Kagerou/releases/tag/v0.4.0).
+The latest release is [v0.5.0](https://github.com/binido/Kagerou/releases/tag/v0.5.0).
 
 ### Prerequisites
 
