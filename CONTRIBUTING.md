@@ -49,7 +49,7 @@ cd src-tauri && cargo test -- --ignored # plus the smoke test against the real s
 cd app && pnpm test                     # frontend store logic (Vitest)
 ```
 
-New backend logic should ship with tests covering edge cases and error paths, not just the happy path — see the existing `#[cfg(test)] mod tests` blocks in `src-tauri/src/` for the pattern (mocked launchers/HTTP servers instead of touching a real sing-box process). Frontend tests target the Zustand store's business logic, not component rendering.
+New backend logic should ship with tests covering edge cases and error paths, not just the happy path — see the existing `tests.rs` sibling modules in `src-tauri/src/` for the pattern (each one is the `#[cfg(test)] mod tests;` of the file next to it, so tests still reach private items) (mocked launchers/HTTP servers instead of touching a real sing-box process). Frontend tests target the Zustand store's business logic, not component rendering.
 
 ## Code style
 
