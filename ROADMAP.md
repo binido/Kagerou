@@ -154,10 +154,10 @@ section](#accessibility--ux-audit) below, with a fix written out for each.
 
 | Issue | Status | Notes |
 |---|---|---|
-| `ProfileTable` renders every row twice | 📋 | The wide table and the narrow card list are both rendered on every pass, with CSS hiding whichever doesn't apply. Correct, but it doubles the DOM and the render work for every profile in every group. A `matchMedia` hook would render one or the other. **Good first issue.** |
+| `ProfileTable` renders every row twice | ✅ | Fixed in `5a6eca3`: a `ResizeObserver` on the table's own box decides between the wide table and the stacked rows, so one of the two is rendered and the other never reaches the DOM. Measured on the container rather than the window because the sidebar and the page padding take a different share of the window at every size. |
 | Linux desktop entry and icon are malformed | ✅ | `bundle.category` is `Utility`, so the generated `.desktop` carries `Categories=Utility;` instead of nothing and the app lands in a menu section. `Network;` would suit a proxy client better, but Tauri only reaches it through `Entertainment` or `SocialNetworking`, and those are the categories macOS would then advertise in the bundle. The 256×256 icon is listed as `256x256.png` rather than `128x128@2x.png`: the bundler names the hicolor directory after the image's own dimensions and appends `@2` for a retina filename, which put a 256×256 image in `256x256@2/`, a directory hicolor does not define. Rerunning `tauri icon` writes the `@2x` name back, so the list in `tauri.conf.json` has to be corrected again after it. Neither package was built to confirm this — the release workflow is where it will show. |
 | Dead profile-ordering plumbing | 📋 | `moveProfile` and `reorderProfiles` in the store, and the `move_profile` / `reorder_profiles` Tauri commands behind them, have no UI calling them. Either wire up manual reordering or delete all four; leaving them is a trap for the next person who greps for them. |
-| Dialogs remount via their `key` | 📋 | `ProfileGroupDialog` includes the open flag in its React `key`, so every open and close throws the component away to reset its form state. It works, but resetting state on open would be the honest version. **Good first issue.** |
+| Dialogs remount via their `key` | ✅ | Fixed in `fb2fd1d`: `ProfileGroupDialog` keeps the previous `open` in state and resets its form when the flag flips, so the component stays mounted through its exit animation instead of being thrown away and rebuilt on every open. |
 
 ---
 
@@ -752,7 +752,7 @@ doing.
   The error also belongs directly under the input rather than above the
   footer, so the eye finds it where the mistake is. **Good first issue.**
 
-- [ ] **URL fields are typed as plain text and spell-checked.**
+- [x] **URL fields are typed as plain text and spell-checked.**
   `app/src/components/settings/SettingTextRow.tsx:37`.
 
   The connection-test URL is `type="text"` with spellcheck on, so the

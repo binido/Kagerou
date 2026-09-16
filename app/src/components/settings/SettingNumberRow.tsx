@@ -21,12 +21,17 @@ export function SettingNumberRow({ id, label, description, value, onChange }: Se
 
   const handleChange = (nextValue: string) => {
     setRawValue(nextValue)
-    if (isPositiveInteger(nextValue)) {
-      setError('')
-      onChange(Number(nextValue))
+    setError(isPositiveInteger(nextValue) ? '' : t('validation.positiveInteger'))
+  }
+
+  // Persist on blur, not per keystroke: onChange goes through the store to a
+  // SQLite write, so every digit of a typed interval used to be one write.
+  const handleBlur = () => {
+    if (!isPositiveInteger(rawValue)) {
+      setError(t('validation.positiveInteger'))
       return
     }
-    setError(t('validation.positiveInteger'))
+    if (Number(rawValue) !== value) onChange(Number(rawValue))
   }
 
   return (
@@ -36,7 +41,7 @@ export function SettingNumberRow({ id, label, description, value, onChange }: Se
         {description ? <p className="mt-1 text-[11px] leading-4 text-muted-copy">{description}</p> : null}
       </div>
       <div className="w-[148px] shrink-0">
-        <Input aria-describedby={`${id}-description${error ? ` ${id}-error` : ''}`} aria-invalid={Boolean(error)} className="number-input-no-spinners h-9 border-0 bg-surface text-left text-[13px] text-body" id={id} inputMode="numeric" min={1} onBlur={() => { if (!isPositiveInteger(rawValue)) setError(t('validation.positiveInteger')) }} onChange={(event) => handleChange(event.target.value)} step={1} type="number" value={rawValue} />
+        <Input aria-describedby={`${id}-description${error ? ` ${id}-error` : ''}`} aria-invalid={Boolean(error)} className="number-input-no-spinners h-9 border-0 bg-surface text-left text-[13px] text-body" id={id} inputMode="numeric" min={1} onBlur={handleBlur} onChange={(event) => handleChange(event.target.value)} step={1} type="number" value={rawValue} />
         <p className="sr-only" id={`${id}-description`}>{t('descriptions.customIntervalA11y')}</p>
         {error ? <p className="mt-1 text-right text-[10px] leading-4 text-bad" id={`${id}-error`} role="alert">{error}</p> : null}
       </div>
