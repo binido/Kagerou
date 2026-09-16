@@ -6,8 +6,8 @@
 //! anything the subscription parser accepts is profiles, a lone one going to
 //! Default and several becoming a static group of their own.
 //!
-//! Fetching the URL stays in `commands`, so everything here runs against text
-//! and an in-memory database.
+//! Fetching the URL stays in `usecase::subscriptions`, so everything here
+//! runs against text and an in-memory database.
 
 use std::collections::{HashMap, HashSet};
 

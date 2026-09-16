@@ -5,16 +5,16 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::app_state::AppState;
 use crate::geo;
-use crate::import::{self, ImportOutcome, Pasted};
+use crate::import::{self, ImportOutcome};
 use crate::singbox;
 use crate::storage::models::{
     NewProfileGroup, NewRoutingRule, Profile, ProfileGroup, RoutingPreset, RoutingRule, Settings,
     Source, TestResult,
 };
-use crate::storage::{groups, profiles, routing, settings, sources, Db};
-use crate::subscription;
+use crate::storage::{groups, profiles, routing, settings, sources};
 use crate::updates;
 use crate::usecase::connection;
+use crate::usecase::subscriptions;
 use crate::usecase::testing;
 
 fn to_err(e: impl std::fmt::Display) -> String {
@@ -365,97 +365,28 @@ pub fn update_source(
     patch: UpdateSourceInput,
     state: State<AppState>,
 ) -> Result<(), String> {
-    let value = patch.value.as_deref().map(str::trim);
-    if value.is_some_and(|value| !import::is_subscription_url(value)) {
-        return Err("a subscription URL must be an http(s) link".to_string());
-    }
-    sources::update(
+    subscriptions::update_source(
         &state.db,
         &id,
-        &sources::SourcePatch {
-            name: patch.name.as_deref(),
-            value,
-            status: None,
-            last_refresh: None,
-        },
+        patch.name.as_deref(),
+        patch.value.as_deref(),
     )
     .map_err(to_err)
 }
 
 #[tauri::command]
 pub async fn refresh_source(id: String, state: State<'_, AppState>) -> Result<(), String> {
-    refresh_subscription(&state.db, &id).await
+    subscriptions::refresh(&state.db, &id).await.map_err(to_err)
 }
 
-async fn refresh_subscription(db: &Db, id: &str) -> Result<(), String> {
-    let source = sources::get(db, id).map_err(to_err)?;
-    if source.kind != "url" {
-        return Ok(());
-    }
-    let body = fetch_subscription(&source.value).await?.body;
-    let parsed = subscription::parse_subscription(&body).map_err(to_err)?;
-    let group = groups::list_all(db)
-        .map_err(to_err)?
-        .into_iter()
-        .find(|g| g.source_id.as_deref() == Some(id))
-        .ok_or("no group for this source")?;
-
-    let existing_by_key: std::collections::HashMap<String, String> = profiles::list_all(db)
-        .map_err(to_err)?
-        .into_iter()
-        .filter(|p| p.group_id == group.id)
-        .map(|p| (p.key, p.id))
-        .collect();
-
-    for old_id in &group.profile_ids {
-        let _ = profiles::delete(db, old_id);
-    }
-    for outbound in &parsed {
-        let mut new_profile =
-            import::profile_from_outbound(outbound, &group.id, Some(id), "imported");
-        if let Some(existing_id) = existing_by_key.get(&new_profile.key) {
-            new_profile.id = existing_id.clone();
-        }
-        profiles::insert(db, &new_profile).map_err(to_err)?;
-    }
-    let refreshed_at = sources::refreshed_now();
-    sources::update(
-        db,
-        id,
-        &sources::SourcePatch {
-            name: None,
-            value: None,
-            status: Some("up-to-date"),
-            last_refresh: Some(&refreshed_at),
-        },
-    )
-    .map_err(to_err)?;
-    Ok(())
-}
-
-/// The one way VPNs get in: whatever was on the clipboard, or pasted by hand.
-/// A URL that is already a subscription is refreshed rather than added twice.
 #[tauri::command]
 pub async fn import_from_text(
     text: String,
     state: State<'_, AppState>,
 ) -> Result<ImportOutcome, String> {
-    let url = match import::classify(&text).map_err(to_err)? {
-        Pasted::Outbounds(outbounds) => {
-            return import::add_outbounds(&state.db, &outbounds).map_err(to_err)
-        }
-        Pasted::SubscriptionUrl(url) => url,
-    };
-    if let Some(group) = import::subscription_for_url(&state.db, &url).map_err(to_err)? {
-        if let Some(source_id) = &group.source_id {
-            refresh_subscription(&state.db, source_id).await?;
-        }
-        return Ok(ImportOutcome::SubscriptionRefreshed { group_id: group.id });
-    }
-    let fetched = fetch_subscription(&url).await?;
-    let parsed = subscription::parse_subscription(&fetched.body).map_err(to_err)?;
-    let name = import::subscription_name(fetched.title.as_deref(), &url);
-    import::add_subscription(&state.db, &url, &name, &parsed).map_err(to_err)
+    subscriptions::import_text(&state.db, &text)
+        .await
+        .map_err(to_err)
 }
 
 #[tauri::command]
@@ -471,30 +402,6 @@ pub fn delete_subscription(
     // The recent list in the tray may have just lost entries.
     crate::tray::refresh(&app, connected);
     Ok(())
-}
-
-struct FetchedSubscription {
-    body: String,
-    /// The provider's `profile-title` header, still encoded.
-    title: Option<String>,
-}
-
-async fn fetch_subscription(url: &str) -> Result<FetchedSubscription, String> {
-    let response = reqwest::Client::new()
-        .get(url)
-        .timeout(Duration::from_secs(15))
-        .send()
-        .await
-        .map_err(to_err)?
-        .error_for_status()
-        .map_err(to_err)?;
-    let title = response
-        .headers()
-        .get("profile-title")
-        .and_then(|value| value.to_str().ok())
-        .map(str::to_string);
-    let body = response.text().await.map_err(to_err)?;
-    Ok(FetchedSubscription { body, title })
 }
 
 // ---------------------------------------------------------------------

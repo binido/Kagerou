@@ -7,4 +7,5 @@
 pub mod connection;
 pub mod core;
 pub mod events;
+pub mod subscriptions;
 pub mod testing;

@@ -1,4 +1,5 @@
 mod error;
+pub mod fetch;
 mod formats;
 pub mod model;
 mod uri;
