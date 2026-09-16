@@ -3,6 +3,16 @@ use rusqlite::{params, OptionalExtension};
 use super::models::{NewSource, Source};
 use super::{Db, StorageError};
 
+/// `last_refresh` holds unix milliseconds as text, or the empty string for a
+/// source that has never been refreshed. It used to hold English prose, which
+/// never aged and could not be translated; see migration 0011.
+pub fn refreshed_now() -> String {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_millis().to_string())
+        .unwrap_or_default()
+}
+
 fn row_to_source(row: &rusqlite::Row) -> rusqlite::Result<Source> {
     Ok(Source {
         id: row.get("id")?,
@@ -112,9 +122,17 @@ mod tests {
             kind: "url".into(),
             value: value.into(),
             status: "up-to-date".into(),
-            last_refresh: "Updated just now".into(),
+            last_refresh: "1757352766522".into(),
             origin_label: "Remote URL".into(),
         }
+    }
+
+    #[test]
+    fn refreshed_now_is_a_parseable_unix_millisecond_stamp() {
+        let stamp = refreshed_now();
+        let millis: i64 = stamp.parse().expect("the column holds a number, not prose");
+        // 2020-01-01; a clock this far back means the stamp is not epoch millis.
+        assert!(millis > 1_577_836_800_000, "got {stamp}");
     }
 
     #[test]

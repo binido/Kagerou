@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ProfileGroupActionsMenu } from '@/components/profiles/ProfileGroupActionsMenu'
 import { ProfileTable } from '@/components/profiles/ProfileTable'
+import { formatRelativeTime } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import type { Profile, ProfileGroup, Source } from '@/types/kagerou'
 
@@ -34,15 +35,13 @@ interface ProfileGroupCardProps {
 }
 
 export function ProfileGroupCard({ group, profiles, source, movableGroups, runningTests, testRunning, refreshing, onToggle, onRenameGroup, onSelect, onRename, onMoveToGroup, onDelete, onTest, onTestGroup, onClearResults, onDeleteUnavailable, onRefresh, onChangeUrl, onCopyUrl, onDeleteSubscription }: ProfileGroupCardProps) {
-  const { t } = useTranslation('profiles')
+  const { i18n, t } = useTranslation('profiles')
   const { t: tc } = useTranslation('common')
   const isSubscription = group.kind === 'subscription'
   const isDefault = group.kind === 'default'
   const groupLabel = isDefault ? t('group.defaultName') : group.label
   const profileCount = tc(profiles.length === 1 ? 'counts.vpnOne' : 'counts.vpnMany', { count: profiles.length })
-  // The backend still stores this as English prose; the one phrase it writes
-  // is translated and anything else is shown as it came.
-  const lastRefresh = source ? (source.lastRefresh === 'Updated just now' ? t('group.updatedJustNow') : source.lastRefresh) : ''
+  const lastRefresh = source ? formatRelativeTime(source.lastRefresh, i18n.resolvedLanguage ?? 'en') : ''
 
   return (
     <Card className="overflow-visible rounded-[10px] border border-hairline bg-surface p-0 shadow-none">

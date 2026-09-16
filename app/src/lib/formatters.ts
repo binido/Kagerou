@@ -61,3 +61,25 @@ const logTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', hour12: fa
  * The entry keeps the ISO form: it is the sortable one, and it is what a copy
  * of the log should carry. */
 export const formatLogTimestamp = (iso: string): string => logTime.format(new Date(iso))
+
+/** Largest unit first; the first one the elapsed time reaches is the one shown. */
+const RELATIVE_UNITS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[] = [
+  ['year', 31_536_000_000],
+  ['month', 2_592_000_000],
+  ['day', 86_400_000],
+  ['hour', 3_600_000],
+  ['minute', 60_000],
+]
+
+/** The unix milliseconds the sources table stores to "5 minutes ago" in the
+ * user's language, or empty for a source that has never been refreshed. A
+ * stamp in the future - a clock nudged backwards between two refreshes - reads
+ * as "now" rather than as a countdown, the same way `formatUptime` clamps. */
+export const formatRelativeTime = (millis: string, language: string): string => {
+  const stamp = Number(millis)
+  if (!millis.trim() || !Number.isFinite(stamp)) return ''
+  const elapsed = Math.max(0, Date.now() - stamp)
+  const relative = new Intl.RelativeTimeFormat(language, { numeric: 'auto' })
+  const unit = RELATIVE_UNITS.find(([, size]) => elapsed >= size)
+  return unit ? relative.format(-Math.round(elapsed / unit[1]), unit[0]) : relative.format(0, 'second')
+}

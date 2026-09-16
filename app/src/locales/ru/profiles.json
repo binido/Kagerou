@@ -58,7 +58,6 @@
     "defaultGroup": "Группа Default",
     "customGroup": "Своя группа",
     "subscriptionGroup": "Подписка",
-    "updatedJustNow": "обновлено только что",
     "singleKeysStartHere": " · одиночные ключи находятся здесь",
     "subscriptionNote": "Обновление заменяет эти VPN текущим списком подписки, поэтому они остаются в этой группе.",
     "defaultNote": "Одиночные VPN можно перемещать из Default в любую свою группу."

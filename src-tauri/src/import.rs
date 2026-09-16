@@ -236,7 +236,7 @@ pub fn add_subscription(
             kind: "url".to_string(),
             value: url.to_string(),
             status: "up-to-date".to_string(),
-            last_refresh: "Updated just now".to_string(),
+            last_refresh: sources::refreshed_now(),
             origin_label: "Remote URL".to_string(),
         },
     )?;

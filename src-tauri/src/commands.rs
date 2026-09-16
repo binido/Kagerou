@@ -816,6 +816,7 @@ async fn refresh_subscription(db: &Db, id: &str) -> Result<(), String> {
         }
         profiles::insert(db, &new_profile).map_err(to_err)?;
     }
+    let refreshed_at = sources::refreshed_now();
     sources::update(
         db,
         id,
@@ -823,7 +824,7 @@ async fn refresh_subscription(db: &Db, id: &str) -> Result<(), String> {
             name: None,
             value: None,
             status: Some("up-to-date"),
-            last_refresh: Some("Updated just now"),
+            last_refresh: Some(&refreshed_at),
         },
     )
     .map_err(to_err)?;

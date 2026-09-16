@@ -58,7 +58,6 @@
     "defaultGroup": "Default group",
     "customGroup": "Custom group",
     "subscriptionGroup": "Subscription",
-    "updatedJustNow": "updated just now",
     "singleKeysStartHere": " · single keys start here",
     "subscriptionNote": "Refreshing replaces these VPNs with the subscription's current list, so they stay in this group.",
     "defaultNote": "Single-key VPNs can be moved from Default into any custom group."

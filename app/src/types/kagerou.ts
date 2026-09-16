@@ -74,6 +74,7 @@ export interface Source {
   type: 'url'
   value: string
   status: SourceStatus
+  /** Unix milliseconds as text, empty when never refreshed. */
   lastRefresh: string
   originLabel: 'Remote URL'
 }

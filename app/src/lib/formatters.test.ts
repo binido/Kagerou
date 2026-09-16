@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { backendErrorMessage } from './errors'
-import { formatExitLocation, formatLogTimestamp, formatUptime, regionToCountry } from './formatters'
+import { formatExitLocation, formatLogTimestamp, formatRelativeTime, formatUptime, regionToCountry } from './formatters'
 
 describe('regionToCountry', () => {
   it('maps a valid ISO code to a localized country with its flag', () => {
@@ -81,5 +81,37 @@ describe('formatLogTimestamp', () => {
 
   it('pads a single-digit hour so the column never jumps by a character', () => {
     expect(formatLogTimestamp('2026-09-08T04:05:06.000Z')).toHaveLength(8)
+  })
+})
+
+describe('formatRelativeTime', () => {
+  const ago = (millis: number) => String(Date.now() - millis)
+
+  it('reads as now for a source refreshed seconds ago', () => {
+    expect(formatRelativeTime(ago(5_000), 'en')).toBe('now')
+    expect(formatRelativeTime(ago(5_000), 'ru')).toBe('сейчас')
+  })
+
+  it('picks the largest unit the elapsed time reaches', () => {
+    expect(formatRelativeTime(ago(5 * 60_000), 'en')).toBe('5 minutes ago')
+    expect(formatRelativeTime(ago(3 * 3_600_000), 'en')).toBe('3 hours ago')
+    expect(formatRelativeTime(ago(8 * 86_400_000), 'en')).toBe('8 days ago')
+  })
+
+  it('translates, which the stored English phrase could never do', () => {
+    expect(formatRelativeTime(ago(7 * 86_400_000), 'ru')).toBe('7 дней назад')
+  })
+
+  it('is empty for a source that has never been refreshed', () => {
+    expect(formatRelativeTime('', 'en')).toBe('')
+    expect(formatRelativeTime('   ', 'en')).toBe('')
+  })
+
+  it('is empty for the prose the column used to hold', () => {
+    expect(formatRelativeTime('Updated just now', 'en')).toBe('')
+  })
+
+  it('reads as now rather than as a countdown when the clock went backwards', () => {
+    expect(formatRelativeTime(String(Date.now() + 60_000), 'en')).toBe('now')
   })
 })

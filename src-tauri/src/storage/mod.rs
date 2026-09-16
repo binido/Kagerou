@@ -27,6 +27,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0008_auto_connect.sql"),
     include_str!("migrations/0009_geo_lookup.sql"),
     include_str!("migrations/0010_unify_sources.sql"),
+    include_str!("migrations/0011_subscription_refresh_time.sql"),
 ];
 
 /// A handle to the application's SQLite database.
@@ -188,6 +189,35 @@ mod tests {
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .unwrap();
         assert_eq!(version, 1, "version must not advance past the failed step");
+    }
+
+    #[test]
+    fn migration_11_clears_the_prose_that_used_to_stand_for_a_refresh_time() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        for migration in &MIGRATIONS[..10] {
+            conn.execute_batch(migration).unwrap();
+        }
+        conn.execute_batch(
+            "INSERT INTO sources (id, name, type, value, status, last_refresh, origin_label) VALUES
+               ('a', 'A', 'url', 'https://a.example', 'up-to-date', 'Updated just now', 'Remote URL'),
+               ('b', 'B', 'url', 'https://b.example', 'refresh-due', 'Updated 3 days ago', 'Remote URL');",
+        )
+        .unwrap();
+
+        conn.execute_batch(MIGRATIONS[10]).unwrap();
+
+        // Prose cannot be turned back into a time, so both read as never
+        // refreshed rather than keeping a sentence no one can translate.
+        let mut stmt = conn
+            .prepare("SELECT last_refresh FROM sources ORDER BY id")
+            .unwrap();
+        let stamps: Vec<String> = stmt
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        assert_eq!(stamps, vec![String::new(), String::new()]);
     }
 
     #[test]
