@@ -10,7 +10,7 @@ import { LogsPage } from '@/pages/LogsPage'
 import { GroupsPage } from '@/pages/GroupsPage'
 import { RoutingRulesPage } from '@/pages/RoutingRulesPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { useKagerouStore } from '@/store/kagerou-store'
+import { subscribeToBackendEvents, useKagerouStore } from '@/store/kagerou-store'
 import { ThemeProvider } from '@/themes/ThemeProvider'
 
 function App() {
@@ -20,6 +20,9 @@ function App() {
   const hydrate = useKagerouStore((state) => state.hydrate)
 
   useEffect(() => {
+    // Before the first read, not inside it: an event that lands while the
+    // snapshot is in flight has somewhere to go.
+    subscribeToBackendEvents()
     void hydrate()
   }, [hydrate])
 
