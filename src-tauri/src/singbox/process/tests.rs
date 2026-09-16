@@ -49,8 +49,12 @@ fn poll_events_buffers_log_lines_in_order() {
     control.send_event(ProcessEvent::Log("line 1".into()));
     control.send_event(ProcessEvent::Log("line 2".into()));
     sup.poll_events();
-    let logs: Vec<_> = sup.recent_logs().cloned().collect();
-    assert_eq!(logs, vec!["line 1".to_string(), "line 2".to_string()]);
+    let (logs, produced) = sup.logs_since(0);
+    assert_eq!(
+        logs.cloned().collect::<Vec<_>>(),
+        vec!["line 1".to_string(), "line 2".to_string()]
+    );
+    assert_eq!(produced, 2);
 }
 
 #[test]
@@ -70,12 +74,51 @@ fn the_log_buffer_is_capped_so_a_noisy_process_cannot_grow_it_unbounded() {
         control.send_event(ProcessEvent::Log(format!("line {i}")));
     }
     sup.poll_events();
-    assert_eq!(sup.recent_logs().count(), MAX_BUFFERED_LOG_LINES);
+    let (logs, produced) = sup.logs_since(0);
+    let logs: Vec<_> = logs.collect();
+    assert_eq!(logs.len(), MAX_BUFFERED_LOG_LINES);
+    assert_eq!(logs[0], "line 50", "oldest lines should be dropped first");
+    assert_eq!(produced, MAX_BUFFERED_LOG_LINES + 50);
+}
+
+/// The log viewer went silent for the rest of the session once the buffer
+/// filled: its reader tracked how far it had got by buffer length, which
+/// stops growing at the cap, so every later line looked like one it had
+/// already sent.
+#[test]
+fn lines_keep_arriving_after_the_buffer_has_wrapped() {
+    let (mut sup, control) = supervisor();
+    sup.start(Path::new("/tmp/config.json"), false).unwrap();
+    for i in 0..MAX_BUFFERED_LOG_LINES {
+        control.send_event(ProcessEvent::Log(format!("line {i}")));
+    }
+    sup.poll_events();
+    let (_, forwarded) = sup.logs_since(0);
+
+    for i in 0..3 {
+        control.send_event(ProcessEvent::Log(format!("later {i}")));
+    }
+    sup.poll_events();
+
+    let (logs, produced) = sup.logs_since(forwarded);
     assert_eq!(
-        sup.recent_logs().next().unwrap(),
-        "line 50",
-        "oldest lines should be dropped first"
+        logs.cloned().collect::<Vec<_>>(),
+        vec!["later 0", "later 1", "later 2"]
     );
+    assert_eq!(produced, MAX_BUFFERED_LOG_LINES + 3);
+}
+
+#[test]
+fn a_reader_that_is_already_up_to_date_is_given_nothing() {
+    let (mut sup, control) = supervisor();
+    sup.start(Path::new("/tmp/config.json"), false).unwrap();
+    control.send_event(ProcessEvent::Log("only line".into()));
+    sup.poll_events();
+
+    let (_, forwarded) = sup.logs_since(0);
+    let (logs, produced) = sup.logs_since(forwarded);
+    assert_eq!(logs.count(), 0);
+    assert_eq!(produced, forwarded);
 }
 
 #[test]

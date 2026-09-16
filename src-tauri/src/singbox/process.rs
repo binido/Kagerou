@@ -376,6 +376,11 @@ pub struct Supervisor<L: Launcher> {
     child: Option<ChildHandle>,
     status: Status,
     logs: VecDeque<String>,
+    /// How many lines the process has produced in total. The buffer is
+    /// capped, so this keeps counting past what it still holds: a reader
+    /// that tracked its position by buffer index instead went silent the
+    /// moment the buffer filled up, because the index stopped moving.
+    produced: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -392,6 +397,7 @@ impl<L: Launcher> Supervisor<L> {
             child: None,
             status: Status::Stopped,
             logs: VecDeque::new(),
+            produced: 0,
         }
     }
 
@@ -399,8 +405,13 @@ impl<L: Launcher> Supervisor<L> {
         &self.status
     }
 
-    pub fn recent_logs(&self) -> impl Iterator<Item = &String> {
-        self.logs.iter()
+    /// The lines produced since `forwarded`, and the count to pass back next
+    /// time. Lines that fell out of the buffer while the caller was away are
+    /// gone, and the count moves past them so they are not asked for again.
+    pub fn logs_since(&self, forwarded: usize) -> (impl Iterator<Item = &String>, usize) {
+        let oldest_held = self.produced - self.logs.len();
+        let skip = forwarded.saturating_sub(oldest_held);
+        (self.logs.iter().skip(skip), self.produced)
     }
 
     pub fn start(&mut self, config_path: &Path, tun: bool) -> Result<(), ProcessError> {
@@ -433,6 +444,7 @@ impl<L: Launcher> Supervisor<L> {
             match child.events.try_recv() {
                 Ok(ProcessEvent::Log(line)) => {
                     self.logs.push_back(line);
+                    self.produced += 1;
                     if self.logs.len() > MAX_BUFFERED_LOG_LINES {
                         self.logs.pop_front();
                     }

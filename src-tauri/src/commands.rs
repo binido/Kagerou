@@ -126,23 +126,17 @@ pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Resul
         loop {
             ticker.tick().await;
             let state = log_app.state::<AppState>();
-            let (logs, status) = {
+            let (lines, status) = {
                 let mut supervisor = state.supervisor.lock().unwrap();
                 supervisor.poll_events();
-                (
-                    supervisor.recent_logs().cloned().collect::<Vec<_>>(),
-                    supervisor.status().clone(),
-                )
+                let (lines, produced) = supervisor.logs_since(forwarded);
+                let lines: Vec<String> = lines.cloned().collect();
+                forwarded = produced;
+                (lines, supervisor.status().clone())
             };
-            let new_lines = if logs.len() >= forwarded {
-                &logs[forwarded..]
-            } else {
-                &logs[..]
-            };
-            for line in new_lines {
-                Events::emit(&log_app, AppEvent::Log(line.clone()));
+            for line in lines {
+                Events::emit(&log_app, AppEvent::Log(line));
             }
-            forwarded = logs.len();
             if let singbox::Status::Crashed { exit_code } = status {
                 *state.connected_since.lock().unwrap() = None;
                 Events::emit(&log_app, AppEvent::ConnectionChanged(false));
