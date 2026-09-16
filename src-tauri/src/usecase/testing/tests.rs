@@ -31,19 +31,16 @@ fn db_with(ids: &[&str]) -> Db {
     db
 }
 
-fn good(ms: u32) -> Measured {
-    Measured::Result(TestResult {
-        value: format!("{ms} ms"),
-        tone: latency_tone(ms),
-    })
+fn good(millis: u32) -> Measured {
+    Measured::Outcome(TestOutcome::Latency { millis })
 }
 
-fn progress(events: &RecordedEvents) -> Vec<(String, String, usize, usize)> {
+fn progress(events: &RecordedEvents) -> Vec<(String, TestOutcome, usize, usize)> {
     events
         .all()
         .into_iter()
         .filter_map(|event| match event {
-            AppEvent::TestProgress(p) => Some((p.profile_id, p.result.value, p.done, p.total)),
+            AppEvent::TestProgress(p) => Some((p.profile_id, p.result.outcome, p.done, p.total)),
             _ => None,
         })
         .collect()
@@ -76,8 +73,8 @@ async fn a_run_reports_every_profile_in_order_and_then_finishes() {
     assert_eq!(
         progress(&events),
         vec![
-            ("a".to_string(), "42 ms".to_string(), 1, 2),
-            ("b".to_string(), "42 ms".to_string(), 2, 2),
+            ("a".to_string(), TestOutcome::Latency { millis: 42 }, 1, 2),
+            ("b".to_string(), TestOutcome::Latency { millis: 42 }, 2, 2),
         ]
     );
     assert_eq!(
@@ -88,7 +85,10 @@ async fn a_run_reports_every_profile_in_order_and_then_finishes() {
             cancelled: false
         })
     );
-    assert_eq!(profiles::get(&db, "a").unwrap().url.value, "42 ms");
+    assert_eq!(
+        profiles::get(&db, "a").unwrap().url.outcome,
+        TestOutcome::Latency { millis: 42 }
+    );
 }
 
 #[tokio::test]
@@ -123,15 +123,7 @@ async fn cancelling_stops_the_run_and_says_so() {
 #[tokio::test]
 async fn a_core_that_would_not_come_up_leaves_the_stored_result_alone() {
     let db = db_with(&["a"]);
-    profiles::set_test_result(
-        &db,
-        "a",
-        &TestResult {
-            value: "120 ms".into(),
-            tone: Tone::Good,
-        },
-    )
-    .unwrap();
+    profiles::set_test_outcome(&db, "a", TestOutcome::Latency { millis: 120 }).unwrap();
     let core = core();
     let events = RecordedEvents::default();
     let cancel = begin_run(&core).unwrap();
@@ -143,12 +135,12 @@ async fn a_core_that_would_not_come_up_leaves_the_stored_result_alone() {
 
     assert_eq!(
         progress(&events),
-        vec![("a".to_string(), "Not tested".to_string(), 1, 1)],
+        vec![("a".to_string(), TestOutcome::NotTested, 1, 1)],
         "the profile is reported as untested, not as failing"
     );
     assert_eq!(
-        profiles::get(&db, "a").unwrap().url.value,
-        "120 ms",
+        profiles::get(&db, "a").unwrap().url.outcome,
+        TestOutcome::Latency { millis: 120 },
         "the run's own problem must not overwrite what the profile last measured"
     );
 }
@@ -183,13 +175,4 @@ fn a_core_is_idle_only_after_the_timeout_has_passed() {
         is_idle(None, now, timeout),
         "a core with no recorded request outlived whatever started it"
     );
-}
-
-#[test]
-fn latency_tones_step_at_the_documented_thresholds() {
-    assert_eq!(latency_tone(0), Tone::Good);
-    assert_eq!(latency_tone(149), Tone::Good);
-    assert_eq!(latency_tone(150), Tone::Warn);
-    assert_eq!(latency_tone(399), Tone::Warn);
-    assert_eq!(latency_tone(400), Tone::Bad);
 }

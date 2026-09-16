@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { sortProfiles } from './profile-sorting'
 import type { Profile, TestResult } from '@/types/kagerou'
 
-const untested: TestResult = { value: 'Not tested', tone: 'muted' }
-const ms = (value: number): TestResult => ({ value: `${value} ms`, tone: 'good' })
+const untested: TestResult = { kind: 'notTested', tone: 'muted' }
+const ms = (millis: number): TestResult => ({ kind: 'latency', millis, tone: 'good' })
 
 const profile = (name: string, url: TestResult): Profile => ({
   id: name, name, region: '', protocol: 'VLESS', origin: 'imported',
@@ -22,7 +22,7 @@ describe('sortProfiles by ping', () => {
   it('sinks untested and failed profiles below every measured one', () => {
     const order = sortProfiles([
       profile('untested', untested),
-      profile('failed', { value: 'Timeout', tone: 'bad' }),
+      profile('failed', { kind: 'timeout', tone: 'bad' }),
       profile('measured', ms(300)),
     ], 'ping').map((p) => p.name)
 

@@ -203,10 +203,10 @@ fn concurrent_profile_selection_never_leaves_more_than_one_profile_selected() {
         let conn = db.lock();
         conn.execute_batch(
                 "INSERT INTO profile_groups (id, label, kind, source_id, is_open, position) VALUES ('g', 'Default', 'default', NULL, 1, 0);
-                 INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key, position) VALUES
-                   ('p1','P1','r','VLESS','local','g',NULL,1,'','muted','k1',0),
-                   ('p2','P2','r','VLESS','local','g',NULL,0,'','muted','k2',1),
-                   ('p3','P3','r','VLESS','local','g',NULL,0,'','muted','k3',2);",
+                 INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key, position) VALUES
+                   ('p1','P1','r','VLESS','local','g',NULL,1,'notTested',NULL,'k1',0),
+                   ('p2','P2','r','VLESS','local','g',NULL,0,'notTested',NULL,'k2',1),
+                   ('p3','P3','r','VLESS','local','g',NULL,0,'notTested',NULL,'k3',2);",
             )
             .unwrap();
     }
@@ -244,4 +244,51 @@ fn concurrent_profile_selection_never_leaves_more_than_one_profile_selected() {
         .optional()
         .unwrap();
     assert!(orphan_selected.is_none());
+}
+
+/// Sentences the interface used to show become a kind and a number, so
+/// sorting has something to compare and translating has something to switch
+/// on. Anything unrecognised is untested rather than lost.
+#[test]
+fn migration_12_turns_result_prose_into_a_kind_and_a_number() {
+    let conn = Connection::open_in_memory().unwrap();
+    conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+    for migration in &MIGRATIONS[..11] {
+        conn.execute_batch(migration).unwrap();
+    }
+    conn.execute_batch(
+        "INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key, position) VALUES
+           ('fast', 'F', '', 'VLESS', 'local', 'default', NULL, 0, '42 ms', 'good', 'vless://a', 0),
+           ('slow', 'S', '', 'VLESS', 'local', 'default', NULL, 0, '1200 ms', 'bad', 'vless://b', 1),
+           ('out', 'O', '', 'VLESS', 'local', 'default', NULL, 0, 'Timeout', 'bad', 'vless://c', 2),
+           ('quiet', 'Q', '', 'VLESS', 'local', 'default', NULL, 0, 'No response', 'bad', 'vless://d', 3),
+           ('gone', 'G', '', 'VLESS', 'local', 'default', NULL, 0, 'Unavailable', 'bad', 'vless://e', 4),
+           ('new', 'N', '', 'VLESS', 'local', 'default', NULL, 0, 'Not tested', 'muted', 'vless://f', 5),
+           ('odd', 'D', '', 'VLESS', 'local', 'default', NULL, 0, '200 OK', 'good', 'vless://g', 6);",
+    )
+    .unwrap();
+
+    conn.execute_batch(MIGRATIONS[11]).unwrap();
+
+    let mut stmt = conn
+        .prepare("SELECT id, url_kind, url_millis FROM profiles ORDER BY position")
+        .unwrap();
+    let rows: Vec<(String, String, Option<i64>)> = stmt
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+
+    assert_eq!(
+        rows,
+        vec![
+            ("fast".into(), "latency".into(), Some(42)),
+            ("slow".into(), "latency".into(), Some(1200)),
+            ("out".into(), "timeout".into(), None),
+            ("quiet".into(), "noResponse".into(), None),
+            ("gone".into(), "unavailable".into(), None),
+            ("new".into(), "notTested".into(), None),
+            ("odd".into(), "notTested".into(), None),
+        ]
+    );
 }

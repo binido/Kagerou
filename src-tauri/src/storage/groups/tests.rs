@@ -67,9 +67,9 @@ fn get_reports_profile_ids_in_position_order() {
     {
         let conn = db.lock();
         conn.execute_batch(
-                "INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key, position) VALUES
-                   ('p2','P2','r','VLESS','local','g',NULL,0,'','muted','k2',1),
-                   ('p1','P1','r','VLESS','local','g',NULL,0,'','muted','k1',0);",
+                "INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key, position) VALUES
+                   ('p2','P2','r','VLESS','local','g',NULL,0,'notTested',NULL,'k2',1),
+                   ('p1','P1','r','VLESS','local','g',NULL,0,'notTested',NULL,'k1',0);",
             )
             .unwrap();
     }

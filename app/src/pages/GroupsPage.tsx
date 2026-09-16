@@ -18,7 +18,7 @@ import { RemoveUnavailableDialog, type RemoveUnavailableTarget } from '@/compone
 import { SubscriptionUrlDialog } from '@/components/profiles/SubscriptionUrlDialog'
 import { TestRunBar } from '@/components/profiles/TestRunBar'
 import { backendErrorMessage } from '@/lib/errors'
-import { localizeResultValue } from '@/lib/result-copy'
+import { isUnreachable, resultLabel } from '@/lib/result-copy'
 import { sortProfiles } from '@/lib/profile-sorting'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type { ImportAttempt, ImportOutcome, Profile, ProfileGroup, Source } from '@/types/kagerou'
@@ -154,7 +154,7 @@ export function GroupsPage() {
       setMessage(t('feedback.testFailed', { name }), 'bad')
       return
     }
-    setMessage(t('feedback.testFinished', { name, value: localizeResultValue(result.value, tc) }), result.tone === 'bad' ? 'bad' : 'good')
+    setMessage(t('feedback.testFinished', { name, value: resultLabel(result, tc) }), result.tone === 'bad' ? 'bad' : 'good')
   }
 
   const runAll = () => {
@@ -175,7 +175,10 @@ export function GroupsPage() {
   // never opens when nothing failed. The backend re-evaluates the same
   // predicate in its transaction, so a stale count here is only cosmetic.
   const openRemoveUnavailable = (group: ProfileGroup) => {
-    const failing = group.profileIds.filter((id) => profilesById.get(id)?.url.tone === 'bad')
+    const failing = group.profileIds.filter((id) => {
+      const result = profilesById.get(id)?.url
+      return result ? isUnreachable(result) : false
+    })
     if (failing.length === 0) {
       setMessage(t('feedback.nothingUnavailable', { group: groupLabel(group) }))
       return

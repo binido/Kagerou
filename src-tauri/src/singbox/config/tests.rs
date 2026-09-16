@@ -1,5 +1,5 @@
 use super::*;
-use crate::storage::models::{Protocol, TestResult, Tone};
+use crate::storage::models::{Protocol, TestOutcome};
 
 fn profile(id: &str, key: &str) -> Profile {
     Profile {
@@ -11,10 +11,7 @@ fn profile(id: &str, key: &str) -> Profile {
         group_id: "g".into(),
         source_id: None,
         selected: false,
-        url: TestResult {
-            value: "".into(),
-            tone: Tone::Muted,
-        },
+        url: TestOutcome::NotTested.into(),
         key: key.into(),
     }
 }

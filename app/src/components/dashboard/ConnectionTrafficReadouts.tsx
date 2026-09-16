@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ResultBadge } from '@/components/common/ResultBadge'
 import { cn } from '@/lib/utils'
 import { formatBytes, formatSpeedMbps } from '@/lib/formatters'
+import { resultLabel } from '@/lib/result-copy'
 import type { SessionTraffic, TestResult } from '@/types/kagerou'
 
 interface TrafficReadoutProps {
@@ -35,6 +36,7 @@ interface ConnectionTrafficReadoutsProps {
 
 export function ConnectionTrafficReadouts({ latestDownload, latestUpload, ping, sessionTraffic, activeConnections }: ConnectionTrafficReadoutsProps) {
   const { t } = useTranslation('dashboard')
+  const { t: tc } = useTranslation('common')
   const sessionTotal = formatBytes(sessionTraffic.download + sessionTraffic.upload)
 
   return (
@@ -71,9 +73,9 @@ export function ConnectionTrafficReadouts({ latestDownload, latestUpload, ping, 
         value={activeConnections === null ? '—' : String(activeConnections)}
       />
       <span aria-hidden="true" className="h-5 w-px shrink-0 bg-hairline/80" />
-      <div aria-label={`${t('connection.ping')}: ${ping.value}`} className="flex shrink-0 items-center gap-2 px-3 pr-0 max-[980px]:gap-1.5 max-[980px]:px-2 max-[760px]:px-1.5 max-[760px]:pr-0" role="status">
+      <div aria-label={`${t('connection.ping')}: ${resultLabel(ping, tc)}`} className="flex shrink-0 items-center gap-2 px-3 pr-0 max-[980px]:gap-1.5 max-[980px]:px-2 max-[760px]:px-1.5 max-[760px]:pr-0" role="status">
         <span className="type-eyebrow !text-[9px] !tracking-[0.14em]">{t('connection.ping')}</span>
-        <ResultBadge tone={ping.tone} value={ping.value} />
+        <ResultBadge result={ping} />
       </div>
     </div>
   )

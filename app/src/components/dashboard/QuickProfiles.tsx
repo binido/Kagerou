@@ -40,7 +40,7 @@ export function QuickProfiles({ profiles, activeProfileId, ranked, testRunning, 
                 type="button"
               >
                 <span className="truncate">{profile.name}</span>
-                <ResultBadge tone={profile.url.tone} value={profile.url.value} />
+                <ResultBadge result={profile.url} />
               </button>
             </li>
           ))}

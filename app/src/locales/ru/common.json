@@ -34,14 +34,12 @@
     "disconnectedState": "Отключено",
     "on": "Вкл.",
     "off": "Выкл.",
-    "checking": "Проверка…",
     "running": "Выполняется…",
     "notTested": "Не проверено",
     "unavailable": "Недоступно",
     "timeout": "Тайм-аут",
     "noResponse": "Нет ответа",
-    "ok": "200 OK",
-    "notApplicable": "н/д"
+    "latency": "{{millis}} мс"
   },
   "counts": {
     "vpnOne": "{{count}} VPN",

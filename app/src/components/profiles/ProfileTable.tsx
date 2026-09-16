@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ProfileActionsMenu } from '@/components/profiles/ProfileActionsMenu'
 import { ResultBadge } from '@/components/common/ResultBadge'
 import { cn } from '@/lib/utils'
-import type { Profile, ProfileGroup, TestResult } from '@/types/kagerou'
+import type { Profile, ProfileGroup } from '@/types/kagerou'
 
 interface ProfileTableProps {
   profiles: Profile[]
@@ -41,10 +41,6 @@ function useNarrowContainer() {
   return [ref, narrow] as const
 }
 
-function getProfileResult(profile: Profile, runningTests: Record<string, boolean>, runningLabel: string): TestResult {
-  return runningTests[profile.id] ? { value: runningLabel, tone: 'warn' } : profile.url
-}
-
 function ProfileSelectButton({ profile, compact = false, onSelect }: { profile: Profile; compact?: boolean; onSelect: (id: string) => void }) {
   const { t } = useTranslation('profiles')
 
@@ -60,7 +56,7 @@ function ProfileCompactRow({
   profile,
   index,
   movableGroups,
-  result,
+  running,
   onSelect,
   onRename,
   onMoveToGroup,
@@ -70,7 +66,7 @@ function ProfileCompactRow({
   profile: Profile
   index: number
   movableGroups: ProfileGroup[]
-  result: TestResult
+  running: boolean
   onSelect: (id: string) => void
   onRename: (profile: Profile) => void
   onMoveToGroup: (profileId: string, groupId: string) => void
@@ -94,7 +90,7 @@ function ProfileCompactRow({
           <span className="rounded-md bg-raised px-2 py-1 font-mono text-body">{profile.protocol}</span>
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <span>{t('table.ping')}</span>
-            <ResultBadge tone={result.tone} value={result.value} />
+            <ResultBadge result={profile.url} running={running} />
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-1.5">
             <ProfileSelectButton compact onSelect={onSelect} profile={profile} />
@@ -108,7 +104,6 @@ function ProfileCompactRow({
 
 export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, onRename, onMoveToGroup, onDelete, onTest }: ProfileTableProps) {
   const { t } = useTranslation('profiles')
-  const runningLabel = t('table.running')
   const [containerRef, narrow] = useNarrowContainer()
 
   return (
@@ -125,7 +120,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
             onSelect={onSelect}
             onTest={onTest}
             profile={profile}
-            result={getProfileResult(profile, runningTests, runningLabel)}
+            running={Boolean(runningTests[profile.id])}
           />
         ))
       ) : (
@@ -142,7 +137,6 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
           </TableHeader>
           <TableBody>
             {profiles.map((profile, index) => {
-              const result = getProfileResult(profile, runningTests, runningLabel)
               return (
                 <TableRow className={cn('min-h-[75px] border-b border-hairline/55 text-body hover:bg-row-hover focus-within:bg-row-hover', profile.selected && 'bg-selected hover:bg-selected')} data-profile-id={profile.id} key={profile.id}>
                   <TableCell className="px-5 py-4 align-middle"><div className="font-mono text-[12px] tabular-nums text-muted-copy"><span className="w-3 text-center">{index + 1}</span></div></TableCell>
@@ -153,7 +147,7 @@ export function ProfileTable({ profiles, movableGroups, runningTests, onSelect, 
                     </div>
                   </TableCell>
                   <TableCell className="px-3 py-4 align-middle"><span className="inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[10px] text-body">{profile.protocol}</span></TableCell>
-                  <TableCell className="px-3 py-4 align-middle"><ResultBadge tone={result.tone} value={result.value} /></TableCell>
+                  <TableCell className="px-3 py-4 align-middle"><ResultBadge result={profile.url} running={Boolean(runningTests[profile.id])} /></TableCell>
                   <TableCell className="px-3 py-4 align-middle"><ProfileSelectButton onSelect={onSelect} profile={profile} /></TableCell>
                   <TableCell className="px-3 py-4 text-right align-middle"><ProfileActionsMenu movableGroups={movableGroups} onDelete={() => onDelete(profile)} onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)} onRename={() => onRename(profile)} onTest={() => onTest(profile.id)} profile={profile} /></TableCell>
                 </TableRow>

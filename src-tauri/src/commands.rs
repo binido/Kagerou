@@ -203,7 +203,7 @@ pub async fn start_group_test(
                         &profile_id,
                     )
                     .await
-                    .map(testing::Measured::Result)
+                    .map(testing::Measured::Outcome)
                     .unwrap_or(testing::Measured::CoreUnavailable),
                     Err(_) => testing::Measured::CoreUnavailable,
                 }
@@ -299,15 +299,15 @@ pub async fn run_profile_test(
     state: State<'_, AppState>,
 ) -> Result<TestResult, String> {
     let clash = testing::ensure_running(&state.db, &state.paths, &state.test_core).await?;
-    let result = testing::measure_profile(
+    let outcome = testing::measure_profile(
         &state.db,
         state.paths.test_mixed_listen_port,
         &clash,
         &profile_id,
     )
     .await?;
-    let _ = profiles::set_test_result(&state.db, &profile_id, &result);
-    Ok(result)
+    let _ = profiles::set_test_outcome(&state.db, &profile_id, outcome);
+    Ok(outcome.into())
 }
 
 // ---------------------------------------------------------------------

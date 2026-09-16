@@ -7,6 +7,7 @@ import { StatusFooter } from '@/components/dashboard/StatusFooter'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { latencyOf, sortProfiles } from '@/lib/profile-sorting'
+import { UNTESTED } from '@/types/kagerou'
 import { useKagerouStore } from '@/store/kagerou-store'
 
 const QUICK_PROFILE_COUNT = 4
@@ -44,7 +45,7 @@ export function DashboardPage() {
       ? t('connection.profile', { group: groupLabel, name: activeProfile.name })
       : activeProfile.name
     : t('connection.fallbackProfile')
-  const ping = activeProfile ? activeProfile.url : { value: 'Not tested', tone: 'muted' as const }
+  const ping = activeProfile?.url ?? UNTESTED
 
   // The quick list ranks the active profile's own group. Without a single
   // measured latency the ranking is meaningless — every profile ties at

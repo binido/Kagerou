@@ -1,6 +1,6 @@
 use super::*;
 use crate::storage::groups;
-use crate::storage::models::NewProfileGroup;
+use crate::storage::models::{NewProfileGroup, Tone};
 
 /// The base migration already seeds a `default` group; this only adds
 /// the extra `custom` one these tests need.
@@ -41,7 +41,7 @@ fn insert_then_get_round_trips_all_fields() {
     assert_eq!(profile.group_id, "default");
     assert_eq!(profile.protocol, Protocol::VLESS);
     assert!(!profile.selected);
-    assert_eq!(profile.url.value, "Not tested");
+    assert_eq!(profile.url.outcome, TestOutcome::NotTested);
 }
 
 #[test]
@@ -271,33 +271,27 @@ fn stamp(db: &Db, id: &str, at: i64) {
 }
 
 #[test]
-fn set_test_result_stores_the_value_and_its_tone() {
+fn a_stored_outcome_comes_back_with_the_tone_it_implies() {
     let db = seeded_db();
     insert(&db, &new_profile("p1", "default")).unwrap();
-    set_test_result(
-        &db,
-        "p1",
-        &TestResult {
-            value: "42 ms".into(),
-            tone: Tone::Good,
-        },
-    )
-    .unwrap();
+    set_test_outcome(&db, "p1", TestOutcome::Latency { millis: 42 }).unwrap();
     let profile = get(&db, "p1").unwrap();
-    assert_eq!(profile.url.value, "42 ms");
+    assert_eq!(profile.url.outcome, TestOutcome::Latency { millis: 42 });
     assert_eq!(profile.url.tone, Tone::Good);
 }
 
+#[test]
+fn a_slow_but_answering_server_is_stored_as_a_latency_not_as_a_failure() {
+    let db = seeded_db();
+    insert(&db, &new_profile("p1", "default")).unwrap();
+    set_test_outcome(&db, "p1", TestOutcome::Latency { millis: 900 }).unwrap();
+    let profile = get(&db, "p1").unwrap();
+    assert_eq!(profile.url.outcome, TestOutcome::Latency { millis: 900 });
+    assert_eq!(profile.url.tone, Tone::Bad, "it is still drawn as bad");
+}
+
 fn fail(db: &Db, id: &str) {
-    set_test_result(
-        db,
-        id,
-        &TestResult {
-            value: "No response".into(),
-            tone: Tone::Bad,
-        },
-    )
-    .unwrap();
+    set_test_outcome(db, id, TestOutcome::NoResponse).unwrap();
 }
 
 #[test]
@@ -314,12 +308,11 @@ fn clear_test_results_resets_only_the_target_group() {
 
     for id in ["p1", "p2"] {
         let profile = get(&db, id).unwrap();
-        assert_eq!(profile.url.value, "Not tested");
+        assert_eq!(profile.url.outcome, TestOutcome::NotTested);
         assert_eq!(profile.url.tone, Tone::Muted);
     }
     let untouched = get(&db, "p3").unwrap();
-    assert_eq!(untouched.url.value, "No response");
-    assert_eq!(untouched.url.tone, Tone::Bad);
+    assert_eq!(untouched.url.outcome, TestOutcome::NoResponse);
 }
 
 #[test]
@@ -328,7 +321,7 @@ fn clear_test_results_is_idempotent_on_untested_profiles() {
     insert(&db, &new_profile("p1", "default")).unwrap();
     clear_test_results(&db, "default").unwrap();
     clear_test_results(&db, "no-such-group").unwrap();
-    assert_eq!(get(&db, "p1").unwrap().url.value, "Not tested");
+    assert_eq!(get(&db, "p1").unwrap().url.outcome, TestOutcome::NotTested);
 }
 
 #[test]
@@ -350,6 +343,24 @@ fn delete_unavailable_deletes_only_failed_rows_of_the_target_group() {
         "never-tested profile survives by construction"
     );
     assert!(get(&db, "p4").is_ok(), "other groups are untouched");
+}
+
+/// "Remove unavailable" used to filter on the display colour, which a
+/// latency over 400ms also carries, so a working-but-slow server was deleted
+/// along with the ones that never answered.
+#[test]
+fn delete_unavailable_keeps_a_server_that_answered_slowly() {
+    let db = seeded_db();
+    insert(&db, &new_profile("slow", "default")).unwrap();
+    insert(&db, &new_profile("dead", "default")).unwrap();
+    set_test_outcome(&db, "slow", TestOutcome::Latency { millis: 1200 }).unwrap();
+    set_test_outcome(&db, "dead", TestOutcome::Timeout).unwrap();
+
+    let deleted = delete_unavailable(&db, "default", None).unwrap();
+
+    assert_eq!(deleted, 1);
+    assert!(get(&db, "slow").is_ok(), "1200ms is slow, not unavailable");
+    assert!(matches!(get(&db, "dead"), Err(StorageError::NotFound)));
 }
 
 #[test]

@@ -1,11 +1,11 @@
 use rusqlite::{params, OptionalExtension};
 
-use super::models::{NewProfile, Profile, Protocol, TestResult, Tone};
+use super::models::{NewProfile, Profile, Protocol, TestOutcome};
 use super::{Db, StorageError};
 
 fn row_to_profile(row: &rusqlite::Row) -> rusqlite::Result<Profile> {
     let protocol: String = row.get("protocol")?;
-    let url_tone: String = row.get("url_tone")?;
+    let url_kind: String = row.get("url_kind")?;
     Ok(Profile {
         id: row.get("id")?,
         name: row.get("name")?,
@@ -15,10 +15,7 @@ fn row_to_profile(row: &rusqlite::Row) -> rusqlite::Result<Profile> {
         group_id: row.get("group_id")?,
         source_id: row.get("source_id")?,
         selected: row.get::<_, i64>("selected")? != 0,
-        url: TestResult {
-            value: row.get("url_value")?,
-            tone: url_tone.parse().unwrap_or(Tone::Muted),
-        },
+        url: TestOutcome::from_stored(&url_kind, row.get("url_millis")?).into(),
         key: row.get("key")?,
     })
 }
@@ -26,7 +23,7 @@ fn row_to_profile(row: &rusqlite::Row) -> rusqlite::Result<Profile> {
 pub fn list_all(db: &Db) -> Result<Vec<Profile>, StorageError> {
     let conn = db.lock();
     let mut stmt = conn.prepare(
-        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key
+        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key
          FROM profiles ORDER BY group_id, position",
     )?;
     let rows = stmt.query_map([], row_to_profile)?;
@@ -37,7 +34,7 @@ pub fn list_all(db: &Db) -> Result<Vec<Profile>, StorageError> {
 pub fn get(db: &Db, id: &str) -> Result<Profile, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key
+        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key
          FROM profiles WHERE id = ?1",
         params![id],
         row_to_profile,
@@ -55,8 +52,8 @@ pub fn insert(db: &Db, profile: &NewProfile) -> Result<(), StorageError> {
         |row| row.get(0),
     )?;
     conn.execute(
-        "INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key, position)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, 'Not tested', 'muted', ?8, ?9)",
+        "INSERT INTO profiles (id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key, position)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, 'notTested', NULL, ?8, ?9)",
         params![
             profile.id,
             profile.name,
@@ -127,11 +124,11 @@ pub fn delete(db: &Db, id: &str) -> Result<(), StorageError> {
     Ok(())
 }
 
-pub fn set_test_result(db: &Db, id: &str, result: &TestResult) -> Result<(), StorageError> {
+pub fn set_test_outcome(db: &Db, id: &str, outcome: TestOutcome) -> Result<(), StorageError> {
     let conn = db.lock();
     let affected = conn.execute(
-        "UPDATE profiles SET url_value = ?1, url_tone = ?2 WHERE id = ?3",
-        params![result.value, result.tone.as_str(), id],
+        "UPDATE profiles SET url_kind = ?1, url_millis = ?2 WHERE id = ?3",
+        params![outcome.kind_str(), outcome.millis(), id],
     )?;
     if affected == 0 {
         return Err(StorageError::NotFound);
@@ -146,7 +143,7 @@ pub fn set_test_result(db: &Db, id: &str, result: &TestResult) -> Result<(), Sto
 pub fn recently_selected(db: &Db, limit: usize) -> Result<Vec<Profile>, StorageError> {
     let conn = db.lock();
     let mut stmt = conn.prepare(
-        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_value, url_tone, key
+        "SELECT id, name, region, protocol, origin, group_id, source_id, selected, url_kind, url_millis, key
          FROM profiles
          WHERE last_selected_at IS NOT NULL
          ORDER BY last_selected_at DESC, name ASC
@@ -164,17 +161,21 @@ pub fn clear_test_results(db: &Db, group_id: &str) -> Result<(), StorageError> {
     let conn = db.lock();
     conn.execute(
         "UPDATE profiles
-         SET url_value = 'Not tested', url_tone = 'muted'
+         SET url_kind = 'notTested', url_millis = NULL
          WHERE group_id = ?1",
         params![group_id],
     )?;
     Ok(())
 }
 
-/// Deletes every profile in `group_id` whose stored test result carries the
-/// `bad` tone — the ones that failed their last test. `skip_id`
+/// Deletes every profile in `group_id` that did not answer its last test.
+///
+/// Not answering is what "unavailable" means here: a timeout, no response,
+/// or a selector the core refused. A server that answered slowly is
+/// available, and used to be deleted alongside them because the filter was
+/// the display colour, which a latency over 400ms also carries. `skip_id`
 /// (the active profile) is never deleted, and untested profiles survive by
-/// construction: their tone is `muted`. Returns how many rows were deleted.
+/// construction. Returns how many rows were deleted.
 pub fn delete_unavailable(
     db: &Db,
     group_id: &str,
@@ -183,11 +184,14 @@ pub fn delete_unavailable(
     let conn = db.lock();
     let affected = match skip_id {
         Some(skip) => conn.execute(
-            "DELETE FROM profiles WHERE group_id = ?1 AND url_tone = 'bad' AND id != ?2",
+            "DELETE FROM profiles
+             WHERE group_id = ?1 AND url_kind IN ('timeout', 'noResponse', 'unavailable')
+               AND id != ?2",
             params![group_id, skip],
         )?,
         None => conn.execute(
-            "DELETE FROM profiles WHERE group_id = ?1 AND url_tone = 'bad'",
+            "DELETE FROM profiles
+             WHERE group_id = ?1 AND url_kind IN ('timeout', 'noResponse', 'unavailable')",
             params![group_id],
         )?,
     };

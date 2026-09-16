@@ -38,10 +38,22 @@ export type GroupSortMode = 'ping' | 'name' | 'protocol'
 /** sing-box's config log levels — deliberately not the display `LogLevel` above. */
 export type SingBoxLogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'panic'
 
-export interface TestResult {
-  value: string
-  tone: TestTone
-}
+/** Mirrors `storage::models::TestOutcome`: what measuring a profile
+ * produced. A kind and, for a latency, a number — not a sentence, so
+ * sorting has something to compare and this side has something to
+ * translate. */
+export type TestOutcome =
+  | { kind: 'notTested' }
+  | { kind: 'latency'; millis: number }
+  | { kind: 'timeout' }
+  | { kind: 'noResponse' }
+  | { kind: 'unavailable' }
+
+/** The outcome plus the colour it implies. The thresholds that decide the
+ * colour live in Rust, so the two can never disagree. */
+export type TestResult = TestOutcome & { tone: TestTone }
+
+export const UNTESTED: TestResult = { kind: 'notTested', tone: 'muted' }
 
 export interface Profile {
   id: string

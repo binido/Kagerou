@@ -97,10 +97,7 @@ fn every_event_keeps_the_name_the_frontend_listens_on() {
         AppEvent::Traffic(DashboardTrafficEvent::Disconnected).name(),
         AppEvent::TestProgress(TestProgress {
             profile_id: String::new(),
-            result: TestResult {
-                value: String::new(),
-                tone: crate::storage::models::Tone::Muted,
-            },
+            result: crate::storage::models::TestOutcome::NotTested.into(),
             done: 0,
             total: 0,
         })

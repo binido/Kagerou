@@ -34,14 +34,12 @@
     "disconnectedState": "Disconnected",
     "on": "On",
     "off": "Off",
-    "checking": "Checking…",
     "running": "Running…",
     "notTested": "Not tested",
     "unavailable": "Unavailable",
     "timeout": "Timeout",
     "noResponse": "No response",
-    "ok": "200 OK",
-    "notApplicable": "n/a"
+    "latency": "{{millis}} ms"
   },
   "counts": {
     "vpnOne": "{{count}} VPN",

@@ -1,13 +1,9 @@
 import type { GroupSortMode, Profile } from '@/types/kagerou'
 
-const latencyPattern = /^(\d+)\s*ms$/i
-
 /** The measured latency in ms, or `null` when the profile is untested or
  * failed — neither yields a number. */
-export const latencyOf = (profile: Profile): number | null => {
-  const match = profile.url.value.match(latencyPattern)
-  return match ? Number(match[1]) : null
-}
+export const latencyOf = (profile: Profile): number | null =>
+  profile.url.kind === 'latency' ? profile.url.millis : null
 
 /** Untested and failed profiles sort last. */
 const pingValue = (profile: Profile) => latencyOf(profile) ?? Number.POSITIVE_INFINITY

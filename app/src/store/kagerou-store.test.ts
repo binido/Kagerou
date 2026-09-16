@@ -94,7 +94,7 @@ const profile = (overrides: Partial<Profile> = {}): Profile => ({
   origin: 'local',
   groupId: 'default',
   selected: false,
-  url: { value: 'Not tested', tone: 'muted' },
+  url: { kind: 'notTested', tone: 'muted' },
   key: 'vless://p1',
   ...overrides,
 })
@@ -408,10 +408,10 @@ describe('group test run', () => {
     await useKagerouStore.getState().hydrate()
     useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
     await useKagerouStore.getState().startGroupTest('g1')
-    handler({ profileId: 'p1', result: { value: '42 ms', tone: 'good' }, done: 1, total: 2 })
+    handler({ profileId: 'p1', result: { kind: 'latency', millis: 42, tone: 'good' }, done: 1, total: 2 })
 
     expect(useKagerouStore.getState().testRun).toEqual({ groupId: 'g1', done: 1, total: 2 })
-    expect(useKagerouStore.getState().profiles[0].url).toEqual({ value: '42 ms', tone: 'good' })
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({ kind: 'latency', millis: 42, tone: 'good' })
   })
 
   it('a progress event for an unknown profile does not invent one', async () => {
@@ -420,10 +420,10 @@ describe('group test run', () => {
 
     await useKagerouStore.getState().hydrate()
     useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
-    handler({ profileId: 'ghost', result: { value: '9 ms', tone: 'good' }, done: 1, total: 1 })
+    handler({ profileId: 'ghost', result: { kind: 'latency', millis: 9, tone: 'good' }, done: 1, total: 1 })
 
     expect(useKagerouStore.getState().profiles).toHaveLength(1)
-    expect(useKagerouStore.getState().profiles[0].url).toEqual({ value: 'Not tested', tone: 'muted' })
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({ kind: 'notTested', tone: 'muted' })
   })
 
   it('the finished event ends the run, cancelled or not', async () => {
@@ -443,12 +443,12 @@ describe('group test run', () => {
 describe('runProfileTest', () => {
   it('applies the returned result to the matching profile and returns it', async () => {
     useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
-    api.runProfileTest.mockResolvedValue({ value: '42 ms', tone: 'good' })
+    api.runProfileTest.mockResolvedValue({ kind: 'latency', millis: 42, tone: 'good' })
 
     const result = await useKagerouStore.getState().runProfileTest('p1')
 
-    expect(result).toEqual({ value: '42 ms', tone: 'good' })
-    expect(useKagerouStore.getState().profiles[0].url).toEqual({ value: '42 ms', tone: 'good' })
+    expect(result).toEqual({ kind: 'latency', millis: 42, tone: 'good' })
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({ kind: 'latency', millis: 42, tone: 'good' })
   })
 
   it('returns null and leaves the profile untouched when the backend call fails', async () => {

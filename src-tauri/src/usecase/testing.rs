@@ -17,7 +17,7 @@ use crate::app_state::RuntimePaths;
 use crate::clash_api::ClashApiClient;
 use crate::probe;
 use crate::singbox::{SidecarLauncher, Supervisor};
-use crate::storage::models::{TestResult, Tone};
+use crate::storage::models::TestOutcome;
 use crate::storage::{profiles, settings, Db};
 
 /// How long a test-only core lingers after the last test before shutting
@@ -106,35 +106,22 @@ fn is_idle(last_request_at: Option<Instant>, now: Instant, timeout: Duration) ->
     }
 }
 
-fn latency_tone(delay_ms: u32) -> Tone {
-    if delay_ms < 150 {
-        Tone::Good
-    } else if delay_ms < 400 {
-        Tone::Warn
-    } else {
-        Tone::Bad
-    }
-}
-
 /// What asking the test core about one profile produced. A core that would
 /// not come up is not the profile's fault, and is kept apart from a profile
 /// that genuinely did not answer.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Measured {
-    Result(TestResult),
+    Outcome(TestOutcome),
     CoreUnavailable,
 }
 
 impl Measured {
-    fn into_result(self) -> TestResult {
+    fn into_outcome(self) -> TestOutcome {
         match self {
-            Self::Result(result) => result,
+            Self::Outcome(outcome) => outcome,
             // Report the profile as untested rather than blaming it for the
             // run's problem.
-            Self::CoreUnavailable => TestResult {
-                value: "Not tested".to_string(),
-                tone: Tone::Muted,
-            },
+            Self::CoreUnavailable => TestOutcome::NotTested,
         }
     }
 }
@@ -170,16 +157,16 @@ pub async fn run_group<E, F, Fut>(
             cancelled = true;
             break;
         }
-        let result = measure(profile_id.clone()).await.into_result();
+        let outcome = measure(profile_id.clone()).await.into_outcome();
         // A core that never came up says nothing about the profile, so the
         // stored result stays whatever it was.
-        if result.tone != Tone::Muted {
-            let _ = profiles::set_test_result(db, &profile_id, &result);
+        if outcome != TestOutcome::NotTested {
+            let _ = profiles::set_test_outcome(db, &profile_id, outcome);
         }
         done += 1;
         events.emit(AppEvent::TestProgress(TestProgress {
             profile_id,
-            result,
+            result: outcome.into(),
             done,
             total,
         }));
@@ -250,30 +237,18 @@ pub async fn measure_profile(
     socks_port: u16,
     clash: &ClashApiClient,
     profile_id: &str,
-) -> Result<TestResult, String> {
+) -> Result<TestOutcome, String> {
     let test_url = settings::get(db).map_err(|e| e.to_string())?.test_url;
     if clash.select_outbound("proxy", profile_id).await.is_err() {
-        return Ok(TestResult {
-            value: "Unavailable".to_string(),
-            tone: Tone::Bad,
-        });
+        return Ok(TestOutcome::Unavailable);
     }
 
     let socks = format!("127.0.0.1:{socks_port}");
     Ok(
         match probe::rtt_through_socks(&socks, &test_url, REQUEST_TIMEOUT).await {
-            Ok(delay_ms) => TestResult {
-                value: format!("{delay_ms} ms"),
-                tone: latency_tone(delay_ms),
-            },
-            Err(probe::ProbeError::Timeout) => TestResult {
-                value: "Timeout".to_string(),
-                tone: Tone::Bad,
-            },
-            Err(probe::ProbeError::Unreachable) => TestResult {
-                value: "No response".to_string(),
-                tone: Tone::Bad,
-            },
+            Ok(millis) => TestOutcome::Latency { millis },
+            Err(probe::ProbeError::Timeout) => TestOutcome::Timeout,
+            Err(probe::ProbeError::Unreachable) => TestOutcome::NoResponse,
         },
     )
 }
