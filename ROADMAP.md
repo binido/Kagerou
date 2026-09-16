@@ -752,7 +752,7 @@ doing.
   The error also belongs directly under the input rather than above the
   footer, so the eye finds it where the mistake is. **Good first issue.**
 
-- [ ] **URL fields are typed as plain text and spell-checked.**
+- [x] **URL fields are typed as plain text and spell-checked.**
   `app/src/components/settings/SettingTextRow.tsx:37`.
 
   The connection-test URL is `type="text"` with spellcheck on, so the
