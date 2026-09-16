@@ -1,10 +1,9 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
 use crate::app_state::AppState;
-use crate::clash_api::{self, ClashApiClient, TrafficEvent};
 use crate::geo;
 use crate::import::{self, ImportOutcome, Pasted};
 use crate::singbox;
@@ -15,8 +14,7 @@ use crate::storage::models::{
 use crate::storage::{groups, profiles, routing, settings, sources, Db};
 use crate::subscription;
 use crate::updates;
-use crate::usecase::core::{self, CoreSpec};
-use crate::usecase::events::{AppEvent, DashboardTrafficEvent, Events};
+use crate::usecase::connection;
 use crate::usecase::testing;
 
 fn to_err(e: impl std::fmt::Display) -> String {
@@ -46,16 +44,6 @@ pub struct AppSnapshot {
     pub settings: Settings,
 }
 
-/// The connection's start time as unix milliseconds. A clock set before
-/// 1970 is the only way this fails, and an absent uptime beats a panic.
-fn epoch_millis(state: &AppState) -> Option<u64> {
-    let since = (*state.connected_since.lock().unwrap())?;
-    since
-        .duration_since(UNIX_EPOCH)
-        .ok()
-        .map(|d| d.as_millis() as u64)
-}
-
 #[tauri::command]
 pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
     // The connection-changed event fires before the WebView is listening
@@ -65,7 +53,9 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
     let connected = state.is_connected();
     Ok(AppSnapshot {
         connected,
-        connected_since: connected.then(|| epoch_millis(&state)).flatten(),
+        connected_since: connected
+            .then(|| connection::connected_since_millis(&state))
+            .flatten(),
         active_profile_id: settings::get_active_profile_id(&state.db)
             .map_err(to_err)?
             .unwrap_or_default(),
@@ -82,99 +72,14 @@ pub fn get_app_state(state: State<AppState>) -> Result<AppSnapshot, String> {
 // Connection lifecycle
 // ---------------------------------------------------------------------
 
-/// The body of the `connect` command, shared with the startup auto-connect
-/// so the two can never drift. TUN and the log level are stored preferences,
-/// not per-call arguments: they are toggled in settings, and take effect on
-/// the next connection.
-pub(crate) async fn connect_internal(app: &AppHandle, state: &AppState) -> Result<(), String> {
-    let stored = settings::get(&state.db).map_err(to_err)?;
-    core::start(
-        &state.db,
-        &mut state.supervisor.lock().unwrap(),
-        &CoreSpec::connection(&state.paths, &stored),
-    )
-    .map_err(to_err)?;
-
-    let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
-    *state.clash.lock().unwrap() = Some(clash.clone());
-
-    let watcher = clash_api::watch_traffic(
-        format!("ws://{}/traffic", state.paths.clash_api_listen),
-        Duration::from_secs(2),
-    );
-    let (mut events, stop) = watcher.into_parts();
-    *state.traffic_stop.lock().unwrap() = Some(stop);
-    let traffic_app = app.clone();
-    tauri::async_runtime::spawn(async move {
-        while let Some(event) = events.recv().await {
-            let totals = if matches!(event, TrafficEvent::Sample(_)) {
-                clash.get_connections().await.ok()
-            } else {
-                None
-            };
-            Events::emit(
-                &traffic_app,
-                AppEvent::Traffic(DashboardTrafficEvent::new(&event, totals.as_ref())),
-            );
-        }
-    });
-
-    let log_app = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let mut forwarded = 0usize;
-        let mut ticker = tokio::time::interval(Duration::from_millis(500));
-        loop {
-            ticker.tick().await;
-            let state = log_app.state::<AppState>();
-            let (lines, status) = {
-                let mut supervisor = state.supervisor.lock().unwrap();
-                supervisor.poll_events();
-                let (lines, produced) = supervisor.logs_since(forwarded);
-                let lines: Vec<String> = lines.cloned().collect();
-                forwarded = produced;
-                (lines, supervisor.status().clone())
-            };
-            for line in lines {
-                Events::emit(&log_app, AppEvent::Log(line));
-            }
-            if let singbox::Status::Crashed { exit_code } = status {
-                *state.connected_since.lock().unwrap() = None;
-                Events::emit(&log_app, AppEvent::ConnectionChanged(false));
-                crate::tray::refresh(&log_app, false);
-                Events::emit(&log_app, AppEvent::Crashed { exit_code });
-                break;
-            }
-            if matches!(status, singbox::Status::Stopped) {
-                break;
-            }
-        }
-    });
-
-    *state.connected_since.lock().unwrap() = Some(SystemTime::now());
-    Events::emit(app, AppEvent::ConnectionChanged(true));
-    crate::tray::refresh(app, true);
-    Ok(())
+#[tauri::command]
+pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    connection::connect(&app, state.inner()).await
 }
 
 #[tauri::command]
-pub async fn connect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    connect_internal(&app, state.inner()).await
-}
-
-/// The startup side of auto-connect: `.setup()` reads the setting and only
-/// spawns this when it is on, so the remaining job is to skip quietly when
-/// there is nothing to connect to and otherwise go through the exact path
-/// the connect command uses. No profiles, or no last-active profile, is not
-/// an error — the app just stays disconnected.
-pub(crate) async fn auto_connect(app: &AppHandle) -> Result<(), String> {
-    let state = app.state::<AppState>();
-    let active_profile_id = settings::get_active_profile_id(&state.db)
-        .map_err(to_err)?
-        .unwrap_or_default();
-    if active_profile_id.is_empty() || profiles::list_all(&state.db).map_err(to_err)?.is_empty() {
-        return Ok(());
-    }
-    connect_internal(app, state.inner()).await
+pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    connection::disconnect(&app, state.inner())
 }
 
 /// A cold sing-box takes a moment to listen. Four attempts two seconds apart
@@ -216,19 +121,6 @@ pub async fn lookup_exit_location(
             Err(error) => return Err(to_err(error)),
         }
     }
-}
-
-#[tauri::command]
-pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    if let Some(stop) = state.traffic_stop.lock().unwrap().take() {
-        let _ = stop.send(true);
-    }
-    *state.clash.lock().unwrap() = None;
-    *state.connected_since.lock().unwrap() = None;
-    state.supervisor.lock().unwrap().stop().map_err(to_err)?;
-    Events::emit(&app, AppEvent::ConnectionChanged(false));
-    crate::tray::refresh(&app, false);
-    Ok(())
 }
 
 // ---------------------------------------------------------------------

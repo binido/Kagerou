@@ -4,6 +4,7 @@
 //! Everything here used to live in `commands.rs`, where it could not be
 //! reached without an `AppHandle` and so went untested.
 
+pub mod connection;
 pub mod core;
 pub mod events;
 pub mod testing;

@@ -100,7 +100,7 @@ pub fn run() {
                 if settings.auto_connect {
                     let handle = app.handle().clone();
                     tauri::async_runtime::spawn(async move {
-                        if let Err(error) = commands::auto_connect(&handle).await {
+                        if let Err(error) = usecase::connection::auto_connect(&handle).await {
                             eprintln!("auto-connect failed: {error}");
                         }
                     });
