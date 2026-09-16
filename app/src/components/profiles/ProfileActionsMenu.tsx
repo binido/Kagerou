@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  ExternalLink,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Waypoints,
-} from 'lucide-react'
+import { ArrowRight, ExternalLink, MoreHorizontal, Pencil, Trash2, Waypoints } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -30,20 +23,40 @@ interface ProfileActionsMenuProps {
   onTest: () => void
 }
 
-export function ProfileActionsMenu({ profile, movableGroups, onRename, onMoveToGroup, onDelete, onTest }: ProfileActionsMenuProps) {
+export function ProfileActionsMenu({
+  profile,
+  movableGroups,
+  onRename,
+  onMoveToGroup,
+  onDelete,
+  onTest,
+}: ProfileActionsMenuProps) {
   const { t } = useTranslation('profiles')
   const local = profile.origin === 'local'
-  const targetGroups = movableGroups.filter((group) => group.kind !== 'subscription' && group.id !== profile.groupId)
-  const groupLabel = (group: ProfileGroup) => group.kind === 'default' ? t('group.defaultName') : group.label
+  const targetGroups = movableGroups.filter(
+    (group) => group.kind !== 'subscription' && group.id !== profile.groupId,
+  )
+  const groupLabel = (group: ProfileGroup) =>
+    group.kind === 'default' ? t('group.defaultName') : group.label
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button aria-label={t('menu.more', { name: profile.name })} className="size-9 text-muted-copy hover:bg-raised hover:text-primary" size="icon" type="button" variant="ghost">
+        <Button
+          aria-label={t('menu.more', { name: profile.name })}
+          className="size-9 text-muted-copy hover:bg-raised hover:text-primary"
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
           <MoreHorizontal aria-hidden="true" className="size-[18px]" strokeWidth={1.7} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 border-hairline bg-popover p-1.5 text-[11px]" sideOffset={8}>
+      <DropdownMenuContent
+        align="end"
+        className="w-56 border-hairline bg-popover p-1.5 text-[11px]"
+        sideOffset={8}
+      >
         <DropdownMenuItem disabled={!local} onSelect={onRename}>
           <Pencil aria-hidden="true" className="size-3.5" />
           <span>{t('menu.rename')}</span>
@@ -62,7 +75,11 @@ export function ProfileActionsMenu({ profile, movableGroups, onRename, onMoveToG
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-bad focus:bg-bad/10 focus:text-bad" disabled={!local} onSelect={onDelete}>
+        <DropdownMenuItem
+          className="text-bad focus:bg-bad/10 focus:text-bad"
+          disabled={!local}
+          onSelect={onDelete}
+        >
           <Trash2 aria-hidden="true" className="size-3.5" />
           <span>{t('menu.delete')}</span>
         </DropdownMenuItem>

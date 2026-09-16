@@ -16,8 +16,11 @@ describe('highlightPattern', () => {
   })
 
   it('matches a metacharacter literally rather than as a pattern', () => {
-    expect('sing-box (1.14.0) started'.split(highlightPattern('(1.14.0)') as RegExp))
-      .toEqual(['sing-box ', '(1.14.0)', ' started'])
+    expect('sing-box (1.14.0) started'.split(highlightPattern('(1.14.0)') as RegExp)).toEqual([
+      'sing-box ',
+      '(1.14.0)',
+      ' started',
+    ])
   })
 
   it('does not let a quantifier through as a quantifier', () => {

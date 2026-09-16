@@ -95,7 +95,8 @@ export const kanagawaPalette = {
   lotusTeal3: '#5a7785',
 } as const
 
-const translucent = (color: string, amount: number) => `color-mix(in srgb, ${color} ${amount}%, transparent)`
+const translucent = (color: string, amount: number) =>
+  `color-mix(in srgb, ${color} ${amount}%, transparent)`
 
 const waveTokens: ThemeTokens = {
   canvas: kanagawaPalette.sumiInk3,
@@ -172,7 +173,12 @@ const lotusTokens: ThemeTokens = {
   shadowColor: translucent(kanagawaPalette.lotusInk1, 24),
 }
 
-export const createKanagawaTheme = (id: Theme['id'], name: string, isDark: boolean, tokens: ThemeTokens): Theme => ({
+export const createKanagawaTheme = (
+  id: Theme['id'],
+  name: string,
+  isDark: boolean,
+  tokens: ThemeTokens,
+): Theme => ({
   id,
   packId: 'kanagawa',
   packName: 'Kanagawa',

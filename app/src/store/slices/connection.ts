@@ -37,7 +37,10 @@ export const createConnectionSlice: Slice<ConnectionSlice> = (set, get) => ({
       if (connected) await kagerouApi.disconnect()
       else await kagerouApi.connect()
     } catch (error) {
-      report(error, connected ? 'common:feedback.disconnectFailed' : 'common:feedback.connectFailed')
+      report(
+        error,
+        connected ? 'common:feedback.disconnectFailed' : 'common:feedback.connectFailed',
+      )
     }
   },
 

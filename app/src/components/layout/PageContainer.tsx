@@ -10,7 +10,9 @@ interface PageContainerProps {
 
 export function PageContainer({ children, className, contentClassName }: PageContainerProps) {
   return (
-    <div className={cn('min-h-screen min-w-0 bg-canvas px-6 pb-10 pt-8 lg:px-12 lg:pt-10', className)}>
+    <div
+      className={cn('min-h-screen min-w-0 bg-canvas px-6 pb-10 pt-8 lg:px-12 lg:pt-10', className)}
+    >
       <div className={cn('mx-auto w-full max-w-[1040px]', contentClassName)}>{children}</div>
     </div>
   )

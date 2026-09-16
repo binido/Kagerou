@@ -2,10 +2,23 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { kagerouApi } from '@/lib/tauri-api'
 import { routeOutboundOptions } from '@/types/kagerou'
 import type { MatchAnalysis, MatchKind, MatchWarning, Outbound, RoutingRule } from '@/types/kagerou'
@@ -58,7 +71,10 @@ export function EditRuleDialog({ rule, onOpenChange, onSave }: EditRuleDialogPro
     const value = match.trim()
     if (!value) return
     const timer = setTimeout(() => {
-      kagerouApi.analyzeRuleMatch(value).then(setAnalysis).catch(() => undefined)
+      kagerouApi
+        .analyzeRuleMatch(value)
+        .then(setAnalysis)
+        .catch(() => undefined)
     }, 200)
     return () => clearTimeout(timer)
   }, [match])
@@ -83,18 +99,64 @@ export function EditRuleDialog({ rule, onOpenChange, onSave }: EditRuleDialogPro
   return (
     <Dialog onOpenChange={onOpenChange} open={Boolean(rule)}>
       <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[420px]">
-        <DialogHeader><DialogTitle className="type-display text-2xl text-primary">{adding ? t('dialog.addTitle') : t('dialog.title')}</DialogTitle><DialogDescription className="text-[12px] text-muted-copy">{t('dialog.description')}</DialogDescription></DialogHeader>
+        <DialogHeader>
+          <DialogTitle className="type-display text-2xl text-primary">
+            {adding ? t('dialog.addTitle') : t('dialog.title')}
+          </DialogTitle>
+          <DialogDescription className="text-[12px] text-muted-copy">
+            {t('dialog.description')}
+          </DialogDescription>
+        </DialogHeader>
         <form className="space-y-5" onSubmit={submit}>
           <Field>
-            <FieldLabel className="text-[12px] text-primary" htmlFor="rule-match">{t('dialog.match')}</FieldLabel>
-            <Input aria-describedby="rule-match-hint" className="h-10 border-hairline bg-surface text-[13px]" id="rule-match" onChange={(event) => setMatch(event.target.value)} placeholder={t('dialog.matchPlaceholder')} value={match} />
+            <FieldLabel className="text-[12px] text-primary" htmlFor="rule-match">
+              {t('dialog.match')}
+            </FieldLabel>
+            <Input
+              aria-describedby="rule-match-hint"
+              className="h-10 border-hairline bg-surface text-[13px]"
+              id="rule-match"
+              onChange={(event) => setMatch(event.target.value)}
+              placeholder={t('dialog.matchPlaceholder')}
+              value={match}
+            />
             <p className="min-h-[15px] text-[11px] leading-4" id="rule-match-hint">
-              {hint ? <span className={hint.warning ? 'text-warn' : 'text-quiet'}>{hint.warning ? t(warningKeys[hint.warning]) : t(kindKeys[hint.kind])}</span> : null}
+              {hint ? (
+                <span className={hint.warning ? 'text-warn' : 'text-quiet'}>
+                  {hint.warning ? t(warningKeys[hint.warning]) : t(kindKeys[hint.kind])}
+                </span>
+              ) : null}
             </p>
           </Field>
-          <Field><FieldLabel className="text-[12px] text-primary" htmlFor="rule-outbound">{t('dialog.outbound')}</FieldLabel><Select onValueChange={(value) => setOutbound(value as Outbound)} value={outbound}><SelectTrigger className="w-full border-hairline bg-surface text-[13px]" id="rule-outbound"><SelectValue placeholder={t('dialog.outboundPlaceholder')} /></SelectTrigger><SelectContent className="border-hairline bg-raised text-body">{routeOutboundOptions.map((option) => <SelectItem key={option} value={option}>{t(outboundKeys[option])}</SelectItem>)}</SelectContent></Select></Field>
+          <Field>
+            <FieldLabel className="text-[12px] text-primary" htmlFor="rule-outbound">
+              {t('dialog.outbound')}
+            </FieldLabel>
+            <Select onValueChange={(value) => setOutbound(value as Outbound)} value={outbound}>
+              <SelectTrigger
+                className="w-full border-hairline bg-surface text-[13px]"
+                id="rule-outbound"
+              >
+                <SelectValue placeholder={t('dialog.outboundPlaceholder')} />
+              </SelectTrigger>
+              <SelectContent className="border-hairline bg-raised text-body">
+                {routeOutboundOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {t(outboundKeys[option])}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           {error ? <p className="text-[11px] text-bad">{error}</p> : null}
-          <DialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="ghost">{t('dialog.cancel')}</Button><Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit">{adding ? t('dialog.add') : t('dialog.save')}</Button></DialogFooter>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
+              {t('dialog.cancel')}
+            </Button>
+            <Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit">
+              {adding ? t('dialog.add') : t('dialog.save')}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

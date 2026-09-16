@@ -23,8 +23,10 @@ export const toLogEntry = (line: string): LogEntry => ({
   message: line,
 })
 
-export const appendLog = (logs: LogEntry[], line: string) =>
-  [...logs.slice(-(MAX_LOG_ENTRIES - 1)), toLogEntry(line)]
+export const appendLog = (logs: LogEntry[], line: string) => [
+  ...logs.slice(-(MAX_LOG_ENTRIES - 1)),
+  toLogEntry(line),
+]
 
 export interface LogsSlice {
   logs: LogEntry[]

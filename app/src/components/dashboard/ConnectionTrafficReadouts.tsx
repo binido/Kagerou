@@ -17,10 +17,16 @@ interface TrafficReadoutProps {
 
 function TrafficReadout({ icon: Icon, iconClassName, label, value, unit }: TrafficReadoutProps) {
   return (
-    <div aria-label={label} className="flex shrink-0 items-center gap-2 px-3 first:pl-0 max-[980px]:gap-1.5 max-[980px]:px-2 max-[760px]:px-1.5" role="group" title={label}>
+    <div
+      aria-label={label}
+      className="flex shrink-0 items-center gap-2 px-3 first:pl-0 max-[980px]:gap-1.5 max-[980px]:px-2 max-[760px]:px-1.5"
+      role="group"
+      title={label}
+    >
       <Icon aria-hidden="true" className={cn('size-4', iconClassName)} strokeWidth={1.7} />
       <span className="type-data whitespace-nowrap text-body">
-        {value} <span className="font-sans text-[10px] font-medium tracking-normal text-body">{unit}</span>
+        {value}{' '}
+        <span className="font-sans text-[10px] font-medium tracking-normal text-body">{unit}</span>
       </span>
     </div>
   )
@@ -34,13 +40,23 @@ interface ConnectionTrafficReadoutsProps {
   activeConnections: number | null
 }
 
-export function ConnectionTrafficReadouts({ latestDownload, latestUpload, ping, sessionTraffic, activeConnections }: ConnectionTrafficReadoutsProps) {
+export function ConnectionTrafficReadouts({
+  latestDownload,
+  latestUpload,
+  ping,
+  sessionTraffic,
+  activeConnections,
+}: ConnectionTrafficReadoutsProps) {
   const { t } = useTranslation('dashboard')
   const { t: tc } = useTranslation('common')
   const sessionTotal = formatBytes(sessionTraffic.download + sessionTraffic.upload)
 
   return (
-    <div aria-label={t('connection.traffic.ariaLabel')} className="flex min-w-0 flex-wrap items-center gap-y-2 text-[11px]" role="group">
+    <div
+      aria-label={t('connection.traffic.ariaLabel')}
+      className="flex min-w-0 flex-wrap items-center gap-y-2 text-[11px]"
+      role="group"
+    >
       <TrafficReadout
         icon={ArrowDown}
         iconClassName="text-lavender"
@@ -73,7 +89,11 @@ export function ConnectionTrafficReadouts({ latestDownload, latestUpload, ping, 
         value={activeConnections === null ? '—' : String(activeConnections)}
       />
       <span aria-hidden="true" className="h-5 w-px shrink-0 bg-hairline/80" />
-      <div aria-label={`${t('connection.ping')}: ${resultLabel(ping, tc)}`} className="flex shrink-0 items-center gap-2 px-3 pr-0 max-[980px]:gap-1.5 max-[980px]:px-2 max-[760px]:px-1.5 max-[760px]:pr-0" role="status">
+      <div
+        aria-label={`${t('connection.ping')}: ${resultLabel(ping, tc)}`}
+        className="flex shrink-0 items-center gap-2 px-3 pr-0 max-[980px]:gap-1.5 max-[980px]:px-2 max-[760px]:px-1.5 max-[760px]:pr-0"
+        role="status"
+      >
         <span className="type-eyebrow !text-[9px] !tracking-[0.14em]">{t('connection.ping')}</span>
         <ResultBadge result={ping} />
       </div>

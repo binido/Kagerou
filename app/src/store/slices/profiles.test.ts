@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toast } from 'sonner'
 
-vi.mock('@/lib/tauri-api', async () => ({ kagerouApi: (await import('../test-api')).kagerouApiMock }))
+vi.mock('@/lib/tauri-api', async () => ({
+  kagerouApi: (await import('../test-api')).kagerouApiMock,
+}))
 vi.mock('@/themes/runtime', () => ({ persistThemeId: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() } }))
 
@@ -25,9 +27,15 @@ beforeEach(() => {
 
 describe('selectProfile', () => {
   it('optimistically marks the profile selected before the backend call resolves', async () => {
-    useKagerouStore.setState({ profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b', selected: false })] })
+    useKagerouStore.setState({
+      profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b', selected: false })],
+    })
     let resolveInvoke: () => void = () => {}
-    api.selectProfile.mockReturnValue(new Promise<void>((resolve) => { resolveInvoke = resolve }))
+    api.selectProfile.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveInvoke = resolve
+      }),
+    )
 
     const pending = useKagerouStore.getState().selectProfile('b')
     // Before the backend call resolves, local state must already reflect the switch.
@@ -40,16 +48,25 @@ describe('selectProfile', () => {
   })
 
   it('is a no-op for an unknown profile id', async () => {
-    useKagerouStore.setState({ profiles: [profile({ id: 'a', selected: true })], activeProfileId: 'a' })
+    useKagerouStore.setState({
+      profiles: [profile({ id: 'a', selected: true })],
+      activeProfileId: 'a',
+    })
     await useKagerouStore.getState().selectProfile('does-not-exist')
     expect(api.selectProfile).not.toHaveBeenCalled()
     expect(useKagerouStore.getState().activeProfileId).toBe('a')
   })
 
   it('re-syncs from the backend if the switch fails server-side', async () => {
-    useKagerouStore.setState({ profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b' })] })
+    useKagerouStore.setState({
+      profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b' })],
+    })
     api.selectProfile.mockRejectedValue({ code: 'notFound', detail: 'not found' })
-    api.getAppState.mockResolvedValue({ ...emptySnapshot, activeProfileId: 'a', profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b' })] })
+    api.getAppState.mockResolvedValue({
+      ...emptySnapshot,
+      activeProfileId: 'a',
+      profiles: [profile({ id: 'a', selected: true }), profile({ id: 'b' })],
+    })
 
     await useKagerouStore.getState().selectProfile('b')
 
@@ -62,7 +79,12 @@ describe('selectProfile', () => {
 describe('addProfileGroup / renameProfileGroup', () => {
   it('addProfileGroup returns the new id and refreshes state on success', async () => {
     api.addProfileGroup.mockResolvedValue('group-123')
-    const snapshot: AppSnapshot = { ...emptySnapshot, profileGroups: [{ id: 'group-123', label: 'New', kind: 'custom', profileIds: [], open: true }] }
+    const snapshot: AppSnapshot = {
+      ...emptySnapshot,
+      profileGroups: [
+        { id: 'group-123', label: 'New', kind: 'custom', profileIds: [], open: true },
+      ],
+    }
     api.getAppState.mockResolvedValue(snapshot)
 
     const id = await useKagerouStore.getState().addProfileGroup('New')
@@ -72,7 +94,9 @@ describe('addProfileGroup / renameProfileGroup', () => {
   })
 
   it('addProfileGroup returns null on a duplicate-name rejection, without touching state', async () => {
-    useKagerouStore.setState({ profileGroups: [{ id: 'g1', label: 'Existing', kind: 'custom', profileIds: [], open: true }] })
+    useKagerouStore.setState({
+      profileGroups: [{ id: 'g1', label: 'Existing', kind: 'custom', profileIds: [], open: true }],
+    })
     api.addProfileGroup.mockRejectedValue(new Error('duplicate name'))
 
     const id = await useKagerouStore.getState().addProfileGroup('Existing')
@@ -91,7 +115,9 @@ describe('addProfileGroup / renameProfileGroup', () => {
 
 describe('setProfileGroupOpen', () => {
   it('updates local state synchronously and fires the backend call without waiting', () => {
-    useKagerouStore.setState({ profileGroups: [{ id: 'g1', label: 'G1', kind: 'custom', profileIds: [], open: false }] })
+    useKagerouStore.setState({
+      profileGroups: [{ id: 'g1', label: 'G1', kind: 'custom', profileIds: [], open: false }],
+    })
     api.setProfileGroupOpen.mockResolvedValue(undefined)
 
     useKagerouStore.getState().setProfileGroupOpen('g1', true)

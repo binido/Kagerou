@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toast } from 'sonner'
 
-vi.mock('@/lib/tauri-api', async () => ({ kagerouApi: (await import('../test-api')).kagerouApiMock }))
+vi.mock('@/lib/tauri-api', async () => ({
+  kagerouApi: (await import('../test-api')).kagerouApiMock,
+}))
 vi.mock('@/themes/runtime', () => ({ persistThemeId: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() } }))
 
@@ -46,28 +48,58 @@ describe('group test run', () => {
   })
 
   it('a progress event advances the count and applies the profile result', async () => {
-    let handler: (event: { profileId: string; result: TestResult; done: number; total: number }) => void = () => {}
-    api.onTestProgress.mockImplementation((h: typeof handler) => { handler = h; return Promise.resolve(() => {}) })
+    let handler: (event: {
+      profileId: string
+      result: TestResult
+      done: number
+      total: number
+    }) => void = () => {}
+    api.onTestProgress.mockImplementation((h: typeof handler) => {
+      handler = h
+      return Promise.resolve(() => {})
+    })
     api.startGroupTest.mockResolvedValue(2)
 
     subscribeToBackendEvents()
     await useKagerouStore.getState().hydrate()
     useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
     await useKagerouStore.getState().startGroupTest('g1')
-    handler({ profileId: 'p1', result: { kind: 'latency', millis: 42, tone: 'good' }, done: 1, total: 2 })
+    handler({
+      profileId: 'p1',
+      result: { kind: 'latency', millis: 42, tone: 'good' },
+      done: 1,
+      total: 2,
+    })
 
     expect(useKagerouStore.getState().testRun).toEqual({ groupId: 'g1', done: 1, total: 2 })
-    expect(useKagerouStore.getState().profiles[0].url).toEqual({ kind: 'latency', millis: 42, tone: 'good' })
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({
+      kind: 'latency',
+      millis: 42,
+      tone: 'good',
+    })
   })
 
   it('a progress event for an unknown profile does not invent one', async () => {
-    let handler: (event: { profileId: string; result: TestResult; done: number; total: number }) => void = () => {}
-    api.onTestProgress.mockImplementation((h: typeof handler) => { handler = h; return Promise.resolve(() => {}) })
+    let handler: (event: {
+      profileId: string
+      result: TestResult
+      done: number
+      total: number
+    }) => void = () => {}
+    api.onTestProgress.mockImplementation((h: typeof handler) => {
+      handler = h
+      return Promise.resolve(() => {})
+    })
 
     subscribeToBackendEvents()
     await useKagerouStore.getState().hydrate()
     useKagerouStore.setState({ profiles: [profile({ id: 'p1' })] })
-    handler({ profileId: 'ghost', result: { kind: 'latency', millis: 9, tone: 'good' }, done: 1, total: 1 })
+    handler({
+      profileId: 'ghost',
+      result: { kind: 'latency', millis: 9, tone: 'good' },
+      done: 1,
+      total: 1,
+    })
 
     expect(useKagerouStore.getState().profiles).toHaveLength(1)
     expect(useKagerouStore.getState().profiles[0].url).toEqual({ kind: 'notTested', tone: 'muted' })
@@ -75,7 +107,10 @@ describe('group test run', () => {
 
   it('the finished event ends the run, cancelled or not', async () => {
     let finish: () => void = () => {}
-    api.onTestFinished.mockImplementation((h: () => void) => { finish = h; return Promise.resolve(() => {}) })
+    api.onTestFinished.mockImplementation((h: () => void) => {
+      finish = h
+      return Promise.resolve(() => {})
+    })
     api.startGroupTest.mockResolvedValue(3)
 
     subscribeToBackendEvents()
@@ -96,7 +131,11 @@ describe('runProfileTest', () => {
     const result = await useKagerouStore.getState().runProfileTest('p1')
 
     expect(result).toEqual({ kind: 'latency', millis: 42, tone: 'good' })
-    expect(useKagerouStore.getState().profiles[0].url).toEqual({ kind: 'latency', millis: 42, tone: 'good' })
+    expect(useKagerouStore.getState().profiles[0].url).toEqual({
+      kind: 'latency',
+      millis: 42,
+      tone: 'good',
+    })
   })
 
   it('returns null and leaves the profile untouched when the backend call fails', async () => {

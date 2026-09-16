@@ -16,20 +16,40 @@ export function LogsPage() {
   const entries = useMemo(
     // Both forms of the time: the formatted one is what the column shows and
     // what a user types, the ISO one is the only place the date survives.
-    () => logs.filter((entry) => `${formatLogTimestamp(entry.timestamp)} ${entry.timestamp} ${entry.level} ${entry.message}`.toLowerCase().includes(normalizedQuery)),
+    () =>
+      logs.filter((entry) =>
+        `${formatLogTimestamp(entry.timestamp)} ${entry.timestamp} ${entry.level} ${entry.message}`
+          .toLowerCase()
+          .includes(normalizedQuery),
+      ),
     [logs, normalizedQuery],
   )
 
   return (
-    <PageContainer className="flex h-screen min-h-[680px] flex-col" contentClassName="flex min-h-0 flex-1 flex-col">
-        <PageHeader
-          description={t('page.description')}
-          eyebrow={t('page.eyebrow')}
-          status={<span className="flex items-center gap-2 text-[12px] text-muted-copy"><span aria-hidden="true" className="size-1.5 rounded-full bg-good" />{t('page.connected')}</span>}
-          title={t('page.title')}
+    <PageContainer
+      className="flex h-screen min-h-[680px] flex-col"
+      contentClassName="flex min-h-0 flex-1 flex-col"
+    >
+      <PageHeader
+        description={t('page.description')}
+        eyebrow={t('page.eyebrow')}
+        status={
+          <span className="flex items-center gap-2 text-[12px] text-muted-copy">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-good" />
+            {t('page.connected')}
+          </span>
+        }
+        title={t('page.title')}
+      />
+      <div className="mt-6 shrink-0">
+        <LogToolbar
+          count={entries.length}
+          onClear={() => setQuery('')}
+          onQueryChange={setQuery}
+          query={query}
         />
-        <div className="mt-6 shrink-0"><LogToolbar count={entries.length} onClear={() => setQuery('')} onQueryChange={setQuery} query={query} /></div>
-        <LogViewer entries={entries} query={query} />
+      </div>
+      <LogViewer entries={entries} query={query} />
     </PageContainer>
   )
 }

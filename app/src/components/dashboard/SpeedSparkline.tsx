@@ -38,10 +38,18 @@ export function SpeedSparkline({ history, className }: SpeedSparklineProps) {
   // A flat line at zero would read as "no traffic" when the truth is "not
   // connected", so an empty window says so in words and keeps its height.
   const hasShape = history.length >= 2
-  const peak = Math.max(SCALE_FLOOR, ...history.map((point) => Math.max(point.download, point.upload)))
+  const peak = Math.max(
+    SCALE_FLOOR,
+    ...history.map((point) => Math.max(point.download, point.upload)),
+  )
 
   return (
-    <div className={cn('relative min-h-[56px] overflow-hidden rounded-md border border-hairline bg-canvas', className)}>
+    <div
+      className={cn(
+        'relative min-h-[56px] overflow-hidden rounded-md border border-hairline bg-canvas',
+        className,
+      )}
+    >
       {hasShape ? (
         <svg
           aria-label={t('sparkline.ariaLabel')}
@@ -52,7 +60,10 @@ export function SpeedSparkline({ history, className }: SpeedSparklineProps) {
         >
           <path
             className="text-lavender"
-            d={toPath(history.map((point) => point.download), peak)}
+            d={toPath(
+              history.map((point) => point.download),
+              peak,
+            )}
             fill="none"
             stroke="currentColor"
             strokeLinejoin="round"
@@ -61,7 +72,10 @@ export function SpeedSparkline({ history, className }: SpeedSparklineProps) {
           />
           <path
             className="text-upload-line"
-            d={toPath(history.map((point) => point.upload), peak)}
+            d={toPath(
+              history.map((point) => point.upload),
+              peak,
+            )}
             fill="none"
             stroke="currentColor"
             strokeLinejoin="round"
@@ -70,11 +84,16 @@ export function SpeedSparkline({ history, className }: SpeedSparklineProps) {
           />
         </svg>
       ) : (
-        <p className="type-meta flex size-full items-center justify-center">{t('sparkline.empty')}</p>
+        <p className="type-meta flex size-full items-center justify-center">
+          {t('sparkline.empty')}
+        </p>
       )}
       {hasShape ? (
         <p className="type-data absolute right-2 top-1.5 text-muted-copy">
-          {t('sparkline.peak', { value: formatSpeedMbps(peak), unit: t('connection.traffic.unit') })}
+          {t('sparkline.peak', {
+            value: formatSpeedMbps(peak),
+            unit: t('connection.traffic.unit'),
+          })}
         </p>
       ) : null}
     </div>

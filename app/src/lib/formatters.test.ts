@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatExitLocation, formatLogTimestamp, formatRelativeTime, formatUptime, regionToCountry } from './formatters'
+import {
+  formatExitLocation,
+  formatLogTimestamp,
+  formatRelativeTime,
+  formatUptime,
+  regionToCountry,
+} from './formatters'
 
 describe('regionToCountry', () => {
   it('maps a valid ISO code to a localized country with its flag', () => {

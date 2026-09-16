@@ -4,7 +4,10 @@ import { asBackendError, backendErrorMessage } from './errors'
 
 describe('asBackendError', () => {
   it('recognises what a command rejects with', () => {
-    expect(asBackendError({ code: 'network', detail: '502' })).toEqual({ code: 'network', detail: '502' })
+    expect(asBackendError({ code: 'network', detail: '502' })).toEqual({
+      code: 'network',
+      detail: '502',
+    })
   })
 
   it('rejects anything that is not one', () => {
@@ -19,7 +22,10 @@ describe('backendErrorMessage', () => {
   it('translates by the code rather than showing the backend sentence', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const message = backendErrorMessage({ code: 'activeProfileInUse', detail: 'switch away first' }, 'fallback')
+    const message = backendErrorMessage(
+      { code: 'activeProfileInUse', detail: 'switch away first' },
+      'fallback',
+    )
 
     expect(message).not.toBe('switch away first')
     expect(message).not.toBe('fallback')
@@ -28,7 +34,10 @@ describe('backendErrorMessage', () => {
   it('keeps the backend wording out of the interface but not out of the console', () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    backendErrorMessage({ code: 'network', detail: 'https://secret.example answered 502' }, 'fallback')
+    backendErrorMessage(
+      { code: 'network', detail: 'https://secret.example answered 502' },
+      'fallback',
+    )
 
     expect(logged).toHaveBeenCalledWith('network: https://secret.example answered 502')
   })

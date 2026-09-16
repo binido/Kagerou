@@ -18,12 +18,18 @@ export function TestRunBar({ run, onCancel }: TestRunBarProps) {
 
   return (
     <div className="mt-4 flex items-center gap-3 rounded-lg border border-hairline bg-surface px-3.5 py-2.5">
-      <Loader2 aria-hidden="true" className="size-4 shrink-0 animate-spin text-lavender" strokeWidth={1.8} />
+      <Loader2
+        aria-hidden="true"
+        className="size-4 shrink-0 animate-spin text-lavender"
+        strokeWidth={1.8}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
           <span className="truncate text-[12px] text-body">{t('test.runningLabel')}</span>
           <span className="type-data shrink-0 text-[11px] text-muted-copy">
-            {known ? t('test.progressCount', { done: run.done, total: run.total }) : t('test.starting')}
+            {known
+              ? t('test.progressCount', { done: run.done, total: run.total })
+              : t('test.starting')}
           </span>
         </div>
         <div
@@ -35,12 +41,22 @@ export function TestRunBar({ run, onCancel }: TestRunBarProps) {
           role="progressbar"
         >
           <div
-            className={known ? 'h-full rounded-full bg-lavender transition-[width] duration-200' : 'h-full w-1/3 animate-pulse rounded-full bg-lavender'}
+            className={
+              known
+                ? 'h-full rounded-full bg-lavender transition-[width] duration-200'
+                : 'h-full w-1/3 animate-pulse rounded-full bg-lavender'
+            }
             style={known ? { width: `${percent}%` } : undefined}
           />
         </div>
       </div>
-      <Button aria-label={t('test.stop')} className="h-8 shrink-0 gap-1.5 border-hairline px-2.5 text-[11px] text-body hover:bg-raised hover:text-primary" onClick={onCancel} type="button" variant="outline">
+      <Button
+        aria-label={t('test.stop')}
+        className="h-8 shrink-0 gap-1.5 border-hairline px-2.5 text-[11px] text-body hover:bg-raised hover:text-primary"
+        onClick={onCancel}
+        type="button"
+        variant="outline"
+      >
         <X aria-hidden="true" className="size-3.5" />
         <span>{t('test.stop')}</span>
       </Button>

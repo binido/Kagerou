@@ -25,7 +25,9 @@ export const createRoutingSlice: Slice<RoutingSlice> = (set, get) => ({
 
   setPreset: (id, enabled) => {
     set((state) => ({
-      routingPresets: state.routingPresets.map((preset) => (preset.id === id ? { ...preset, enabled } : preset)),
+      routingPresets: state.routingPresets.map((preset) =>
+        preset.id === id ? { ...preset, enabled } : preset,
+      ),
     }))
     void kagerouApi.setPreset(id, enabled).catch(async (error) => {
       report(error, 'common:feedback.presetSaveFailed')
@@ -46,7 +48,9 @@ export const createRoutingSlice: Slice<RoutingSlice> = (set, get) => ({
   updateRule: (id, patch) => {
     const rulesChangedBefore = get().rulesChangedSinceConnect
     set((state) => ({
-      routingRules: state.routingRules.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)),
+      routingRules: state.routingRules.map((rule) =>
+        rule.id === id ? { ...rule, ...patch } : rule,
+      ),
       rulesChangedSinceConnect: state.connected || state.rulesChangedSinceConnect,
     }))
     void kagerouApi.updateRule(id, patch).catch(async (error) => {
@@ -63,7 +67,9 @@ export const createRoutingSlice: Slice<RoutingSlice> = (set, get) => ({
     try {
       const id = await kagerouApi.addRoutingRule(match, outbound)
       await refresh(set)
-      set((state) => ({ rulesChangedSinceConnect: state.connected || state.rulesChangedSinceConnect }))
+      set((state) => ({
+        rulesChangedSinceConnect: state.connected || state.rulesChangedSinceConnect,
+      }))
       return id
     } catch {
       return null

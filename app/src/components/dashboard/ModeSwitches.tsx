@@ -18,17 +18,29 @@ export function ModeSwitches({ tunMode, systemProxy, onToggle }: ModeSwitchesPro
       <p className="type-eyebrow">{t('modes.title')}</p>
       <label className="flex cursor-pointer items-center justify-between gap-3 text-[13px] text-body">
         <span className="flex min-w-0 items-center gap-2">
-          <Network aria-hidden="true" className="size-4 shrink-0 text-muted-copy" strokeWidth={1.7} />
+          <Network
+            aria-hidden="true"
+            className="size-4 shrink-0 text-muted-copy"
+            strokeWidth={1.7}
+          />
           <span className="truncate">{t('modes.tun')}</span>
         </span>
-        <Switch aria-label={t('modes.tun')} checked={tunMode} onCheckedChange={() => onToggle('tun')} />
+        <Switch
+          aria-label={t('modes.tun')}
+          checked={tunMode}
+          onCheckedChange={() => onToggle('tun')}
+        />
       </label>
       <label className="flex cursor-pointer items-center justify-between gap-3 text-[13px] text-body">
         <span className="flex min-w-0 items-center gap-2">
           <Globe aria-hidden="true" className="size-4 shrink-0 text-muted-copy" strokeWidth={1.7} />
           <span className="truncate">{t('modes.systemProxy')}</span>
         </span>
-        <Switch aria-label={t('modes.systemProxy')} checked={systemProxy} onCheckedChange={() => onToggle('proxy')} />
+        <Switch
+          aria-label={t('modes.systemProxy')}
+          checked={systemProxy}
+          onCheckedChange={() => onToggle('proxy')}
+        />
       </label>
       <p className="type-meta">{t('modes.hint')}</p>
     </Card>

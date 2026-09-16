@@ -8,7 +8,9 @@ const translate = ((key: string, options?: Record<string, unknown>) =>
 
 describe('resultLabel', () => {
   it('passes the measured number to the translation rather than formatting it here', () => {
-    expect(resultLabel({ kind: 'latency', millis: 42 }, translate)).toBe('status.latency:{"millis":42}')
+    expect(resultLabel({ kind: 'latency', millis: 42 }, translate)).toBe(
+      'status.latency:{"millis":42}',
+    )
   })
 
   it('has a key for every outcome the backend can send', () => {

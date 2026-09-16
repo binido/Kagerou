@@ -18,7 +18,14 @@ interface QuickProfilesProps {
   onTestGroup: () => void
 }
 
-export function QuickProfiles({ profiles, activeProfileId, ranked, testRunning, onSelect, onTestGroup }: QuickProfilesProps) {
+export function QuickProfiles({
+  profiles,
+  activeProfileId,
+  ranked,
+  testRunning,
+  onSelect,
+  onTestGroup,
+}: QuickProfilesProps) {
   const { t } = useTranslation('dashboard')
 
   return (
@@ -48,7 +55,14 @@ export function QuickProfiles({ profiles, activeProfileId, ranked, testRunning, 
       ) : (
         <>
           <p className="type-meta">{t('quickProfiles.untested')}</p>
-          <Button className="w-full" disabled={testRunning} onClick={onTestGroup} size="sm" type="button" variant="outline">
+          <Button
+            className="w-full"
+            disabled={testRunning}
+            onClick={onTestGroup}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
             <Gauge aria-hidden="true" className="size-4" strokeWidth={1.7} />
             {testRunning ? t('quickProfiles.testing') : t('quickProfiles.test')}
           </Button>

@@ -37,7 +37,8 @@ export const resources = {
 export const supportedLanguages = ['en', 'ru'] as const satisfies readonly Language[]
 export const languageStorageKey = 'kagerou-language'
 
-const isSupportedLanguage = (value: string | null): value is Language => value === 'en' || value === 'ru'
+const isSupportedLanguage = (value: string | null): value is Language =>
+  value === 'en' || value === 'ru'
 
 const getInitialLanguage = (): Language => {
   if (typeof window === 'undefined') return 'en'
@@ -55,21 +56,19 @@ declare module 'i18next' {
   }
 }
 
-void i18n
-  .use(initReactI18next)
-  .init({
-    resources,
-    lng: getInitialLanguage(),
-    fallbackLng: 'en',
-    defaultNS: 'common',
-    ns: ['common', 'dashboard', 'profiles', 'routing', 'logs', 'settings'],
-    interpolation: {
-      escapeValue: false,
-    },
-    react: {
-      useSuspense: false,
-    },
-  })
+void i18n.use(initReactI18next).init({
+  resources,
+  lng: getInitialLanguage(),
+  fallbackLng: 'en',
+  defaultNS: 'common',
+  ns: ['common', 'dashboard', 'profiles', 'routing', 'logs', 'settings'],
+  interpolation: {
+    escapeValue: false,
+  },
+  react: {
+    useSuspense: false,
+  },
+})
 
 i18n.on('languageChanged', (language) => {
   if (typeof window !== 'undefined' && isSupportedLanguage(language)) {

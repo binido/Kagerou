@@ -8,7 +8,8 @@ import type { ImportAttempt, ImportOutcome } from '@/types/kagerou'
 
 /** Pasting into a field, or anywhere inside an open dialog, is ordinary typing
  * rather than an import. */
-const TYPING_TARGETS = 'input, textarea, [contenteditable="true"], [role="dialog"], [role="alertdialog"]'
+const TYPING_TARGETS =
+  'input, textarea, [contenteditable="true"], [role="dialog"], [role="alertdialog"]'
 
 /** Adding VPNs: from the clipboard button, from the paste dialog, or from a
  * paste anywhere on the page.
@@ -27,17 +28,35 @@ export function useProfileImport(groupLabel: (groupId: string) => string) {
   const announce = (outcome: ImportOutcome, toastId: string | number) => {
     switch (outcome.kind) {
       case 'subscriptionAdded':
-        return toast.success(t('import.subscriptionAdded', { name: groupLabel(outcome.groupId), count: outcome.added }), { id: toastId })
+        return toast.success(
+          t('import.subscriptionAdded', {
+            name: groupLabel(outcome.groupId),
+            count: outcome.added,
+          }),
+          { id: toastId },
+        )
       case 'subscriptionRefreshed':
-        return toast.success(t('import.subscriptionRefreshed', { name: groupLabel(outcome.groupId) }), { id: toastId })
+        return toast.success(
+          t('import.subscriptionRefreshed', { name: groupLabel(outcome.groupId) }),
+          { id: toastId },
+        )
       case 'profileAdded':
         return toast.success(t('import.profileAdded', { name: outcome.name }), { id: toastId })
       case 'groupAdded':
-        return toast.success(outcome.skipped > 0
-          ? t('import.groupAddedSkipped', { name: groupLabel(outcome.groupId), count: outcome.added, skipped: outcome.skipped })
-          : t('import.groupAdded', { name: groupLabel(outcome.groupId), count: outcome.added }), { id: toastId })
+        return toast.success(
+          outcome.skipped > 0
+            ? t('import.groupAddedSkipped', {
+                name: groupLabel(outcome.groupId),
+                count: outcome.added,
+                skipped: outcome.skipped,
+              })
+            : t('import.groupAdded', { name: groupLabel(outcome.groupId), count: outcome.added }),
+          { id: toastId },
+        )
       case 'alreadyPresent':
-        return toast.info(t('import.alreadyPresent', { group: groupLabel(outcome.groupId) }), { id: toastId })
+        return toast.info(t('import.alreadyPresent', { group: groupLabel(outcome.groupId) }), {
+          id: toastId,
+        })
       case 'nothingNew':
         return toast.info(t('import.nothingNew', { count: outcome.skipped }), { id: toastId })
     }
@@ -79,7 +98,11 @@ export function useProfileImport(groupLabel: (groupId: string) => string) {
     importing,
     draft,
     dismissDraft: () => setDraft(null),
-    fromClipboard: () => { void run(importFromClipboard) },
-    fromText: (text: string) => { void run(() => importText(text)) },
+    fromClipboard: () => {
+      void run(importFromClipboard)
+    },
+    fromText: (text: string) => {
+      void run(() => importText(text))
+    },
   }
 }

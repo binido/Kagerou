@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toast } from 'sonner'
 
-vi.mock('@/lib/tauri-api', async () => ({ kagerouApi: (await import('../test-api')).kagerouApiMock }))
+vi.mock('@/lib/tauri-api', async () => ({
+  kagerouApi: (await import('../test-api')).kagerouApiMock,
+}))
 vi.mock('@/themes/runtime', () => ({ persistThemeId: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() } }))
 

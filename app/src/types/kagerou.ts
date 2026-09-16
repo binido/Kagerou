@@ -1,21 +1,10 @@
 import type { ThemeId } from '@/themes/types'
 
-export type RouteKey =
-  | 'dashboard'
-  | 'groups'
-  | 'routing-rules'
-  | 'logs'
-  | 'settings'
+export type RouteKey = 'dashboard' | 'groups' | 'routing-rules' | 'logs' | 'settings'
 
 export type ProfileOrigin = 'local' | 'imported'
 export type ProfileGroupKind = 'default' | 'custom' | 'subscription'
-export type ProfileProtocol =
-  | 'VLESS'
-  | 'VMess'
-  | 'Trojan'
-  | 'Shadowsocks'
-  | 'Hysteria2'
-  | 'Tuic'
+export type ProfileProtocol = 'VLESS' | 'VMess' | 'Trojan' | 'Shadowsocks' | 'Hysteria2' | 'Tuic'
 export type TestTone = 'good' | 'warn' | 'bad' | 'muted'
 export type SourceStatus = 'up-to-date' | 'ready' | 'refresh-due' | 'updating'
 export type Outbound = 'Direct' | 'Proxy' | 'Block'
@@ -103,8 +92,7 @@ export type ImportOutcome =
 /** A failed attempt carries its text back so it can be corrected by hand. An
  * empty `error` means there was nothing to import in the first place. */
 export type ImportAttempt =
-  | { status: 'imported'; outcome: ImportOutcome }
-  | { status: 'failed'; text: string; error: string }
+  { status: 'imported'; outcome: ImportOutcome } | { status: 'failed'; text: string; error: string }
 
 export interface RoutingPreset {
   id: string

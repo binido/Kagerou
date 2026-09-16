@@ -30,7 +30,9 @@ export const createProfilesSlice: Slice<ProfilesSlice> = (set, get) => ({
 
   setProfileGroupOpen: (id, open) => {
     set((state) => ({
-      profileGroups: state.profileGroups.map((group) => (group.id === id ? { ...group, open } : group)),
+      profileGroups: state.profileGroups.map((group) =>
+        group.id === id ? { ...group, open } : group,
+      ),
     }))
     void kagerouApi.setProfileGroupOpen(id, open).catch(async (error) => {
       report(error, 'common:feedback.groupOpenSaveFailed')

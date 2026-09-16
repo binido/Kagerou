@@ -49,9 +49,11 @@ export const subscribeToBackendEvents = () => {
   // case the frontend clock cannot serve on its own. Going down clears the
   // history so the sparkline stops drawing the previous session's shape.
   void kagerouApi.onConnectionChanged((connected) => {
-    setState(connected
-      ? { connected, connectedSince: Date.now(), rulesChangedSinceConnect: false }
-      : { connected, connectedSince: null, trafficHistory: [], activeConnections: null })
+    setState(
+      connected
+        ? { connected, connectedSince: Date.now(), rulesChangedSinceConnect: false }
+        : { connected, connectedSince: null, trafficHistory: [], activeConnections: null },
+    )
     // The exit only exists while the core does, so this is one of the two
     // moments worth asking - the other is a profile switch.
     if (connected) void getState().refreshExitLocation()
@@ -77,9 +79,12 @@ export const subscribeToBackendEvents = () => {
 
   void kagerouApi.onTestProgress((event) => {
     setState((state) => ({
-      testRun: state.testRun ? { ...state.testRun, done: event.done, total: event.total } : state.testRun,
+      testRun: state.testRun
+        ? { ...state.testRun, done: event.done, total: event.total }
+        : state.testRun,
       profiles: state.profiles.map((profile) =>
-        profile.id === event.profileId ? { ...profile, url: event.result } : profile),
+        profile.id === event.profileId ? { ...profile, url: event.result } : profile,
+      ),
     }))
   })
 
@@ -100,5 +105,11 @@ export const subscribeToBackendEvents = () => {
   })
 
   void kagerouApi.onCrashed(() =>
-    setState({ connected: false, connectedSince: null, trafficHistory: [], activeConnections: null }))
+    setState({
+      connected: false,
+      connectedSince: null,
+      trafficHistory: [],
+      activeConnections: null,
+    }),
+  )
 }

@@ -49,11 +49,17 @@ export function GroupsPage() {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
   const [groupDialogTarget, setGroupDialogTarget] = useState<ProfileGroup | null>(null)
 
-  const profilesById = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles])
-  const sourcesById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources])
+  const profilesById = useMemo(
+    () => new Map(profiles.map((profile) => [profile.id, profile])),
+    [profiles],
+  )
+  const sourcesById = useMemo(
+    () => new Map(sources.map((source) => [source.id, source])),
+    [sources],
+  )
 
   const groupLabel = (group?: ProfileGroup) =>
-    group?.kind === 'default' ? t('group.defaultName') : group?.label ?? t('fallback.group')
+    group?.kind === 'default' ? t('group.defaultName') : (group?.label ?? t('fallback.group'))
   // Reads from the store rather than this render: an import has just
   // refreshed the groups, and a new one is not in the props yet.
   const labelOfId = (groupId: string) =>
@@ -99,7 +105,10 @@ export function GroupsPage() {
   const moveToGroup = async (profileId: string, targetGroupId: string) => {
     const target = groups.find((candidate) => candidate.id === targetGroupId)
     const moved = await moveProfileToGroup(profileId, targetGroupId)
-    say(moved ? t('feedback.moved', { group: groupLabel(target) }) : t('feedback.moveSubscription'), moved ? 'good' : 'bad')
+    say(
+      moved ? t('feedback.moved', { group: groupLabel(target) }) : t('feedback.moveSubscription'),
+      moved ? 'good' : 'bad',
+    )
   }
 
   const select = (id: string) => {
@@ -109,21 +118,25 @@ export function GroupsPage() {
   }
 
   const movableGroups = groups.filter((group) => group.kind !== 'subscription')
-  const visibleProfiles = (group: ProfileGroup) => sortProfiles(
-    group.profileIds
-      .map((id) => profilesById.get(id))
-      .filter((profile): profile is Profile => Boolean(profile)),
-    groupSort,
-  )
+  const visibleProfiles = (group: ProfileGroup) =>
+    sortProfiles(
+      group.profileIds
+        .map((id) => profilesById.get(id))
+        .filter((profile): profile is Profile => Boolean(profile)),
+      groupSort,
+    )
 
   return (
     <PageContainer>
       <PageHeader
-        actions={(
+        actions={
           <div className="flex flex-wrap justify-end gap-2">
             <Button
               className="h-10 gap-2 border-hairline bg-surface px-3.5 text-[12px] text-body hover:bg-raised hover:text-primary"
-              onClick={() => { setGroupDialogTarget(null); setGroupDialogOpen(true) }}
+              onClick={() => {
+                setGroupDialogTarget(null)
+                setGroupDialogOpen(true)
+              }}
               type="button"
               variant="outline"
             >
@@ -149,13 +162,20 @@ export function GroupsPage() {
               {t('actions.runTest')}
             </Button>
           </div>
-        )}
+        }
         description={t('page.description')}
         eyebrow={t('page.eyebrow')}
         title={t('page.title')}
       />
 
-      {testRun ? <TestRunBar onCancel={() => { void cancelGroupTest() }} run={testRun} /> : null}
+      {testRun ? (
+        <TestRunBar
+          onCancel={() => {
+            void cancelGroupTest()
+          }}
+          run={testRun}
+        />
+      ) : null}
 
       <div className="mt-7 flex flex-col gap-4">
         {groups.map((group) => {
@@ -165,16 +185,27 @@ export function GroupsPage() {
               group={group}
               key={group.id}
               movableGroups={movableGroups}
-              onChangeUrl={() => { if (source) subscriptions.openUrlDialog(source) }}
+              onChangeUrl={() => {
+                if (source) subscriptions.openUrlDialog(source)
+              }}
               onClearResults={() => testing.clearResults(group)}
-              onCopyUrl={() => { if (source) void subscriptions.copyUrl(source) }}
+              onCopyUrl={() => {
+                if (source) void subscriptions.copyUrl(source)
+              }}
               onDelete={setDeleteTarget}
               onDeleteSubscription={() => subscriptions.askToDelete(group)}
               onDeleteUnavailable={() => testing.askToRemoveUnavailable(group)}
-              onMoveToGroup={(profileId, targetGroupId) => { void moveToGroup(profileId, targetGroupId) }}
-              onRefresh={() => { if (source) void subscriptions.refresh(group, source) }}
+              onMoveToGroup={(profileId, targetGroupId) => {
+                void moveToGroup(profileId, targetGroupId)
+              }}
+              onRefresh={() => {
+                if (source) void subscriptions.refresh(group, source)
+              }}
               onRename={setRenameTarget}
-              onRenameGroup={(target) => { setGroupDialogTarget(target); setGroupDialogOpen(true) }}
+              onRenameGroup={(target) => {
+                setGroupDialogTarget(target)
+                setGroupDialogOpen(true)
+              }}
               onSelect={select}
               onTest={testing.testOne}
               onTestGroup={() => testing.testGroup(group)}
@@ -189,44 +220,68 @@ export function GroupsPage() {
         })}
       </div>
 
-      <p aria-live="polite" className={`mt-4 min-h-[17px] text-[11px] ${toneClasses[message.tone]}`}>{message.text}</p>
+      <p
+        aria-live="polite"
+        className={`mt-4 min-h-[17px] text-[11px] ${toneClasses[message.tone]}`}
+      >
+        {message.text}
+      </p>
       <p className="sr-only">{t('table.available', { count: profiles.length })}</p>
 
       <ProfileGroupDialog
         group={groupDialogTarget}
-        onOpenChange={(open) => { setGroupDialogOpen(open); if (!open) setGroupDialogTarget(null) }}
+        onOpenChange={(open) => {
+          setGroupDialogOpen(open)
+          if (!open) setGroupDialogTarget(null)
+        }}
         onSubmit={submitGroup}
         open={groupDialogOpen}
       />
       <RemoveUnavailableDialog
-        onConfirm={() => { void testing.confirmRemoveUnavailable() }}
-        onOpenChange={(open) => { if (!open) testing.dismissRemoveTarget() }}
+        onConfirm={() => {
+          void testing.confirmRemoveUnavailable()
+        }}
+        onOpenChange={(open) => {
+          if (!open) testing.dismissRemoveTarget()
+        }}
         target={testing.removeTarget}
       />
       <ImportDialog
         draft={imports.draft}
-        onOpenChange={(open) => { if (!open) imports.dismissDraft() }}
+        onOpenChange={(open) => {
+          if (!open) imports.dismissDraft()
+        }}
         onSubmit={imports.fromText}
         submitting={imports.importing}
       />
       <SubscriptionUrlDialog
-        onOpenChange={(open) => { if (!open) subscriptions.dismissUrlDialog() }}
+        onOpenChange={(open) => {
+          if (!open) subscriptions.dismissUrlDialog()
+        }}
         onSubmit={subscriptions.submitUrl}
         source={subscriptions.urlTarget}
       />
       <DeleteSubscriptionDialog
         group={subscriptions.deleteTarget}
-        onConfirm={() => { void subscriptions.confirmDelete() }}
-        onOpenChange={(open) => { if (!open) subscriptions.dismissDeleteTarget() }}
+        onConfirm={() => {
+          void subscriptions.confirmDelete()
+        }}
+        onOpenChange={(open) => {
+          if (!open) subscriptions.dismissDeleteTarget()
+        }}
       />
       <RenameProfileDialog
-        onOpenChange={(open) => { if (!open) setRenameTarget(null) }}
+        onOpenChange={(open) => {
+          if (!open) setRenameTarget(null)
+        }}
         onSubmit={submitRename}
         profile={renameTarget}
       />
       <DeleteProfileDialog
         onConfirm={confirmDelete}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
         profile={deleteTarget}
       />
     </PageContainer>

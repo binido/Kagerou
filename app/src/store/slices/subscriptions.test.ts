@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toast } from 'sonner'
 
-vi.mock('@/lib/tauri-api', async () => ({ kagerouApi: (await import('../test-api')).kagerouApiMock }))
+vi.mock('@/lib/tauri-api', async () => ({
+  kagerouApi: (await import('../test-api')).kagerouApiMock,
+}))
 vi.mock('@/themes/runtime', () => ({ persistThemeId: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() } }))
 
@@ -38,11 +40,18 @@ describe('importing pasted text', () => {
   })
 
   it('hands the text back with the backend reason when the import fails', async () => {
-    api.importFromText.mockRejectedValue({ code: 'subscriptionInvalid', detail: 'unrecognized format' })
+    api.importFromText.mockRejectedValue({
+      code: 'subscriptionInvalid',
+      detail: 'unrecognized format',
+    })
 
     const attempt = await useKagerouStore.getState().importText('garbage')
 
-    expect(attempt).toEqual({ status: 'failed', text: 'garbage', error: en.errors.subscriptionInvalid })
+    expect(attempt).toEqual({
+      status: 'failed',
+      text: 'garbage',
+      error: en.errors.subscriptionInvalid,
+    })
     expect(api.getAppState).not.toHaveBeenCalled()
     expect(toast.error).not.toHaveBeenCalled()
   })
@@ -84,8 +93,18 @@ describe('subscription actions', () => {
   })
 
   it('deleteSubscription refreshes state on success', async () => {
-    const group: ProfileGroup = { id: 'sub', label: 'Work', kind: 'subscription', profileIds: ['p1'], open: true, sourceId: 's1' }
-    useKagerouStore.setState({ profileGroups: [group], profiles: [profile({ groupId: 'sub', origin: 'imported' })] })
+    const group: ProfileGroup = {
+      id: 'sub',
+      label: 'Work',
+      kind: 'subscription',
+      profileIds: ['p1'],
+      open: true,
+      sourceId: 's1',
+    }
+    useKagerouStore.setState({
+      profileGroups: [group],
+      profiles: [profile({ groupId: 'sub', origin: 'imported' })],
+    })
     api.deleteSubscription.mockResolvedValue(undefined)
 
     const ok = await useKagerouStore.getState().deleteSubscription('sub')
@@ -97,9 +116,19 @@ describe('subscription actions', () => {
   })
 
   it('deleteSubscription reports the backend reason and keeps the group', async () => {
-    const group: ProfileGroup = { id: 'sub', label: 'Work', kind: 'subscription', profileIds: ['p1'], open: true, sourceId: 's1' }
+    const group: ProfileGroup = {
+      id: 'sub',
+      label: 'Work',
+      kind: 'subscription',
+      profileIds: ['p1'],
+      open: true,
+      sourceId: 's1',
+    }
     useKagerouStore.setState({ profileGroups: [group] })
-    api.deleteSubscription.mockRejectedValue({ code: 'activeProfileInUse', detail: 'switch away first' })
+    api.deleteSubscription.mockRejectedValue({
+      code: 'activeProfileInUse',
+      detail: 'switch away first',
+    })
 
     const ok = await useKagerouStore.getState().deleteSubscription('sub')
 

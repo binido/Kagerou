@@ -47,7 +47,10 @@ export function useSubscriptionActions({ groups, groupLabel }: Options) {
     const target = urlTarget
     if (!target || !(await updateSource(target.id, { value: url }))) return false
     setUrlTarget(null)
-    void refresh(groups.find((group) => group.sourceId === target.id), target)
+    void refresh(
+      groups.find((group) => group.sourceId === target.id),
+      target,
+    )
     return true
   }
 
@@ -74,7 +77,8 @@ export function useSubscriptionActions({ groups, groupLabel }: Options) {
     const target = deleteTarget
     if (!target) return
     setDeleteTarget(null)
-    if (await deleteSubscription(target.id)) toast.success(t('feedback.subscriptionDeleted', { group: groupLabel(target) }))
+    if (await deleteSubscription(target.id))
+      toast.success(t('feedback.subscriptionDeleted', { group: groupLabel(target) }))
   }
 
   return {

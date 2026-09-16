@@ -73,7 +73,9 @@ export const applyTheme = (theme: Theme) => {
     root.style.setProperty(property, value)
   })
 
-  document.querySelector<HTMLMetaElement>(`meta[name="${themeColorMetaName}"]`)?.setAttribute('content', theme.tokens.canvas)
+  document
+    .querySelector<HTMLMetaElement>(`meta[name="${themeColorMetaName}"]`)
+    ?.setAttribute('content', theme.tokens.canvas)
 }
 
 export const initializeTheme = () => {

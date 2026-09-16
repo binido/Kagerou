@@ -25,12 +25,28 @@ export function SidebarUpdateNotice({ collapsed, update }: SidebarUpdateNoticePr
         collapsed && 'size-10 justify-center border-transparent bg-transparent p-0',
         'max-[960px]:size-10 max-[960px]:justify-center max-[960px]:border-transparent max-[960px]:bg-transparent max-[960px]:p-0',
       )}
-      onClick={() => { void openUrl(update.url) }}
+      onClick={() => {
+        void openUrl(update.url)
+      }}
       type="button"
     >
-      <CircleArrowUp aria-hidden="true" className="size-4 shrink-0 text-lavender" strokeWidth={1.8} />
-      <span className={cn('min-w-0 truncate', collapsed && 'hidden', 'max-[960px]:hidden')}>{updateAvailable}</span>
-      <ExternalLink aria-hidden="true" className={cn('ml-auto size-3 shrink-0 text-lavender/70', collapsed && 'hidden', 'max-[960px]:hidden')} strokeWidth={1.8} />
+      <CircleArrowUp
+        aria-hidden="true"
+        className="size-4 shrink-0 text-lavender"
+        strokeWidth={1.8}
+      />
+      <span className={cn('min-w-0 truncate', collapsed && 'hidden', 'max-[960px]:hidden')}>
+        {updateAvailable}
+      </span>
+      <ExternalLink
+        aria-hidden="true"
+        className={cn(
+          'ml-auto size-3 shrink-0 text-lavender/70',
+          collapsed && 'hidden',
+          'max-[960px]:hidden',
+        )}
+        strokeWidth={1.8}
+      />
     </button>
   )
 

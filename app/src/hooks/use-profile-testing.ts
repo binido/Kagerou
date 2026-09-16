@@ -38,7 +38,10 @@ export function useProfileTesting({ profilesById, groupLabel, say }: Options) {
       say(t('feedback.testFailed', { name }), 'bad')
       return
     }
-    say(t('feedback.testFinished', { name, value: resultLabel(result, tc) }), result.tone === 'bad' ? 'bad' : 'good')
+    say(
+      t('feedback.testFinished', { name, value: resultLabel(result, tc) }),
+      result.tone === 'bad' ? 'bad' : 'good',
+    )
   }
 
   const testEverything = () => {

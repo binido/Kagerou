@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import type { Profile } from '@/types/kagerou'
@@ -37,8 +44,12 @@ export function RenameProfileDialog({ profile, onOpenChange, onSubmit }: RenameP
     <Dialog onOpenChange={onOpenChange} open={Boolean(profile)}>
       <DialogContent className="border-hairline bg-raised text-primary sm:max-w-[420px]">
         <DialogHeader>
-          <DialogTitle className="type-display text-2xl text-primary">{t('dialogs.rename.title')}</DialogTitle>
-          <DialogDescription className="text-[12px] text-muted-copy">{t('dialogs.rename.description')}</DialogDescription>
+          <DialogTitle className="type-display text-2xl text-primary">
+            {t('dialogs.rename.title')}
+          </DialogTitle>
+          <DialogDescription className="text-[12px] text-muted-copy">
+            {t('dialogs.rename.description')}
+          </DialogDescription>
         </DialogHeader>
         <form className="space-y-5" onSubmit={submit}>
           <Field>
@@ -54,7 +65,9 @@ export function RenameProfileDialog({ profile, onOpenChange, onSubmit }: RenameP
             />
           </Field>
           <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">{t('dialogs.rename.cancel')}</Button>
+            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
+              {t('dialogs.rename.cancel')}
+            </Button>
             <Button className="bg-lavender text-ink hover:bg-lavender-hi" type="submit">
               <Check aria-hidden="true" className="size-3.5" />
               {t('dialogs.rename.submit')}

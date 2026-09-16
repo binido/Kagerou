@@ -17,7 +17,9 @@ export function SettingsFooter({ version = APP_VERSION }: SettingsFooterProps) {
         <button
           aria-label={t('footer.openRepository')}
           className="inline-flex min-w-0 items-center gap-1.5 text-muted-copy transition-colors hover:text-lavender-hi focus-visible:focus-ring"
-          onClick={() => { void openUrl(KAGEROU_REPOSITORY_URL) }}
+          onClick={() => {
+            void openUrl(KAGEROU_REPOSITORY_URL)
+          }}
           type="button"
         >
           <span className="truncate">{t('footer.repository')}</span>

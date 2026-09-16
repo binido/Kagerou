@@ -81,36 +81,57 @@ export function ConnectionStage({
 
         <div className="flex min-h-0 min-w-0 flex-col max-[860px]:w-full max-[860px]:text-center">
           <p className="type-eyebrow">{t('connection.activeVpn')}</p>
-          <h2 className="type-display mt-2 min-w-0 truncate text-[22px] leading-tight tracking-[-0.01em] text-primary" id="connection-stage-title">
+          <h2
+            className="type-display mt-2 min-w-0 truncate text-[22px] leading-tight tracking-[-0.01em] text-primary"
+            id="connection-stage-title"
+          >
             {profileName}
           </h2>
           {place === null ? null : (
-          <div className={cn('mt-2 flex min-w-0 items-center gap-2 text-[14px] max-[860px]:justify-center', connected ? 'text-body' : 'text-muted-copy')}>
-            <MapPin aria-hidden="true" className="size-4 shrink-0 text-muted-copy" strokeWidth={1.7} />
-            {/* The place and the address share a baseline, not a centre line:
+            <div
+              className={cn(
+                'mt-2 flex min-w-0 items-center gap-2 text-[14px] max-[860px]:justify-center',
+                connected ? 'text-body' : 'text-muted-copy',
+              )}
+            >
+              <MapPin
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-copy"
+                strokeWidth={1.7}
+              />
+              {/* The place and the address share a baseline, not a centre line:
                 centring 11px mono against 14px sans drops the digits below the
                 text they belong to. The icon and the button stay centred, which
                 is why the baseline pair is its own box. */}
-            <span className="flex min-w-0 items-baseline gap-2">
-              <span className="truncate">{place}</span>
-              {exitLocation ? (
-                <span className="type-data shrink-0 text-muted-copy" title={t('connection.exitIp')}>{exitLocation.ip}</span>
+              <span className="flex min-w-0 items-baseline gap-2">
+                <span className="truncate">{place}</span>
+                {exitLocation ? (
+                  <span
+                    className="type-data shrink-0 text-muted-copy"
+                    title={t('connection.exitIp')}
+                  >
+                    {exitLocation.ip}
+                  </span>
+                ) : null}
+              </span>
+              {connected ? (
+                <Button
+                  aria-label={t('connection.refreshLocation')}
+                  className="size-6 shrink-0 text-muted-copy"
+                  disabled={exitLocationPending}
+                  onClick={onRefreshLocation}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <RotateCw
+                    aria-hidden="true"
+                    className={cn('size-3.5', exitLocationPending && 'animate-spin')}
+                    strokeWidth={1.7}
+                  />
+                </Button>
               ) : null}
-            </span>
-            {connected ? (
-              <Button
-                aria-label={t('connection.refreshLocation')}
-                className="size-6 shrink-0 text-muted-copy"
-                disabled={exitLocationPending}
-                onClick={onRefreshLocation}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <RotateCw aria-hidden="true" className={cn('size-3.5', exitLocationPending && 'animate-spin')} strokeWidth={1.7} />
-              </Button>
-            ) : null}
-          </div>
+            </div>
           )}
 
           <div className="mt-5 border-t border-hairline pt-4">

@@ -21,7 +21,9 @@ export const createTestingSlice: Slice<TestingSlice> = (set) => ({
     try {
       const result = await kagerouApi.runProfileTest(id)
       set((state) => ({
-        profiles: state.profiles.map((profile) => (profile.id === id ? { ...profile, url: result } : profile)),
+        profiles: state.profiles.map((profile) =>
+          profile.id === id ? { ...profile, url: result } : profile,
+        ),
       }))
       return result
     } catch (error) {

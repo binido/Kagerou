@@ -2,7 +2,8 @@ import type { CatppuccinFlavor } from '@catppuccin/palette'
 
 import type { Theme, ThemeTokens } from '@/themes/types'
 
-const translucent = (color: string, amount: number) => `color-mix(in srgb, ${color} ${amount}%, transparent)`
+const translucent = (color: string, amount: number) =>
+  `color-mix(in srgb, ${color} ${amount}%, transparent)`
 
 const toTokens = (flavor: CatppuccinFlavor): ThemeTokens => {
   const { colors } = flavor

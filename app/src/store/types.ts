@@ -10,11 +10,11 @@ import type { TestingSlice } from './slices/testing'
 /** The whole store, as the sum of the areas it covers. One Zustand store
  * still, so `set` reaches everything: the split is about where a reader
  * looks for something, not about walling the areas off from each other. */
-export type KagerouStore = ShellSlice
-  & ConnectionSlice
-  & LogsSlice
-  & ProfilesSlice
-  & RoutingSlice
-  & SettingsSlice
-  & SubscriptionsSlice
-  & TestingSlice
+export type KagerouStore = ShellSlice &
+  ConnectionSlice &
+  LogsSlice &
+  ProfilesSlice &
+  RoutingSlice &
+  SettingsSlice &
+  SubscriptionsSlice &
+  TestingSlice

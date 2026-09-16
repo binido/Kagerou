@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toast } from 'sonner'
 
-vi.mock('@/lib/tauri-api', async () => ({ kagerouApi: (await import('../test-api')).kagerouApiMock }))
+vi.mock('@/lib/tauri-api', async () => ({
+  kagerouApi: (await import('../test-api')).kagerouApiMock,
+}))
 vi.mock('@/themes/runtime', () => ({ persistThemeId: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() } }))
 
@@ -80,13 +82,21 @@ describe('rules changed since connect', () => {
   const rules: RoutingRule[] = [{ id: 'r1', match: 'a.com', outbound: 'Direct', selected: false }]
 
   it('stays false while the connection is down, since nothing is running yet', () => {
-    useKagerouStore.setState({ routingRules: rules, connected: false, rulesChangedSinceConnect: false })
+    useKagerouStore.setState({
+      routingRules: rules,
+      connected: false,
+      rulesChangedSinceConnect: false,
+    })
     useKagerouStore.getState().updateRule('r1', { outbound: 'Block' })
     expect(useKagerouStore.getState().rulesChangedSinceConnect).toBe(false)
   })
 
   it('flips once a rule changes on a live connection', async () => {
-    useKagerouStore.setState({ routingRules: rules, connected: true, rulesChangedSinceConnect: false })
+    useKagerouStore.setState({
+      routingRules: rules,
+      connected: true,
+      rulesChangedSinceConnect: false,
+    })
     useKagerouStore.getState().updateRule('r1', { outbound: 'Block' })
     expect(useKagerouStore.getState().rulesChangedSinceConnect).toBe(true)
 
@@ -98,7 +108,10 @@ describe('rules changed since connect', () => {
 
   it('clears when a new connection comes up on a freshly generated config', async () => {
     let handler: (connected: boolean) => void = () => {}
-    api.onConnectionChanged.mockImplementation((h: (c: boolean) => void) => { handler = h; return Promise.resolve(() => {}) })
+    api.onConnectionChanged.mockImplementation((h: (c: boolean) => void) => {
+      handler = h
+      return Promise.resolve(() => {})
+    })
     subscribeToBackendEvents()
     await useKagerouStore.getState().hydrate()
     useKagerouStore.setState({ rulesChangedSinceConnect: true })

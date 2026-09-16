@@ -13,11 +13,22 @@ const toneClasses: Record<TestTone, string> = {
 
 /** `running` is a state of this screen rather than a measurement, so it is a
  * flag here instead of a sixth outcome the backend would never send. */
-export function ResultBadge({ result, running = false }: { result: TestResult; running?: boolean }) {
+export function ResultBadge({
+  result,
+  running = false,
+}: {
+  result: TestResult
+  running?: boolean
+}) {
   const { t } = useTranslation('common')
 
   return (
-    <span className={cn('inline-flex min-w-0 items-center gap-2 whitespace-nowrap font-mono text-[11px] tabular-nums before:size-1.5 before:shrink-0 before:rounded-full', toneClasses[running ? 'warn' : result.tone])}>
+    <span
+      className={cn(
+        'inline-flex min-w-0 items-center gap-2 whitespace-nowrap font-mono text-[11px] tabular-nums before:size-1.5 before:shrink-0 before:rounded-full',
+        toneClasses[running ? 'warn' : result.tone],
+      )}
+    >
       {running ? t('status.running') : resultLabel(result, t)}
     </span>
   )

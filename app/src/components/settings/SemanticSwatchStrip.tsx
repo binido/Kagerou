@@ -14,9 +14,16 @@ const swatches = [
 
 export function SemanticSwatchStrip({ theme }: { theme: Theme }) {
   return (
-    <span aria-hidden="true" className="flex h-[18px] w-[72px] shrink-0 overflow-hidden rounded-[4px]">
+    <span
+      aria-hidden="true"
+      className="flex h-[18px] w-[72px] shrink-0 overflow-hidden rounded-[4px]"
+    >
       {swatches.map(({ key, width }) => (
-        <span className="h-full" key={key} style={{ backgroundColor: theme.tokens[key], width } satisfies CSSProperties} />
+        <span
+          className="h-full"
+          key={key}
+          style={{ backgroundColor: theme.tokens[key], width } satisfies CSSProperties}
+        />
       ))}
     </span>
   )

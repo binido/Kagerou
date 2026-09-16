@@ -48,7 +48,11 @@ export const createSettingsSlice: Slice<SettingsSlice> = (set, get) => ({
 
   updateSettings: (patch) => {
     // Mirrors the backend: the connection modes are exclusive.
-    const exclusive = patch.tunMode ? { systemProxy: false } : patch.systemProxy ? { tunMode: false } : {}
+    const exclusive = patch.tunMode
+      ? { systemProxy: false }
+      : patch.systemProxy
+        ? { tunMode: false }
+        : {}
     set((state) => ({ settings: { ...state.settings, ...exclusive, ...patch } }))
     void kagerouApi.updateSettings(patch).catch(async (error) => {
       report(error, 'common:feedback.settingsSaveFailed')
