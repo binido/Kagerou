@@ -295,12 +295,17 @@ fn a_leftover_sing_box_is_killed_at_startup() {
 fn an_unprivileged_stop_lets_the_process_shut_down_cleanly() {
     let dir = tempfile::tempdir().unwrap();
     let marker = dir.path().join("terminated");
+    let ready = dir.path().join("ready");
     let script = dir.path().join("fake-sing-box");
+    // The script says when its trap is installed. A fixed sleep here was
+    // enough on an idle machine and not on a loaded one, which is how this
+    // test came to fail every few hundred runs.
     std::fs::write(
         &script,
         format!(
-            "#!/bin/sh\ntrap 'touch {}; exit 0' TERM\nwhile :; do sleep 0.05; done\n",
-            marker.display()
+            "#!/bin/sh\ntrap 'touch {}; exit 0' TERM\ntouch {}\nwhile :; do sleep 0.05; done\n",
+            marker.display(),
+            ready.display()
         ),
     )
     .unwrap();
@@ -310,12 +315,22 @@ fn an_unprivileged_stop_lets_the_process_shut_down_cleanly() {
         &dir.path().join("run"),
     ));
     sup.start(Path::new("/tmp/config.json"), false).unwrap();
-    // Let the shell install its trap before it is signalled.
-    std::thread::sleep(std::time::Duration::from_millis(300));
+    wait_for(&ready, "the fake core never started");
 
     sup.stop().unwrap();
 
     assert!(marker.exists(), "sing-box must get SIGTERM before SIGKILL");
+}
+
+/// Waits for `path` to appear, up to five seconds. Long enough for a loaded
+/// CI runner, and it still fails rather than hanging.
+#[cfg(unix)]
+fn wait_for(path: &Path, whats_wrong: &str) {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while !path.exists() {
+        assert!(std::time::Instant::now() < deadline, "{whats_wrong}");
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
 }
 
 #[test]
