@@ -19,12 +19,18 @@ export function SettingTextRow({ id, label, description, value, onChange }: Sett
 
   const handleChange = (nextValue: string) => {
     setRawValue(nextValue)
-    if (nextValue.trim()) {
-      setError('')
-      onChange(nextValue.trim())
+    setError(nextValue.trim() ? '' : t('validation.nonEmpty'))
+  }
+
+  // Persist on blur, not per keystroke: onChange goes through the store to a
+  // SQLite write, so a typed-out URL used to cost one write per character.
+  const handleBlur = () => {
+    const trimmed = rawValue.trim()
+    if (!trimmed) {
+      setError(t('validation.nonEmpty'))
       return
     }
-    setError(t('validation.nonEmpty'))
+    if (trimmed !== value) onChange(trimmed)
   }
 
   return (
@@ -34,7 +40,7 @@ export function SettingTextRow({ id, label, description, value, onChange }: Sett
         {description ? <p className="mt-1 text-[11px] leading-4 text-muted-copy" id={`${id}-description`}>{description}</p> : null}
       </div>
       <div className="w-[240px] shrink-0">
-        <Input aria-describedby={`${id}-description${error ? ` ${id}-error` : ''}`} aria-invalid={Boolean(error)} className="h-9 border-0 bg-surface text-left text-[13px] text-body" id={id} onBlur={() => { if (!rawValue.trim()) setError(t('validation.nonEmpty')) }} onChange={(event) => handleChange(event.target.value)} type="text" value={rawValue} />
+        <Input aria-describedby={`${id}-description${error ? ` ${id}-error` : ''}`} aria-invalid={Boolean(error)} className="h-9 border-0 bg-surface text-left text-[13px] text-body" id={id} onBlur={handleBlur} onChange={(event) => handleChange(event.target.value)} type="text" value={rawValue} />
         {error ? <p className="mt-1 text-right text-[10px] leading-4 text-bad" id={`${id}-error`} role="alert">{error}</p> : null}
       </div>
     </div>
