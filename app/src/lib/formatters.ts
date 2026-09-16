@@ -54,3 +54,10 @@ export const formatUptime = (elapsedMs: number): string => {
   const hours = Math.floor(total / 3600)
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`
 }
+
+const logTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', hour12: false, minute: '2-digit', second: '2-digit' })
+
+/** The ISO timestamp the store keeps to the `HH:MM:SS` the log column shows.
+ * The entry keeps the ISO form: it is the sortable one, and it is what a copy
+ * of the log should carry. */
+export const formatLogTimestamp = (iso: string): string => logTime.format(new Date(iso))

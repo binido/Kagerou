@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { backendErrorMessage } from './errors'
-import { formatExitLocation, formatUptime, regionToCountry } from './formatters'
+import { formatExitLocation, formatLogTimestamp, formatUptime, regionToCountry } from './formatters'
 
 describe('regionToCountry', () => {
   it('maps a valid ISO code to a localized country with its flag', () => {
@@ -69,5 +69,17 @@ describe('formatExitLocation', () => {
 
   it('falls back to the service’s own country name when the code is unusable', () => {
     expect(formatExitLocation({ ...exit, countryCode: '' }, 'en')).toBe('London, United Kingdom')
+  })
+})
+
+describe('formatLogTimestamp', () => {
+  it('reduces the stored ISO timestamp to the clock time the column has room for', () => {
+    // Asserted by shape, not by value: the format follows the machine's own
+    // time zone, and a fixed expectation would only pass where it was written.
+    expect(formatLogTimestamp('2026-09-08T17:52:46.522Z')).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+  })
+
+  it('pads a single-digit hour so the column never jumps by a character', () => {
+    expect(formatLogTimestamp('2026-09-08T04:05:06.000Z')).toHaveLength(8)
   })
 })
