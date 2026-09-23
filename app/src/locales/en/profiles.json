@@ -168,12 +168,14 @@
     "stop": "Stop"
   },
   "provider": {
-    "used": "{{used}} of {{total}} used",
-    "usedUnlimited": "{{used}} used, no limit",
-    "expires": "Paid until {{date}} ({{relative}})",
-    "expired": "Expired {{date}} ({{relative}})",
+    "used": "{{used}} of {{total}}",
+    "usedUnlimited": "{{used}} used",
+    "expires": "Until {{date}} · {{relative}}",
+    "expired": "Ended {{date}} · {{relative}}",
     "support": "Support",
     "supportAria": "Open the support page for {{name}} in the browser",
-    "announce": "Provider announcement"
+    "announce": "Provider announcement",
+    "traffic": "Traffic",
+    "expiry": "Subscription period"
   }
 }
