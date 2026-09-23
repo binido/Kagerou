@@ -27,7 +27,9 @@
     "tunInterface": "TUN interface",
     "logLevel": "Log level",
     "testUrl": "Connection-test URL",
-    "geoLookup": "Exit location lookup"
+    "geoLookup": "Exit location lookup",
+    "mixedPort": "Proxy port",
+    "clashApiPort": "Clash API port"
   },
   "descriptions": {
     "autoUpdateSubscriptions": "Keep URL subscription groups fresh automatically.",
@@ -38,6 +40,8 @@
     "systemProxy": "Points the system proxy at Kagerou while connected. Turns TUN mode off. Applies the next time you connect.",
     "logLevel": "Applies the next time you connect.",
     "testUrl": "Fetched through the VPN to measure its delay. Something small that answers from anywhere works best.",
+    "mixedPort": "Local HTTP and SOCKS port that apps and the system proxy connect to. Only this computer can reach it. Locked while connected.",
+    "clashApiPort": "Local port Kagerou uses to control the core. Change it if another app already uses 9090. Locked while connected.",
     "geoLookup": "Asks a public service, through the tunnel, which country and city your connection appears to come from. Turning this off keeps the dashboard on the flag in the profile name."
   },
   "options": {

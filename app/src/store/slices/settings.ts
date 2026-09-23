@@ -30,6 +30,8 @@ export const createSettingsSlice: Slice<SettingsSlice> = (set, get) => ({
     groupSort: 'ping',
     logLevel: 'info',
     testUrl: 'http://www.gstatic.com/generate_204',
+    mixedPort: 2080,
+    clashApiPort: 9090,
   },
 
   setTheme: (themeId) => {

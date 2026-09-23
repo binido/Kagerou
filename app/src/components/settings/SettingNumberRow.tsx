@@ -9,7 +9,9 @@ interface SettingNumberRowProps {
   id: string
   label: string
   description?: string
+  a11yDescription?: string
   value: number
+  disabled?: boolean
   onChange: (value: number) => void
 }
 
@@ -19,7 +21,9 @@ export function SettingNumberRow({
   id,
   label,
   description,
+  a11yDescription,
   value,
+  disabled = false,
   onChange,
 }: SettingNumberRowProps) {
   const { t } = useTranslation('settings')
@@ -51,8 +55,13 @@ export function SettingNumberRow({
       </div>
       <div className="w-[148px] shrink-0">
         <Input
-          aria-describedby={`${id}-description${error ? ` ${id}-error` : ''}`}
+          aria-describedby={
+            [a11yDescription && `${id}-description`, error && `${id}-error`]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }
           aria-invalid={Boolean(error)}
+          disabled={disabled}
           className="number-input-no-spinners h-9 border-0 bg-surface text-left text-[13px] text-body"
           id={id}
           inputMode="numeric"
@@ -63,9 +72,11 @@ export function SettingNumberRow({
           type="number"
           value={rawValue}
         />
-        <p className="sr-only" id={`${id}-description`}>
-          {t('descriptions.customIntervalA11y')}
-        </p>
+        {a11yDescription ? (
+          <p className="sr-only" id={`${id}-description`}>
+            {a11yDescription}
+          </p>
+        ) : null}
         {error ? (
           <p
             className="mt-1 text-right text-[10px] leading-4 text-bad"

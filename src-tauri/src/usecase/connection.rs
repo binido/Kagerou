@@ -26,16 +26,17 @@ const TRAFFIC_RECONNECT_DELAY: Duration = Duration::from_secs(2);
 /// they are toggled in settings and take effect on the next connection.
 pub async fn connect(app: &AppHandle, state: &AppState) -> Result<(), AppError> {
     let stored = settings::get(&state.db)?;
-    core::start(
-        &state.db,
-        &mut state.supervisor.lock().unwrap(),
-        &CoreSpec::connection(&state.paths, &stored),
-    )?;
+    let spec = CoreSpec::connection(&state.paths, &stored);
+    {
+        let mut supervisor = state.supervisor.lock().unwrap();
+        supervisor.launcher_mut().system_proxy_port = stored.mixed_port;
+        core::start(&state.db, &mut supervisor, &spec)?;
+    }
 
-    let clash = ClashApiClient::new(format!("http://{}", state.paths.clash_api_listen));
+    let clash = ClashApiClient::new(format!("http://{}", spec.clash_api_listen));
     *state.clash.lock().unwrap() = Some(clash.clone());
 
-    spawn_traffic_pump(app.clone(), state, clash);
+    spawn_traffic_pump(app.clone(), state, &spec.clash_api_listen, clash);
     spawn_log_pump(app.clone());
 
     *state.connected_since.lock().unwrap() = Some(SystemTime::now());
@@ -167,9 +168,14 @@ pub fn live_connections(
 /// Each sample is followed by a `/connections` read for the session totals;
 /// a failure there sends the sample with empty totals rather than dropping
 /// it, so one API hiccup does not blank the panel.
-fn spawn_traffic_pump(app: AppHandle, state: &AppState, clash: ClashApiClient) {
+fn spawn_traffic_pump(
+    app: AppHandle,
+    state: &AppState,
+    clash_api_listen: &str,
+    clash: ClashApiClient,
+) {
     let watcher = clash_api::watch_traffic(
-        format!("ws://{}/traffic", state.paths.clash_api_listen),
+        format!("ws://{clash_api_listen}/traffic"),
         TRAFFIC_RECONNECT_DELAY,
     );
     let (mut events, stop) = watcher.into_parts();

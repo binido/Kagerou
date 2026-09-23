@@ -21,6 +21,7 @@ import type {
 export function SettingsPage() {
   const { t } = useTranslation('settings')
   const settings = useKagerouStore((state) => state.settings)
+  const connected = useKagerouStore((state) => state.connected)
   const setTheme = useKagerouStore((state) => state.setTheme)
   const updateSettings = useKagerouStore((state) => state.updateSettings)
   const subscriptionIntervalOptions = [
@@ -112,6 +113,7 @@ export function SettingsPage() {
                 />
                 {settings.subscriptionUpdateInterval === 'custom' ? (
                   <SettingNumberRow
+                    a11yDescription={t('descriptions.customIntervalA11y')}
                     description={t('descriptions.customInterval')}
                     id="custom-subscription-update-minutes"
                     label={t('fields.customInterval')}
@@ -146,6 +148,24 @@ export function SettingsPage() {
                 { value: 'tun0', label: t('options.tun0') },
               ]}
               value={settings.tunInterface}
+            />
+            <SettingNumberRow
+              description={t('descriptions.mixedPort')}
+              disabled={connected}
+              id="mixed-port"
+              key={`mixed-port-${settings.mixedPort}`}
+              label={t('fields.mixedPort')}
+              onChange={(mixedPort) => updateSettings({ mixedPort })}
+              value={settings.mixedPort}
+            />
+            <SettingNumberRow
+              description={t('descriptions.clashApiPort')}
+              disabled={connected}
+              id="clash-api-port"
+              key={`clash-api-port-${settings.clashApiPort}`}
+              label={t('fields.clashApiPort')}
+              onChange={(clashApiPort) => updateSettings({ clashApiPort })}
+              value={settings.clashApiPort}
             />
           </SettingsSection>
           <SettingsSection title={t('sections.diagnostics')}>

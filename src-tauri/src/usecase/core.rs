@@ -30,7 +30,7 @@ pub enum CoreError {
 pub struct CoreSpec<'a> {
     pub config_path: &'a Path,
     pub mixed_listen_port: u16,
-    pub clash_api_listen: &'a str,
+    pub clash_api_listen: String,
     pub log_level: &'a str,
     pub tun: bool,
     pub system_proxy: bool,
@@ -42,8 +42,8 @@ impl<'a> CoreSpec<'a> {
     pub fn connection(paths: &'a RuntimePaths, stored: &'a Settings) -> Self {
         Self {
             config_path: &paths.config_path,
-            mixed_listen_port: paths.mixed_listen_port,
-            clash_api_listen: &paths.clash_api_listen,
+            mixed_listen_port: stored.mixed_port,
+            clash_api_listen: format!("127.0.0.1:{}", stored.clash_api_port),
             log_level: &stored.log_level,
             tun: stored.tun_mode,
             system_proxy: stored.system_proxy,
@@ -61,7 +61,7 @@ impl<'a> CoreSpec<'a> {
         Self {
             config_path: &paths.test_config_path,
             mixed_listen_port: paths.test_mixed_listen_port,
-            clash_api_listen: &paths.test_clash_api_listen,
+            clash_api_listen: paths.test_clash_api_listen.clone(),
             log_level: &stored.log_level,
             tun: false,
             system_proxy: false,
@@ -90,7 +90,7 @@ pub fn start<L: Launcher>(
         active_profile_id: &active_profile_id,
         routing_rules: &routing_rules,
         mixed_listen_port: spec.mixed_listen_port,
-        clash_api_listen: spec.clash_api_listen,
+        clash_api_listen: &spec.clash_api_listen,
         log_level: spec.log_level,
         tun: spec.tun,
         system_proxy: spec.system_proxy,
