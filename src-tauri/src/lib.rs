@@ -44,6 +44,7 @@ pub fn run() {
         // WebView: `target="_blank"` opens nothing in a bundled app, so the
         // update notice arrived and then went nowhere.
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         // LaunchAgent writes a plist under the user's LaunchAgents directory;
         // the AppleScript route it competes with is unreliable on modern macOS.
         .plugin(tauri_plugin_autostart::init(
@@ -125,6 +126,9 @@ pub fn run() {
             commands::close_connection,
             commands::close_all_connections,
             commands::select_profile,
+            commands::export_links,
+            commands::profile_qr_svg,
+            commands::save_links_to_file,
             commands::rename_profile,
             commands::delete_profile,
             commands::move_profile_to_group,

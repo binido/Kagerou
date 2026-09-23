@@ -35,6 +35,10 @@ interface ProfileGroupCardProps {
   onCopyUrl: () => void
   onDeleteSubscription: () => void
   onOpenSupport: () => void
+  onCopyLink: (profile: Profile) => void
+  onShowQr: (profile: Profile) => void
+  onCopyLinks: () => void
+  onSaveLinks: () => void
 }
 
 export function ProfileGroupCard({
@@ -60,6 +64,10 @@ export function ProfileGroupCard({
   onCopyUrl,
   onDeleteSubscription,
   onOpenSupport,
+  onCopyLink,
+  onShowQr,
+  onCopyLinks,
+  onSaveLinks,
 }: ProfileGroupCardProps) {
   const { i18n, t } = useTranslation('profiles')
   const { t: tc } = useTranslation('common')
@@ -146,10 +154,12 @@ export function ProfileGroupCard({
               group={group}
               onChangeUrl={onChangeUrl}
               onClearResults={onClearResults}
+              onCopyLinks={onCopyLinks}
               onCopyUrl={onCopyUrl}
               onDeleteSubscription={onDeleteSubscription}
               onDeleteUnavailable={onDeleteUnavailable}
               onRename={() => onRenameGroup(group)}
+              onSaveLinks={onSaveLinks}
               onTestGroup={onTestGroup}
               testRunning={testRunning}
             />
@@ -167,6 +177,8 @@ export function ProfileGroupCard({
         <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
           <ProfileTable
             movableGroups={movableGroups}
+            onCopyLink={onCopyLink}
+            onShowQr={onShowQr}
             onDelete={onDelete}
             onMoveToGroup={onMoveToGroup}
             onRename={onRename}

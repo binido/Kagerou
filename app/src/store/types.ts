@@ -4,6 +4,7 @@ import type { LogsSlice } from './slices/logs'
 import type { ProfilesSlice } from './slices/profiles'
 import type { RoutingSlice } from './slices/routing'
 import type { SettingsSlice } from './slices/settings'
+import type { SharingSlice } from './slices/sharing'
 import type { ShellSlice } from './slices/shell'
 import type { SubscriptionsSlice } from './slices/subscriptions'
 import type { TestingSlice } from './slices/testing'
@@ -18,5 +19,6 @@ export type KagerouStore = ShellSlice &
   ProfilesSlice &
   RoutingSlice &
   SettingsSlice &
+  SharingSlice &
   SubscriptionsSlice &
   TestingSlice

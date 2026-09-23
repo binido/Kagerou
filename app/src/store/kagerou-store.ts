@@ -9,6 +9,7 @@ import { appendLog, createLogsSlice } from './slices/logs'
 import { createProfilesSlice } from './slices/profiles'
 import { createRoutingSlice } from './slices/routing'
 import { createSettingsSlice } from './slices/settings'
+import { createSharingSlice } from './slices/sharing'
 import { createShellSlice } from './slices/shell'
 import { createSubscriptionsSlice } from './slices/subscriptions'
 import { createTestingSlice } from './slices/testing'
@@ -30,6 +31,7 @@ export const useKagerouStore = create<KagerouStore>()((...args) => ({
   ...createProfilesSlice(...args),
   ...createRoutingSlice(...args),
   ...createSettingsSlice(...args),
+  ...createSharingSlice(...args),
   ...createSubscriptionsSlice(...args),
   ...createTestingSlice(...args),
 }))

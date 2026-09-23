@@ -16,6 +16,7 @@ export type ErrorCode =
   | 'testRunInProgress'
   | 'lookupFailed'
   | 'systemSetting'
+  | 'fileWrite'
 
 export interface BackendError {
   code: ErrorCode

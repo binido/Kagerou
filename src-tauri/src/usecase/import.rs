@@ -166,14 +166,7 @@ pub fn profile_from_outbound(
 /// cut off the string.
 fn identity(outbound: &ParsedOutbound) -> String {
     let mut unnamed = outbound.clone();
-    match &mut unnamed {
-        ParsedOutbound::Vmess(o) => o.name.clear(),
-        ParsedOutbound::Vless(o) => o.name.clear(),
-        ParsedOutbound::Trojan(o) => o.name.clear(),
-        ParsedOutbound::Shadowsocks(o) => o.name.clear(),
-        ParsedOutbound::Hysteria2(o) => o.name.clear(),
-        ParsedOutbound::Tuic(o) => o.name.clear(),
-    }
+    unnamed.set_name("");
     subscription::to_uri(&unnamed)
 }
 

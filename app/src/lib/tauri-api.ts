@@ -83,6 +83,10 @@ export const kagerouApi = {
     invoke<void>('move_profile', { id, direction }),
   reorderProfiles: (fromId: string, toId: string) =>
     invoke<void>('reorder_profiles', { fromId, toId }),
+  exportLinks: (ids: string[]) => invoke<string[]>('export_links', { ids }),
+  profileQrSvg: (id: string) => invoke<string>('profile_qr_svg', { id }),
+  saveLinksToFile: (ids: string[], label: string) =>
+    invoke<boolean>('save_links_to_file', { ids, label }),
   runProfileTest: (profileId: string) => invoke<TestResult>('run_profile_test', { profileId }),
   startGroupTest: (groupId: string | null) => invoke<number>('start_group_test', { groupId }),
   cancelGroupTest: () => invoke<void>('cancel_group_test'),

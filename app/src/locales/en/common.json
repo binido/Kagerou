@@ -98,6 +98,7 @@
     "activeProfileInUse": "The VPN in use belongs to this subscription. Switch to another one or disconnect first.",
     "testRunInProgress": "A test is already running. Wait for it or stop it first.",
     "lookupFailed": "The location could not be looked up through the tunnel.",
-    "systemSetting": "The system refused that change."
+    "systemSetting": "The system refused that change.",
+    "fileWrite": "The file could not be saved there."
   }
 }
