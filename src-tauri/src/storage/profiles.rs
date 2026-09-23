@@ -1,6 +1,5 @@
 use rusqlite::{params, OptionalExtension};
 
-use super::groups;
 use super::models::{NewProfile, Profile, Protocol, TestOutcome};
 use super::{Db, StorageError};
 
@@ -249,106 +248,6 @@ pub fn move_to_group(db: &Db, id: &str, target_group_id: &str) -> Result<(), Sto
     }
     tx.commit()?;
     Ok(())
-}
-
-/// Rewrites the `position` of every profile in `group_id` to match the
-/// order of `ordered_ids`. Used to implement both "move up/down" (compute
-/// the swapped order, then reorder) and drag-to-reorder in one primitive
-/// rather than two position-swap-specific queries. Rejects the whole
-/// operation - no partial reorder - if `ordered_ids` doesn't contain
-/// exactly the profiles currently in that group.
-pub fn reorder(db: &Db, group_id: &str, ordered_ids: &[String]) -> Result<(), StorageError> {
-    let mut conn = db.lock();
-    let tx = conn.transaction()?;
-
-    let mut current: Vec<String> = {
-        let mut stmt =
-            tx.prepare("SELECT id FROM profiles WHERE group_id = ?1 ORDER BY position")?;
-        let rows = stmt.query_map(params![group_id], |row| row.get::<_, String>(0))?;
-        rows.collect::<Result<Vec<_>, _>>()?
-    };
-    current.sort();
-    let mut requested = ordered_ids.to_vec();
-    requested.sort();
-    if current != requested {
-        return Err(StorageError::InvalidInput(
-            "ordered_ids must be exactly the profiles currently in the group".into(),
-        ));
-    }
-
-    for (position, id) in ordered_ids.iter().enumerate() {
-        tx.execute(
-            "UPDATE profiles SET position = ?1 WHERE id = ?2",
-            params![position as i64, id],
-        )?;
-    }
-    tx.commit()?;
-    Ok(())
-}
-
-/// Which way a profile is being nudged within its group.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Direction {
-    Up,
-    Down,
-}
-
-impl std::str::FromStr for Direction {
-    type Err = StorageError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "up" => Ok(Self::Up),
-            "down" => Ok(Self::Down),
-            other => Err(StorageError::InvalidInput(format!(
-                "unknown direction: {other}"
-            ))),
-        }
-    }
-}
-
-/// Moves a profile one place within its own group. At the end it is already
-/// at, this does nothing: a list's first row has nowhere to go up to, and
-/// saying so is not worth an error.
-pub fn move_within_group(db: &Db, id: &str, direction: Direction) -> Result<(), StorageError> {
-    let profile = get(db, id)?;
-    let group = groups::get(db, &profile.group_id)?;
-    let index = group
-        .profile_ids
-        .iter()
-        .position(|candidate| candidate == id)
-        .ok_or(StorageError::NotFound)?;
-    let target = match direction {
-        Direction::Up => index.checked_sub(1),
-        Direction::Down => index
-            .checked_add(1)
-            .filter(|i| *i < group.profile_ids.len()),
-    };
-    let Some(target) = target else {
-        return Ok(());
-    };
-    let mut ordered = group.profile_ids;
-    ordered.swap(index, target);
-    reorder(db, &group.id, &ordered)
-}
-
-/// Lifts a profile out of its position and drops it where another one sits,
-/// shifting the rest along. Both have to be in the same group.
-pub fn move_before(db: &Db, from_id: &str, to_id: &str) -> Result<(), StorageError> {
-    let from = get(db, from_id)?;
-    let group = groups::get(db, &from.group_id)?;
-    let mut ordered = group.profile_ids;
-    let from_index = ordered
-        .iter()
-        .position(|c| c == from_id)
-        .ok_or(StorageError::NotFound)?;
-    let to_index = ordered
-        .iter()
-        .position(|c| c == to_id)
-        .ok_or(StorageError::NotFound)?;
-    let id = ordered.remove(from_index);
-    ordered.insert(to_index, id);
-    reorder(db, &group.id, &ordered)
 }
 
 #[cfg(test)]

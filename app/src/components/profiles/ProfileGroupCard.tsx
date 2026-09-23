@@ -174,7 +174,7 @@ export function ProfileGroupCard({
         ) : null}
       </div>
       {group.open ? (
-        <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
+        <div aria-label={groupLabel} id={`${group.id}-panel`} role="region">
           <ProfileTable
             movableGroups={movableGroups}
             onCopyLink={onCopyLink}

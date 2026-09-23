@@ -25,8 +25,6 @@ export const kagerouApiMock = {
   renameProfile: vi.fn(),
   deleteProfile: vi.fn(),
   moveProfileToGroup: vi.fn(),
-  moveProfile: vi.fn(),
-  reorderProfiles: vi.fn(),
   exportLinks: vi.fn(),
   profileQrSvg: vi.fn(),
   saveLinksToFile: vi.fn(),

@@ -75,7 +75,7 @@ row.
 | Provider headers | ✅ | Besides `profile-title`, each fetch reads the traffic used, the limit and the end date (`subscription-userinfo`), an announcement (`announce`, plain or `base64:`) and a support link (`support-url`), and the subscription's card shows them under its title - usage as a bar against the limit, the end date, the support link, and the announcement in a panel of its own - turning amber at 90% of the limit or three days before the end and red past either. An end date more than ten years out is how providers write "never ends", so it reads as none. Migration 0013 adds the columns; a subscription shows nothing until its next refresh. Every fetch overwrites all five, so a field the provider stops sending disappears rather than going stale. The support link is kept only if it is http(s), and the window opens it by source id through a backend command, so the opener scope still covers only GitHub. `profile-update-interval` and `profile-web-page-url` are not read. |
 | WireGuard links | 📋 | `wireguard://` is an endpoint in sing-box, not an outbound, so it does not fit the per-profile outbound the config is built from. |
 | Hysteria v1, AnyTLS and SOCKS links | 📋 | sing-box runs all three, and imports list them as not supported. The protocol list is a `CHECK` constraint on `profiles`, which SQLite cannot alter, so adding them means a migration that rebuilds the table with every stored key in it - to be reviewed on its own. |
-| Profile groups | ✅ | Create, rename, move profiles between groups, reorder, drag-and-drop. |
+| Profile groups | ✅ | Create, rename, move profiles between groups from the row menu. Profiles inside a group cannot be reordered by hand, and nothing is drag-and-drop. |
 | Import and subscriptions | ✅ | One "Add from clipboard" button, or a paste anywhere on the groups page, and the text decides what it is: an http(s) link becomes a subscription group that refreshes from it (named from its `profile-title` header, else its host), a single key lands in Default, several keys become an "Imported" group. Keys already present in any group are skipped, ignoring their display name; a link already added is refreshed instead. Unreadable or unrecognised text opens a paste dialog with the reason. Subscription groups carry their own refresh, change-URL, copy-URL and delete actions, and are closed to moving profiles in or out, because a refresh replaces the whole group. Deleting one takes its VPNs with it and is refused while connected through one of them. An entry the app cannot run - an unknown scheme or protocol, a transport sing-box lacks such as `xhttp`, a broken line - is left out rather than failing the whole import, and the toast lists what was left out and why. A subscription with nothing importable fails and leaves its group as it was. |
 | Per-profile delay test | ✅ | One measurement: the latency of the whole path through the proxy, reported by sing-box's own API and shown in the Ping column. The TCP ping that used to sit beside it is gone — it measured the round trip to the proxy server rather than through it, which told a user nothing they could act on. |
 | Group-wide delay test | ✅ | Each group's menu tests all its members concurrently (TCP or URL), then "clear results" resets both stored results and "delete unavailable" removes the profiles that failed the chosen method — never the active profile, never untested ones, behind a confirmation. |
@@ -161,7 +161,7 @@ section](#accessibility--ux-audit) below, with a fix written out for each.
 |---|---|---|
 | `ProfileTable` renders every row twice | ✅ | Fixed in `5a6eca3`: a `ResizeObserver` on the table's own box decides between the wide table and the stacked rows, so one of the two is rendered and the other never reaches the DOM. Measured on the container rather than the window because the sidebar and the page padding take a different share of the window at every size. |
 | Linux desktop entry and icon are malformed | ✅ | `bundle.category` is `Utility`, so the generated `.desktop` carries `Categories=Utility;` instead of nothing and the app lands in a menu section. `Network;` would suit a proxy client better, but Tauri only reaches it through `Entertainment` or `SocialNetworking`, and those are the categories macOS would then advertise in the bundle. The 256×256 icon is listed as `256x256.png` rather than `128x128@2x.png`: the bundler names the hicolor directory after the image's own dimensions and appends `@2` for a retina filename, which put a 256×256 image in `256x256@2/`, a directory hicolor does not define. Rerunning `tauri icon` writes the `@2x` name back, so the list in `tauri.conf.json` has to be corrected again after it. Neither package was built to confirm this — the release workflow is where it will show. |
-| Dead profile-ordering plumbing | 📋 | `moveProfile` and `reorderProfiles` in the store, and the `move_profile` / `reorder_profiles` Tauri commands behind them, have no UI calling them. Either wire up manual reordering or delete all four; leaving them is a trap for the next person who greps for them. |
+| Dead profile-ordering plumbing | ✅ | Deleted rather than wired up: `moveProfile` and `reorderProfiles` in the store, the `move_profile` / `reorder_profiles` commands and the storage functions behind them. Manual reordering inside a group comes back as a feature of its own if anyone asks for it. |
 | Dialogs remount via their `key` | ✅ | Fixed in `fb2fd1d`: `ProfileGroupDialog` keeps the previous `open` in state and resets its form when the flag flips, so the component stays mounted through its exit animation instead of being thrown away and rebuilt on every open. |
 
 ---
@@ -427,7 +427,7 @@ user needs to know about.
   those errors inline. Failure paths and rollbacks are covered by store
   tests.
 
-- [ ] **No skip link, and `<main>` has no accessible name.**
+- [x] **No skip link, and `<main>` has no accessible name.**
   `app/src/components/layout/AppShell.tsx:9`.
 
   Six sidebar links sit ahead of the content on every page, and a keyboard
@@ -518,7 +518,7 @@ user needs to know about.
 Real defects, none of them blocking. Roughly in the order they are worth
 doing.
 
-- [ ] **The focus ring is drawn at 50% alpha.**
+- [x] **The focus ring is drawn at 50% alpha.**
   `app/src/index.css:81-83`.
 
   ```css
@@ -780,7 +780,7 @@ doing.
   already have an `onBlur` doing validation; move the persist there and keep
   the keystroke handler local. **Good first issue.**
 
-- [ ] **`transition-all` on three primitives.**
+- [x] **`transition-all` on three primitives.**
   `app/src/components/ui/button.tsx:8`, `app/src/components/ui/badge.tsx:8`,
   `app/src/components/ui/switch.tsx:20`.
 
@@ -843,7 +843,7 @@ doing.
   in the middle of a sentence. Gone with the sources page: the card that
   carried it was deleted when subscriptions moved onto the groups page.
 
-- [ ] **A disabled switch looks almost enabled.**
+- [x] **A disabled switch looks almost enabled.**
   `app/src/components/settings/SettingSwitchRow.tsx:18`,
   `app/src/components/ui/switch.tsx:20`.
 
@@ -853,12 +853,14 @@ doing.
   the next one that is. Give the state a shape of its own:
 
   ```
-  data-disabled:bg-transparent data-disabled:ring-1 data-disabled:ring-hairline
+  data-disabled:bg-transparent! data-disabled:ring-1 data-disabled:ring-hairline
   ```
 
-  **Good first issue.**
+  The background needs `!`: the checked and unchecked backgrounds, including
+  the ones `SettingSwitchRow` passes in, have the same specificity and win
+  without it. **Good first issue.**
 
-- [ ] **Dead `aria-hidden` and an unnamed region on group panels.**
+- [x] **Dead `aria-hidden` and an unnamed region on group panels.**
   `app/src/components/profiles/ProfileGroupCard.tsx:59-60`.
 
   ```tsx
