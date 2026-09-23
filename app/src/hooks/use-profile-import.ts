@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import type { ImportDraft } from '@/components/profiles/ImportDialog'
+import { describeUnsupported } from '@/lib/unsupported'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type { ImportAttempt, ImportOutcome } from '@/types/kagerou'
 
@@ -26,6 +27,7 @@ export function useProfileImport(groupLabel: (groupId: string) => string) {
   const [draft, setDraft] = useState<ImportDraft | null>(null)
 
   const announce = (outcome: ImportOutcome, toastId: string | number) => {
+    const options = { id: toastId, description: describeUnsupported(outcome.unsupported) }
     switch (outcome.kind) {
       case 'subscriptionAdded':
         return toast.success(
@@ -33,15 +35,15 @@ export function useProfileImport(groupLabel: (groupId: string) => string) {
             name: groupLabel(outcome.groupId),
             count: outcome.added,
           }),
-          { id: toastId },
+          options,
         )
       case 'subscriptionRefreshed':
         return toast.success(
           t('import.subscriptionRefreshed', { name: groupLabel(outcome.groupId) }),
-          { id: toastId },
+          options,
         )
       case 'profileAdded':
-        return toast.success(t('import.profileAdded', { name: outcome.name }), { id: toastId })
+        return toast.success(t('import.profileAdded', { name: outcome.name }), options)
       case 'groupAdded':
         return toast.success(
           outcome.skipped > 0
@@ -51,14 +53,15 @@ export function useProfileImport(groupLabel: (groupId: string) => string) {
                 skipped: outcome.skipped,
               })
             : t('import.groupAdded', { name: groupLabel(outcome.groupId), count: outcome.added }),
-          { id: toastId },
+          options,
         )
       case 'alreadyPresent':
-        return toast.info(t('import.alreadyPresent', { group: groupLabel(outcome.groupId) }), {
-          id: toastId,
-        })
+        return toast.info(
+          t('import.alreadyPresent', { group: groupLabel(outcome.groupId) }),
+          options,
+        )
       case 'nothingNew':
-        return toast.info(t('import.nothingNew', { count: outcome.skipped }), { id: toastId })
+        return toast.info(t('import.nothingNew', { count: outcome.skipped }), options)
     }
   }
 

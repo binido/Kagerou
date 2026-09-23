@@ -14,6 +14,12 @@ pub enum SubscriptionError {
     #[error("unsupported URI scheme: {0}")]
     UnsupportedScheme(String),
 
+    #[error("unsupported protocol: {0}")]
+    UnsupportedProtocol(String),
+
+    #[error("unsupported transport: {0}")]
+    UnsupportedTransport(String),
+
     #[error("invalid Clash proxy entry at index {index}: {reason}")]
     InvalidClashProxy { index: usize, reason: String },
 

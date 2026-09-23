@@ -288,7 +288,7 @@ fn direct_domains_are_resolved_locally_and_nothing_else_is() {
 #[test]
 fn an_imported_reality_subscription_still_generates_a_reality_outbound() {
     let line = "vless://11111111-2222-3333-4444-555555555555@example.com:443?encryption=none&security=reality&sni=cdn.example.com&type=tcp&flow=xtls-rprx-vision&pbk=abc123&sid=de#My%20Node";
-    let imported = subscription::parse_subscription(line).unwrap();
+    let imported = subscription::parse_subscription(line).unwrap().outbounds;
     let key = subscription::to_uri(&imported[0]);
 
     let profiles = vec![profile("p1", &key)];

@@ -5,7 +5,7 @@ const RELAY: &str = "trojan://pass@relay.example:443#Relay";
 
 fn outbounds(text: &str) -> Vec<ParsedOutbound> {
     match classify(text).unwrap() {
-        Pasted::Outbounds(outbounds) => outbounds,
+        Pasted::Outbounds(parsed) => parsed.outbounds,
         other => panic!("expected keys, got {other:?}"),
     }
 }
@@ -287,5 +287,24 @@ fn the_wire_format_matches_what_the_frontend_expects() {
     assert_eq!(
         json,
         serde_json::json!({ "kind": "alreadyPresent", "groupId": "default" })
+    );
+}
+
+#[test]
+fn what_was_left_out_rides_next_to_the_outcome() {
+    let json = serde_json::to_value(Imported {
+        outcome: ImportOutcome::AlreadyPresent {
+            group_id: "default".into(),
+        },
+        unsupported: vec![Unsupported::Protocol("ssr".into())],
+    })
+    .unwrap();
+    assert_eq!(
+        json,
+        serde_json::json!({
+            "kind": "alreadyPresent",
+            "groupId": "default",
+            "unsupported": [{ "kind": "protocol", "name": "ssr" }],
+        })
     );
 }

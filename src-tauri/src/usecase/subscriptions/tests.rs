@@ -1,4 +1,5 @@
 use super::*;
+use crate::clash_api::test_support::spawn_http_mock;
 use crate::subscription::parse_subscription;
 
 /// Two keys the parser accepts, named so a refresh can be seen to keep one
@@ -8,7 +9,7 @@ const OSAKA: &str = "vless://uuid-b@5.6.7.8:443?security=tls#Osaka";
 const KYOTO: &str = "vless://uuid-c@9.10.11.12:443?security=tls#Kyoto";
 
 fn outbounds(keys: &[&str]) -> Vec<ParsedOutbound> {
-    parse_subscription(&keys.join("\n")).unwrap()
+    parse_subscription(&keys.join("\n")).unwrap().outbounds
 }
 
 /// A database holding one subscription group with Tokyo and Osaka in it.
@@ -131,4 +132,41 @@ fn a_renamed_subscription_keeps_its_url() {
     let source = sources::get(&db, &source_id).unwrap();
     assert_eq!(source.name, "Renamed");
     assert_eq!(source.value, "https://example.com/sub");
+}
+
+fn http_ok(body: &'static str) -> impl Fn(String) -> Vec<u8> + Send + Sync + 'static {
+    move |_| {
+        format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        )
+        .into_bytes()
+    }
+}
+
+#[tokio::test]
+async fn a_refresh_with_nothing_importable_leaves_the_group_as_it_was() {
+    let (db, source_id) = subscribed();
+    let url = spawn_http_mock(http_ok("vless://uuid@example.com:443?type=xhttp#Gone")).await;
+    update_source(&db, &source_id, None, Some(&url)).unwrap();
+
+    let error = refresh(&db, &source_id).await.unwrap_err();
+
+    assert!(matches!(error, SubscriptionsError::Parse(_)));
+    assert_eq!(names(&db), vec!["Osaka".to_string(), "Tokyo".to_string()]);
+}
+
+#[tokio::test]
+async fn a_refresh_reports_what_it_left_out() {
+    let (db, source_id) = subscribed();
+    let url = spawn_http_mock(http_ok(
+        "vless://uuid-a@1.2.3.4:443?security=tls#Tokyo\nvless://uuid@example.com:443?type=xhttp#Gone",
+    ))
+    .await;
+    update_source(&db, &source_id, None, Some(&url)).unwrap();
+
+    let unsupported = refresh(&db, &source_id).await.unwrap();
+
+    assert_eq!(unsupported, vec![Unsupported::Transport("xhttp".into())]);
+    assert_eq!(names(&db), vec!["Tokyo".to_string()]);
 }

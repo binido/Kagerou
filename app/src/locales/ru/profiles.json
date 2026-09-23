@@ -24,7 +24,9 @@
     "groupAdded": "Группа «{{name}}» создана · VPN: {{count}}",
     "groupAddedSkipped": "Группа «{{name}}» создана · VPN: {{count}}, уже были: {{skipped}}",
     "alreadyPresent": "Этот VPN уже есть в группе «{{group}}»",
-    "nothingNew": "Ничего нового · уже добавлено: {{count}}"
+    "nothingNew": "Ничего нового · уже добавлено: {{count}}",
+    "unsupported": "Не поддерживаются, пропущено: {{count}} - {{list}}",
+    "unreadableEntry": "нечитаемая запись"
   },
   "feedback": {
     "testRunning": "Проверяем {{name}}…",

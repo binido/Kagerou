@@ -26,7 +26,12 @@ beforeEach(() => {
 })
 
 describe('importing pasted text', () => {
-  const outcome: ImportOutcome = { kind: 'profileAdded', profileId: 'p1', name: 'Tokyo' }
+  const outcome: ImportOutcome = {
+    kind: 'profileAdded',
+    profileId: 'p1',
+    name: 'Tokyo',
+    unsupported: [],
+  }
 
   it('refreshes state and reports what the text became', async () => {
     api.importFromText.mockResolvedValue(outcome)
@@ -135,5 +140,17 @@ describe('subscription actions', () => {
     expect(ok).toBe(false)
     expect(toast.error).toHaveBeenCalledWith(en.errors.activeProfileInUse)
     expect(useKagerouStore.getState().profileGroups).toEqual([group])
+  })
+})
+
+describe('refreshing a subscription', () => {
+  it('hands back what the provider offered that could not be imported', async () => {
+    api.refreshSource.mockResolvedValue([{ kind: 'transport', name: 'xhttp' }])
+    api.getAppState.mockResolvedValue(emptySnapshot)
+
+    const unsupported = await useKagerouStore.getState().refreshSource('source-1')
+
+    expect(unsupported).toEqual([{ kind: 'transport', name: 'xhttp' }])
+    expect(api.getAppState).toHaveBeenCalled()
   })
 })

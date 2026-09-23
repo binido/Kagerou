@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use super::error::SubscriptionError;
 use super::model::{
     Hysteria2Outbound, ParsedOutbound, ShadowsocksOutbound, TrojanOutbound, TuicOutbound,
@@ -15,19 +17,65 @@ const KNOWN_SCHEMES: &[&str] = &[
     "tuic://",
 ];
 
-fn looks_like_uri_list(text: &str) -> bool {
-    text.lines()
-        .map(str::trim)
-        .find(|line| !line.is_empty())
-        .map(|first| {
-            KNOWN_SCHEMES
-                .iter()
-                .any(|scheme| first.to_ascii_lowercase().starts_with(scheme))
-        })
-        .unwrap_or(false)
+/// A subscription entry left out of the import, and why.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "kind", content = "name", rename_all = "camelCase")]
+pub enum Unsupported {
+    Protocol(String),
+    Transport(String),
+    Invalid,
 }
 
-fn parse_uri_list(text: &str) -> Result<Vec<ParsedOutbound>, SubscriptionError> {
+impl From<&SubscriptionError> for Unsupported {
+    fn from(error: &SubscriptionError) -> Self {
+        match error {
+            SubscriptionError::UnsupportedScheme(name)
+            | SubscriptionError::UnsupportedProtocol(name) => Self::Protocol(name.clone()),
+            SubscriptionError::UnsupportedTransport(name) => Self::Transport(name.clone()),
+            _ => Self::Invalid,
+        }
+    }
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub struct Parsed {
+    pub outbounds: Vec<ParsedOutbound>,
+    pub unsupported: Vec<Unsupported>,
+}
+
+type Entries = Vec<Result<ParsedOutbound, SubscriptionError>>;
+
+/// Transports sing-box has, by the names subscriptions use for them.
+const KNOWN_NETWORKS: &[&str] = &["tcp", "ws", "grpc", "http", "httpupgrade", "quic"];
+
+/// Rejects a transport sing-box does not have, so it never reaches the
+/// generated config, where it would stop the core from starting.
+fn check_transport(mut outbound: ParsedOutbound) -> Result<ParsedOutbound, SubscriptionError> {
+    let network = match &mut outbound {
+        ParsedOutbound::Vless(o) => &mut o.network,
+        ParsedOutbound::Vmess(o) => &mut o.network,
+        ParsedOutbound::Trojan(o) => &mut o.network,
+        _ => return Ok(outbound),
+    };
+    // Xray renamed plain TCP to `raw`.
+    if network.is_empty() || network == "raw" {
+        *network = "tcp".to_string();
+    }
+    if !KNOWN_NETWORKS.contains(&network.as_str()) {
+        return Err(SubscriptionError::UnsupportedTransport(network.clone()));
+    }
+    Ok(outbound)
+}
+
+fn looks_like_uri_list(text: &str) -> bool {
+    text.lines().map(str::trim).any(|line| {
+        KNOWN_SCHEMES
+            .iter()
+            .any(|scheme| line.to_ascii_lowercase().starts_with(scheme))
+    })
+}
+
+fn parse_uri_list(text: &str) -> Entries {
     text.lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
@@ -38,36 +86,49 @@ fn parse_uri_list(text: &str) -> Result<Vec<ParsedOutbound>, SubscriptionError> 
 /// Parses subscription content of any recognized shape: a plain or
 /// base64-encoded newline list of proxy URIs, a Clash YAML document
 /// (`proxies:`), or a sing-box JSON config (`outbounds`).
-pub fn parse_subscription(content: &str) -> Result<Vec<ParsedOutbound>, SubscriptionError> {
+///
+/// Entries this app cannot run are left out and listed in `unsupported`.
+/// When nothing is left, the first entry's error is returned, so a single
+/// bad key still says what is wrong with it.
+pub fn parse_subscription(content: &str) -> Result<Parsed, SubscriptionError> {
     let trimmed = content.trim();
     if trimmed.is_empty() {
         return Err(SubscriptionError::Empty);
     }
+    let entries = recognize(trimmed).ok_or(SubscriptionError::UnrecognizedFormat)?;
 
-    if looks_like_uri_list(trimmed) {
-        return parse_uri_list(trimmed);
-    }
-
-    if let Some(result) = try_parse_singbox_json(trimmed) {
-        return result;
-    }
-
-    if let Some(result) = try_parse_clash_yaml(trimmed) {
-        return result;
-    }
-
-    if let Some(decoded) = decode_base64_flexible(trimmed) {
-        if let Ok(text) = String::from_utf8(decoded) {
-            if looks_like_uri_list(&text) {
-                return parse_uri_list(&text);
+    let mut parsed = Parsed::default();
+    let mut first_error = None;
+    for entry in entries {
+        match entry.and_then(check_transport) {
+            Ok(outbound) => parsed.outbounds.push(outbound),
+            Err(error) => {
+                parsed.unsupported.push(Unsupported::from(&error));
+                first_error.get_or_insert(error);
             }
         }
     }
-
-    Err(SubscriptionError::UnrecognizedFormat)
+    if parsed.outbounds.is_empty() {
+        return Err(first_error.unwrap_or(SubscriptionError::Empty));
+    }
+    Ok(parsed)
 }
 
-fn try_parse_singbox_json(trimmed: &str) -> Option<Result<Vec<ParsedOutbound>, SubscriptionError>> {
+fn recognize(trimmed: &str) -> Option<Entries> {
+    if looks_like_uri_list(trimmed) {
+        return Some(parse_uri_list(trimmed));
+    }
+    if let Some(entries) = try_parse_singbox_json(trimmed) {
+        return Some(entries);
+    }
+    if let Some(entries) = try_parse_clash_yaml(trimmed) {
+        return Some(entries);
+    }
+    let text = String::from_utf8(decode_base64_flexible(trimmed)?).ok()?;
+    looks_like_uri_list(&text).then(|| parse_uri_list(&text))
+}
+
+fn try_parse_singbox_json(trimmed: &str) -> Option<Entries> {
     if !trimmed.starts_with('{') {
         return None;
     }
@@ -214,11 +275,11 @@ fn convert_singbox_outbound(
                 })
                 .unwrap_or_default(),
         })),
-        other => Err(fail(&format!("unsupported outbound type \"{other}\""))),
+        other => Err(SubscriptionError::UnsupportedProtocol(other.to_string())),
     }
 }
 
-fn try_parse_clash_yaml(trimmed: &str) -> Option<Result<Vec<ParsedOutbound>, SubscriptionError>> {
+fn try_parse_clash_yaml(trimmed: &str) -> Option<Entries> {
     let doc: serde_yaml::Value = serde_yaml::from_str(trimmed).ok()?;
     let proxies = doc.get("proxies")?.as_sequence()?;
 
@@ -355,7 +416,7 @@ fn convert_clash_proxy(
                 })
                 .unwrap_or_default(),
         })),
-        other => Err(fail(&format!("unsupported proxy type \"{other}\""))),
+        other => Err(SubscriptionError::UnsupportedProtocol(other.to_string())),
     }
 }
 
