@@ -151,7 +151,23 @@ export interface TestRun {
 export interface UpdateInfo {
   version: string
   url: string
+  /** False for the portable build and dev builds, which only get the link. */
+  installable: boolean
 }
+
+/** Mirrors `usecase::events::UpdateProgress`. */
+export interface UpdateProgress {
+  downloaded: number
+  /** Null when the server sends no length. */
+  total: number | null
+}
+
+/** How far the in-app update has got. */
+export type UpdateDownload =
+  | { phase: 'idle' }
+  | ({ phase: 'downloading' } & UpdateProgress)
+  | { phase: 'ready' }
+  | { phase: 'installing' }
 
 /** The most recent per-second speed sample from sing-box, in bytes/s. */
 export interface TrafficSample {

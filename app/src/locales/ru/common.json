@@ -13,7 +13,13 @@
     "collapse": "Свернуть боковую панель",
     "expand": "Развернуть боковую панель",
     "updateAvailable": "Доступна версия {{version}}",
-    "viewReleases": "Открыть релизы Kagerou"
+    "viewReleases": "Открыть релизы Kagerou",
+    "updateInstall": "Скачать и установить версию {{version}}",
+    "updateDownloading": "Загрузка {{percent}}%",
+    "updateDownloadingUnknown": "Загрузка…",
+    "updateReady": "Перезапустить для обновления",
+    "updateReadyHint": "Kagerou перезапустится в версии {{version}}. На время установки VPN отключится.",
+    "updateInstalling": "Установка…"
   },
   "actions": {
     "cancel": "Отмена",
@@ -77,7 +83,9 @@
     "importFailed": "Не удалось добавить эти VPN.",
     "subscriptionDeleteFailed": "Не удалось удалить подписку.",
     "supportOpenFailed": "Не удалось открыть страницу поддержки.",
-    "startupFailed": "Не удалось прочитать данные приложения."
+    "startupFailed": "Не удалось прочитать данные приложения.",
+    "updateDownloadFailed": "Не удалось скачать обновление.",
+    "updateInstallFailed": "Не удалось установить обновление."
   },
   "startup": {
     "title": "Kagerou не смог запуститься",
@@ -99,6 +107,7 @@
     "testRunInProgress": "Проверка уже идёт. Дождитесь её или остановите.",
     "lookupFailed": "Не удалось определить местоположение через туннель.",
     "systemSetting": "Система отклонила это изменение.",
-    "fileWrite": "Не удалось сохранить файл в этом месте."
+    "fileWrite": "Не удалось сохранить файл в этом месте.",
+    "updateFailed": "Не удалось скачать или установить обновление."
   }
 }

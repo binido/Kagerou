@@ -16,6 +16,7 @@ import type {
   Source,
   TestResult,
   UpdateInfo,
+  UpdateProgress,
   Unsupported,
 } from '@/types/kagerou'
 
@@ -67,6 +68,9 @@ export const kagerouApi = {
   getAppState: () => invoke<AppSnapshot>('get_app_state'),
   appDataDir: () => appDataDir(),
   checkForUpdate: () => invoke<UpdateInfo | null>('check_for_update'),
+  downloadUpdate: () => invoke<void>('download_update'),
+  /** Does not resolve on success: the app restarts into the new version. */
+  installUpdate: () => invoke<void>('install_update'),
   connect: () => invoke<void>('connect'),
   disconnect: () => invoke<void>('disconnect'),
   lookupExitLocation: () => invoke<ExitLocation | null>('lookup_exit_location'),
@@ -134,6 +138,8 @@ export const kagerouApi = {
     listen<string>('kagerou://tray-select-profile', (event) => handler(event.payload)),
   onLog: (handler: (line: string) => void) =>
     listen<string>('kagerou://log', (event) => handler(event.payload)),
+  onUpdateProgress: (handler: (progress: UpdateProgress) => void) =>
+    listen<UpdateProgress>('kagerou://update-progress', (event) => handler(event.payload)),
   onCrashed: (handler: (exitCode: number | null) => void) =>
     listen<number | null>('kagerou://crashed', (event) => handler(event.payload)),
 }

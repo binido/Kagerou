@@ -17,6 +17,7 @@ export type ErrorCode =
   | 'lookupFailed'
   | 'systemSetting'
   | 'fileWrite'
+  | 'updateFailed'
 
 export interface BackendError {
   code: ErrorCode

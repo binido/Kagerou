@@ -112,6 +112,11 @@ fn every_event_keeps_the_name_the_frontend_listens_on() {
         .name(),
         AppEvent::TrayToggleConnection.name(),
         AppEvent::TraySelectProfile(String::new()).name(),
+        AppEvent::UpdateProgress(UpdateProgress {
+            downloaded: 0,
+            total: None,
+        })
+        .name(),
     ];
     assert_eq!(
         names,
@@ -124,6 +129,19 @@ fn every_event_keeps_the_name_the_frontend_listens_on() {
             "kagerou://test-finished",
             "kagerou://tray-toggle-connection",
             "kagerou://tray-select-profile",
+            "kagerou://update-progress",
         ]
+    );
+}
+
+#[test]
+fn update_progress_serialises_camel_case_with_an_unknown_total_as_null() {
+    let progress = UpdateProgress {
+        downloaded: 512,
+        total: None,
+    };
+    assert_eq!(
+        serde_json::to_value(&progress).unwrap(),
+        serde_json::json!({ "downloaded": 512, "total": null })
     );
 }
