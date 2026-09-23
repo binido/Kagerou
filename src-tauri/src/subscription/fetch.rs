@@ -17,8 +17,14 @@ fn user_agent() -> String {
 }
 
 #[derive(Debug, Error)]
-#[error("could not fetch the subscription: {0}")]
-pub struct FetchError(#[from] reqwest::Error);
+pub enum FetchError {
+    #[error("could not fetch the subscription: {0}")]
+    Http(#[from] reqwest::Error),
+
+    /// Some panels serve only the clients on their own User-Agent list.
+    #[error("the provider refused this client: {0}")]
+    Refused(reqwest::StatusCode),
+}
 
 pub struct Fetched {
     pub body: String,
@@ -32,8 +38,12 @@ pub async fn fetch(url: &str) -> Result<Fetched, FetchError> {
         .header(reqwest::header::USER_AGENT, user_agent())
         .timeout(TIMEOUT)
         .send()
-        .await?
-        .error_for_status()?;
+        .await?;
+    let status = response.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return Err(FetchError::Refused(status));
+    }
+    let response = response.error_for_status()?;
     let title = response
         .headers()
         .get("profile-title")

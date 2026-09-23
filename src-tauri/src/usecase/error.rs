@@ -29,6 +29,8 @@ pub enum ErrorCode {
     Network,
     /// The subscription answered with something that is not a subscription.
     SubscriptionInvalid,
+    /// The provider would not hand the subscription to this app.
+    SubscriptionRefused,
     /// The text is not an http(s) link.
     NotASubscriptionUrl,
     /// This group is not a subscription, so it has nothing to refresh.
@@ -109,7 +111,11 @@ impl From<SubscriptionError> for AppError {
 
 impl From<FetchError> for AppError {
     fn from(error: FetchError) -> Self {
-        Self::new(ErrorCode::Network, error)
+        let code = match error {
+            FetchError::Refused(_) => ErrorCode::SubscriptionRefused,
+            FetchError::Http(_) => ErrorCode::Network,
+        };
+        Self::new(code, error)
     }
 }
 

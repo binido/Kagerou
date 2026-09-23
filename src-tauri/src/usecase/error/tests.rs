@@ -54,6 +54,7 @@ fn the_codes_keep_the_names_the_frontend_switches_on() {
         ErrorCode::CoreFailed,
         ErrorCode::Network,
         ErrorCode::SubscriptionInvalid,
+        ErrorCode::SubscriptionRefused,
         ErrorCode::NotASubscriptionUrl,
         ErrorCode::NotASubscription,
         ErrorCode::ActiveProfileInUse,
@@ -81,6 +82,7 @@ fn the_codes_keep_the_names_the_frontend_switches_on() {
             "coreFailed",
             "network",
             "subscriptionInvalid",
+            "subscriptionRefused",
             "notASubscriptionUrl",
             "notASubscription",
             "activeProfileInUse",
@@ -89,4 +91,10 @@ fn the_codes_keep_the_names_the_frontend_switches_on() {
             "systemSetting",
         ]
     );
+}
+
+#[test]
+fn a_provider_refusing_the_app_is_not_reported_as_a_network_failure() {
+    let error: AppError = FetchError::Refused(reqwest::StatusCode::FORBIDDEN).into();
+    assert_eq!(error.code, ErrorCode::SubscriptionRefused);
 }
