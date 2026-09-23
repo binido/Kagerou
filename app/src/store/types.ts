@@ -1,4 +1,5 @@
 import type { ConnectionSlice } from './slices/connection'
+import type { ConnectionsSlice } from './slices/connections'
 import type { LogsSlice } from './slices/logs'
 import type { ProfilesSlice } from './slices/profiles'
 import type { RoutingSlice } from './slices/routing'
@@ -12,6 +13,7 @@ import type { TestingSlice } from './slices/testing'
  * looks for something, not about walling the areas off from each other. */
 export type KagerouStore = ShellSlice &
   ConnectionSlice &
+  ConnectionsSlice &
   LogsSlice &
   ProfilesSlice &
   RoutingSlice &

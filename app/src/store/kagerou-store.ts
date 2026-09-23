@@ -4,6 +4,7 @@ import { kagerouApi } from '@/lib/tauri-api'
 import { TRAFFIC_HISTORY_LIMIT } from '@/types/kagerou'
 
 import { createConnectionSlice } from './slices/connection'
+import { createConnectionsSlice } from './slices/connections'
 import { appendLog, createLogsSlice } from './slices/logs'
 import { createProfilesSlice } from './slices/profiles'
 import { createRoutingSlice } from './slices/routing'
@@ -24,6 +25,7 @@ export const __resetBackendEventSubscriptionForTests = () => {
 export const useKagerouStore = create<KagerouStore>()((...args) => ({
   ...createShellSlice(...args),
   ...createConnectionSlice(...args),
+  ...createConnectionsSlice(...args),
   ...createLogsSlice(...args),
   ...createProfilesSlice(...args),
   ...createRoutingSlice(...args),
@@ -52,7 +54,13 @@ export const subscribeToBackendEvents = () => {
     setState(
       connected
         ? { connected, connectedSince: Date.now(), rulesChangedSinceConnect: false }
-        : { connected, connectedSince: null, trafficHistory: [], activeConnections: null },
+        : {
+            connected,
+            connectedSince: null,
+            trafficHistory: [],
+            activeConnections: null,
+            liveConnections: [],
+          },
     )
     // The exit only exists while the core does, so this is one of the two
     // moments worth asking - the other is a profile switch.
@@ -110,6 +118,7 @@ export const subscribeToBackendEvents = () => {
       connectedSince: null,
       trafficHistory: [],
       activeConnections: null,
+      liveConnections: [],
     }),
   )
 }

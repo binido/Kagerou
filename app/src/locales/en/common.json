@@ -7,6 +7,7 @@
     "dashboard": "Dashboard",
     "groups": "Groups",
     "routingRules": "Routing rules",
+    "connections": "Connections",
     "logs": "Logs",
     "settings": "Settings",
     "collapse": "Collapse sidebar",

@@ -1,0 +1,29 @@
+{
+  "page": {
+    "eyebrow": "Kagerou  /  Соединения",
+    "title": "Соединения",
+    "description": "Что сейчас открыто через ядро и куда оно выходит",
+    "count": "Открыто: {{count}}",
+    "closeAll": "Закрыть все",
+    "disconnectedTitle": "Нет подключения",
+    "disconnectedDescription": "Соединения появляются здесь, пока Kagerou подключён.",
+    "emptyTitle": "Ничего не открыто",
+    "emptyDescription": "Новые соединения появятся в течение секунды."
+  },
+  "table": {
+    "destination": "Адрес",
+    "network": "Сеть",
+    "exit": "Выход",
+    "rule": "Правило",
+    "traffic": "Приём / отдача",
+    "duration": "Длительность",
+    "direct": "Напрямую",
+    "block": "Заблокировано",
+    "unknown": "Неизвестно",
+    "close": "Закрыть соединение с {{host}}"
+  },
+  "feedback": {
+    "closeFailed": "Не удалось закрыть соединение.",
+    "closeAllFailed": "Не удалось закрыть соединения."
+  }
+}

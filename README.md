@@ -49,6 +49,7 @@ Most sing-box clients either expose a configuration file or hide the core behind
 - DNS over HTTPS through the proxy for remote queries.
 - Domain sniffing before routing, so domain rules can match connections accurately.
 - Download/upload speed, session totals, uptime, connection count, and a live speed chart.
+- A live list of open connections showing where each one exits, with close and close-all.
 - Optional exit-country and city lookup through `ipwho.is` from inside the tunnel.
 
 ### Interface

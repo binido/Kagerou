@@ -5,6 +5,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
+import { ConnectionsPage } from '@/pages/ConnectionsPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LogsPage } from '@/pages/LogsPage'
 import { GroupsPage } from '@/pages/GroupsPage'
@@ -59,6 +60,7 @@ function App() {
               <Route path="sources" element={<Navigate replace to="/groups" />} />
               <Route path="subscriptions" element={<Navigate replace to="/groups" />} />
               <Route path="routing-rules" element={<RoutingRulesPage />} />
+              <Route path="connections" element={<ConnectionsPage />} />
               <Route path="logs" element={<LogsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate replace to="/dashboard" />} />
