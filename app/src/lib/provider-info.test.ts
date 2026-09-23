@@ -34,9 +34,11 @@ describe('provider info', () => {
     expect(expiryTone(now - DAY, now)).toBe('bad')
   })
 
-  it('counts whole days towards now', () => {
-    expect(daysUntil(now + 2.9 * DAY, now)).toBe(2)
-    expect(daysUntil(now + 0.5 * DAY, now)).toBe(0)
-    expect(daysUntil(now - 1.5 * DAY, now)).toBe(-1)
+  it('counts calendar days, the way the date beside it reads', () => {
+    const evening = new Date(2026, 8, 23, 22, 0).getTime()
+    expect(daysUntil(new Date(2026, 8, 24, 1, 0).getTime(), evening)).toBe(1)
+    expect(daysUntil(new Date(2026, 8, 25, 21, 0).getTime(), evening)).toBe(2)
+    expect(daysUntil(new Date(2026, 8, 23, 23, 0).getTime(), evening)).toBe(0)
+    expect(daysUntil(new Date(2026, 8, 21, 23, 0).getTime(), evening)).toBe(-2)
   })
 })

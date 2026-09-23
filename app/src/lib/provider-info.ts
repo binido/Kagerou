@@ -16,6 +16,10 @@ export const usageTone = (used: number, total: number): ProviderTone =>
 export const expiryTone = (expiresAt: number, now: number): ProviderTone =>
   expiresAt <= now ? 'bad' : expiresAt - now < EXPIRY_WARNING_MS ? 'warn' : 'normal'
 
-/** Whole days to the end date, rounded towards now. Negative once it has passed. */
+const startOfDay = (millis: number): number => new Date(millis).setHours(0, 0, 0, 0)
+
+/** Calendar days from today to the end date, so it agrees with the date shown
+ * beside it. Negative once it has passed. Rounded because a day that crosses a
+ * DST change is an hour off 24. */
 export const daysUntil = (expiresAt: number, now: number): number =>
-  Math.trunc((expiresAt - now) / DAY_MS)
+  Math.round((startOfDay(expiresAt) - startOfDay(now)) / DAY_MS)
