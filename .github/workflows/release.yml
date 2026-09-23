@@ -112,6 +112,8 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: Kagerou ${{ github.ref_name }}
           releaseBody: |
+            ## Installing
+
             Bundles sing-box as its proxy core — nothing to install separately.
 
             **These builds are not notarised.** macOS may refuse to open the app; clear the quarantine flag it adds on download:
