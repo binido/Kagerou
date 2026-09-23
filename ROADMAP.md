@@ -427,7 +427,7 @@ user needs to know about.
   those errors inline. Failure paths and rollbacks are covered by store
   tests.
 
-- [ ] **No skip link, and `<main>` has no accessible name.**
+- [x] **No skip link, and `<main>` has no accessible name.**
   `app/src/components/layout/AppShell.tsx:9`.
 
   Six sidebar links sit ahead of the content on every page, and a keyboard

@@ -2,6 +2,10 @@
   "brand": {
     "name": "Kagerou"
   },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "mainContent": "Page content"
+  },
   "sidebar": {
     "primaryNavigation": "Primary navigation",
     "dashboard": "Dashboard",
