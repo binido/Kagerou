@@ -1,3 +1,4 @@
+import { SettingHint } from '@/components/settings/SettingHint'
 import { Switch } from '@/components/ui/switch'
 
 interface SettingSwitchRowProps {
@@ -17,11 +18,9 @@ export function SettingSwitchRow({
 }: SettingSwitchRowProps) {
   return (
     <div className="flex min-h-14 items-center justify-between gap-8 border-b border-hairline/55">
-      <div className="min-w-0">
-        <span className="block text-[14px] leading-5 text-body">{label}</span>
-        {description ? (
-          <p className="mt-1 text-[11px] leading-4 text-muted-copy">{description}</p>
-        ) : null}
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="text-[14px] leading-5 text-body">{label}</span>
+        {description ? <SettingHint description={description} /> : null}
       </div>
       <Switch
         aria-label={label}

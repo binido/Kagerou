@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { SettingHint } from '@/components/settings/SettingHint'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -35,15 +36,11 @@ export function SettingTextRow({ id, label, description, value, onChange }: Sett
 
   return (
     <div className="flex min-h-14 items-start justify-between gap-8 border-b border-hairline/55 py-3">
-      <div className="min-w-0 pt-1">
+      <div className="flex min-w-0 items-center gap-1.5 pt-1">
         <Label className="text-[14px] leading-5 text-body" htmlFor={id}>
           {label}
         </Label>
-        {description ? (
-          <p className="mt-1 text-[11px] leading-4 text-muted-copy" id={`${id}-description`}>
-            {description}
-          </p>
-        ) : null}
+        {description ? <SettingHint description={description} id={`${id}-description`} /> : null}
       </div>
       <div className="w-[240px] shrink-0">
         <Input
