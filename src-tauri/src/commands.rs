@@ -318,24 +318,6 @@ pub fn move_profile_to_group(
 }
 
 #[tauri::command]
-pub fn move_profile(id: String, direction: String, state: State<AppState>) -> Result<(), AppError> {
-    Ok(profiles::move_within_group(
-        &state.db,
-        &id,
-        direction.parse()?,
-    )?)
-}
-
-#[tauri::command]
-pub fn reorder_profiles(
-    from_id: String,
-    to_id: String,
-    state: State<AppState>,
-) -> Result<(), AppError> {
-    Ok(profiles::move_before(&state.db, &from_id, &to_id)?)
-}
-
-#[tauri::command]
 pub async fn run_profile_test(
     profile_id: String,
     state: State<'_, AppState>,

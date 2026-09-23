@@ -14,8 +14,6 @@ export interface ProfilesSlice {
   renameProfile: (id: string, name: string) => Promise<boolean>
   deleteProfile: (id: string) => Promise<void>
   moveProfileToGroup: (profileId: string, targetGroupId: string) => Promise<boolean>
-  moveProfile: (id: string, direction: 'up' | 'down') => Promise<boolean>
-  reorderProfiles: (fromId: string, toId: string) => Promise<boolean>
 }
 
 /** The VPNs themselves and the groups they sit in.
@@ -99,26 +97,6 @@ export const createProfilesSlice: Slice<ProfilesSlice> = (set, get) => ({
   moveProfileToGroup: async (profileId, targetGroupId) => {
     try {
       await kagerouApi.moveProfileToGroup(profileId, targetGroupId)
-      await refresh(set)
-      return true
-    } catch {
-      return false
-    }
-  },
-
-  moveProfile: async (id, direction) => {
-    try {
-      await kagerouApi.moveProfile(id, direction)
-      await refresh(set)
-      return true
-    } catch {
-      return false
-    }
-  },
-
-  reorderProfiles: async (fromId, toId) => {
-    try {
-      await kagerouApi.reorderProfiles(fromId, toId)
       await refresh(set)
       return true
     } catch {

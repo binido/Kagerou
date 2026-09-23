@@ -83,10 +83,6 @@ export const kagerouApi = {
   deleteProfile: (id: string) => invoke<void>('delete_profile', { id }),
   moveProfileToGroup: (profileId: string, targetGroupId: string) =>
     invoke<void>('move_profile_to_group', { profileId, targetGroupId }),
-  moveProfile: (id: string, direction: 'up' | 'down') =>
-    invoke<void>('move_profile', { id, direction }),
-  reorderProfiles: (fromId: string, toId: string) =>
-    invoke<void>('reorder_profiles', { fromId, toId }),
   exportLinks: (ids: string[]) => invoke<string[]>('export_links', { ids }),
   profileQrSvg: (id: string) => invoke<string>('profile_qr_svg', { id }),
   saveLinksToFile: (ids: string[], label: string) =>

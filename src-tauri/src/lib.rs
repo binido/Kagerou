@@ -135,8 +135,6 @@ pub fn run() {
             commands::rename_profile,
             commands::delete_profile,
             commands::move_profile_to_group,
-            commands::move_profile,
-            commands::reorder_profiles,
             commands::run_profile_test,
             commands::clear_test_results,
             commands::delete_unavailable_profiles,
