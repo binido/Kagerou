@@ -699,7 +699,7 @@ doing.
   This one is a trap for whoever adds a third preset, and it will look like
   a backend bug when it lands. **Good first issue.**
 
-- [ ] **The theme list is eight tab stops, and its arrow keys disagree with its grouping.**
+- [x] **The theme list is eight tab stops, and its arrow keys disagree with its grouping.**
   `app/src/components/settings/ThemeFlavorRow.tsx:36`,
   `app/src/components/settings/ThemePicker.tsx:55-73, 108`.
 

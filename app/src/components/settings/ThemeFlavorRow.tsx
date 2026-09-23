@@ -32,6 +32,8 @@ export const ThemeFlavorRow = forwardRef<HTMLButtonElement, ThemeFlavorRowProps>
         onClick={() => onSelect(theme.id)}
         onKeyDown={onKeyDown}
         role="radio"
+        // One tab stop for the whole list, the arrows move between rows.
+        tabIndex={active ? 0 : -1}
         type="button"
         variant="ghost"
       >

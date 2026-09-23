@@ -118,18 +118,17 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
         sideOffset={8}
       >
         <div className="flex min-h-0 flex-col" ref={contentRef}>
-          <div className="min-h-0 scroll-pt-[50px] overflow-y-auto">
+          <div
+            aria-label={t('theme.ariaLabel')}
+            className="min-h-0 scroll-pt-[50px] overflow-y-auto"
+            role="radiogroup"
+          >
             {themePacks.map((pack) => (
-              <section aria-labelledby={`${pack.id}-theme-pack`} key={pack.id}>
+              <div key={pack.id}>
                 <div className="sticky top-0 z-10 flex h-[50px] items-center justify-between border-b border-hairline bg-popover px-4">
                   <div className="flex items-center gap-2.5">
                     <span className="size-2 rounded-full bg-lavender" />
-                    <p
-                      className="type-display text-[14px] text-primary"
-                      id={`${pack.id}-theme-pack`}
-                    >
-                      {pack.name}
-                    </p>
+                    <p className="type-display text-[14px] text-primary">{pack.name}</p>
                   </div>
                   <span className="font-mono text-[10px] text-muted-copy">
                     {t('theme.installed', {
@@ -138,7 +137,7 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
                     })}
                   </span>
                 </div>
-                <div aria-label={pack.name} className="p-2" role="radiogroup">
+                <div className="p-2">
                   {pack.themes.map((theme, packIndex) => {
                     const themeIndex = allThemes.findIndex((candidate) => candidate.id === theme.id)
                     return (
@@ -157,7 +156,7 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
                     )
                   })}
                 </div>
-              </section>
+              </div>
             ))}
           </div>
           <div className="flex h-7 shrink-0 items-center border-t border-hairline px-4 font-mono text-[9px] text-quiet max-[640px]:hidden">
