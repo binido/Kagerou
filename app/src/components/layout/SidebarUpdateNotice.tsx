@@ -80,7 +80,7 @@ export function SidebarUpdateNotice({
       aria-disabled={busy || undefined}
       aria-label={hint}
       className={cn(
-        'group relative flex min-h-10 items-center gap-2 overflow-hidden rounded-lg border border-lavender/20 bg-lavender/10 px-2.5 py-2 text-[10px] leading-4 text-lavender-hi transition-colors hover:border-lavender/35 hover:bg-lavender/15 focus-visible:focus-ring',
+        'group relative flex min-h-10 w-full items-center gap-2 overflow-hidden rounded-lg border border-lavender/20 bg-lavender/10 px-2.5 py-2 text-[10px] leading-4 text-lavender-hi transition-colors hover:border-lavender/35 hover:bg-lavender/15 focus-visible:focus-ring',
         busy && 'cursor-default hover:border-lavender/20 hover:bg-lavender/10',
         collapsed && 'size-10 justify-center border-transparent bg-transparent p-0',
         'max-[960px]:size-10 max-[960px]:justify-center max-[960px]:border-transparent max-[960px]:bg-transparent max-[960px]:p-0',
