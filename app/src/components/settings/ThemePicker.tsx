@@ -82,7 +82,7 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
   }
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
+    <Popover modal onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
           aria-expanded={open}
@@ -112,49 +112,55 @@ export function ThemePicker({ value, onChange }: ThemePickerProps) {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-[432px] max-w-[calc(100vw-24px)] gap-0 rounded-md border-0 bg-popover p-0 text-popover-foreground shadow-none ring-0 theme-shadow"
+        className="max-h-(--radix-popover-content-available-height) w-[432px] max-w-[calc(100vw-24px)] gap-0 overflow-hidden rounded-md border-0 bg-popover p-0 text-popover-foreground shadow-none ring-0 theme-shadow"
+        collisionPadding={12}
         onOpenAutoFocus={(event) => event.preventDefault()}
         sideOffset={8}
       >
-        <div ref={contentRef}>
-          {themePacks.map((pack) => (
-            <section aria-labelledby={`${pack.id}-theme-pack`} key={pack.id}>
-              <div className="flex h-[50px] items-center justify-between border-b border-hairline px-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="size-2 rounded-full bg-lavender" />
-                  <p className="type-display text-[14px] text-primary" id={`${pack.id}-theme-pack`}>
-                    {pack.name}
-                  </p>
+        <div className="flex min-h-0 flex-col" ref={contentRef}>
+          <div className="min-h-0 scroll-pt-[50px] overflow-y-auto">
+            {themePacks.map((pack) => (
+              <section aria-labelledby={`${pack.id}-theme-pack`} key={pack.id}>
+                <div className="sticky top-0 z-10 flex h-[50px] items-center justify-between border-b border-hairline bg-popover px-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="size-2 rounded-full bg-lavender" />
+                    <p
+                      className="type-display text-[14px] text-primary"
+                      id={`${pack.id}-theme-pack`}
+                    >
+                      {pack.name}
+                    </p>
+                  </div>
+                  <span className="font-mono text-[10px] text-muted-copy">
+                    {t('theme.installed', {
+                      installed: pack.themes.length,
+                      total: pack.themes.length,
+                    })}
+                  </span>
                 </div>
-                <span className="font-mono text-[10px] text-muted-copy">
-                  {t('theme.installed', {
-                    installed: pack.themes.length,
-                    total: pack.themes.length,
+                <div aria-label={pack.name} className="p-2" role="radiogroup">
+                  {pack.themes.map((theme, packIndex) => {
+                    const themeIndex = allThemes.findIndex((candidate) => candidate.id === theme.id)
+                    return (
+                      <ThemeFlavorRow
+                        active={theme.id === activeTheme.id}
+                        isFirst={packIndex === 0}
+                        isLast={packIndex === pack.themes.length - 1}
+                        key={theme.id}
+                        onKeyDown={(event) => handleRowKeyDown(event, themeIndex)}
+                        onSelect={onChange}
+                        ref={(element) => {
+                          rowRefs.current[theme.id] = element
+                        }}
+                        theme={theme}
+                      />
+                    )
                   })}
-                </span>
-              </div>
-              <div aria-label={pack.name} className="p-2" role="radiogroup">
-                {pack.themes.map((theme, packIndex) => {
-                  const themeIndex = allThemes.findIndex((candidate) => candidate.id === theme.id)
-                  return (
-                    <ThemeFlavorRow
-                      active={theme.id === activeTheme.id}
-                      isFirst={packIndex === 0}
-                      isLast={packIndex === pack.themes.length - 1}
-                      key={theme.id}
-                      onKeyDown={(event) => handleRowKeyDown(event, themeIndex)}
-                      onSelect={onChange}
-                      ref={(element) => {
-                        rowRefs.current[theme.id] = element
-                      }}
-                      theme={theme}
-                    />
-                  )
-                })}
-              </div>
-            </section>
-          ))}
-          <div className="flex h-7 items-center border-t border-hairline px-4 font-mono text-[9px] text-quiet max-[640px]:hidden">
+                </div>
+              </section>
+            ))}
+          </div>
+          <div className="flex h-7 shrink-0 items-center border-t border-hairline px-4 font-mono text-[9px] text-quiet max-[640px]:hidden">
             {t('theme.keyboard')}
           </div>
         </div>
