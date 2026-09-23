@@ -38,6 +38,7 @@ Most sing-box clients either expose a configuration file or hide the core behind
 - Profile groups with drag-and-drop ordering.
 - Subscription sources loaded from a URL or pasted content.
 - Manual and scheduled subscription refresh.
+- Traffic used, limit, expiry date, announcements and support link, when the provider sends them.
 - Per-profile and group-wide connectivity tests.
 - Test results, progress reporting, and removal of unavailable profiles.
 - Live logs from the sing-box core.

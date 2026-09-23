@@ -166,5 +166,14 @@
     "progressCount": "{{done}} из {{total}}",
     "starting": "Запуск…",
     "stop": "Остановить"
+  },
+  "provider": {
+    "used": "Израсходовано {{used}} из {{total}}",
+    "usedUnlimited": "Израсходовано {{used}}, без лимита",
+    "expires": "Оплачено до {{date}} ({{relative}})",
+    "expired": "Истекла {{date}} ({{relative}})",
+    "support": "Поддержка",
+    "supportAria": "Открыть страницу поддержки {{name}} в браузере",
+    "announce": "Объявление провайдера"
   }
 }

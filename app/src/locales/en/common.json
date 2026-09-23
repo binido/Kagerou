@@ -76,6 +76,7 @@
     "deleteUnavailableFailed": "Could not delete the unavailable profiles.",
     "importFailed": "Could not add these VPNs.",
     "subscriptionDeleteFailed": "Could not delete the subscription.",
+    "supportOpenFailed": "Could not open the support page.",
     "startupFailed": "Could not read the app data."
   },
   "startup": {

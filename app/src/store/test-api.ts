@@ -38,6 +38,7 @@ export const kagerouApiMock = {
   updateSource: vi.fn(),
   refreshSource: vi.fn(),
   deleteSubscription: vi.fn(),
+  openSupportUrl: vi.fn(),
   setPreset: vi.fn(),
   selectRule: vi.fn(),
   updateRule: vi.fn(),

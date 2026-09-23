@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ProfileGroupActionsMenu } from '@/components/profiles/ProfileGroupActionsMenu'
 import { ProfileTable } from '@/components/profiles/ProfileTable'
+import { SubscriptionProviderInfo } from '@/components/profiles/SubscriptionProviderInfo'
 import { formatRelativeTime } from '@/lib/formatters'
+import { hasProviderInfo } from '@/lib/provider-info'
 import { cn } from '@/lib/utils'
 import type { Profile, ProfileGroup, Source } from '@/types/kagerou'
 
@@ -32,6 +34,7 @@ interface ProfileGroupCardProps {
   onChangeUrl: () => void
   onCopyUrl: () => void
   onDeleteSubscription: () => void
+  onOpenSupport: () => void
 }
 
 export function ProfileGroupCard({
@@ -56,6 +59,7 @@ export function ProfileGroupCard({
   onChangeUrl,
   onCopyUrl,
   onDeleteSubscription,
+  onOpenSupport,
 }: ProfileGroupCardProps) {
   const { i18n, t } = useTranslation('profiles')
   const { t: tc } = useTranslation('common')
@@ -155,6 +159,14 @@ export function ProfileGroupCard({
           />
         </div>
       </div>
+      {source && hasProviderInfo(source.provider) ? (
+        <SubscriptionProviderInfo
+          className={cn(group.open && 'border-b border-hairline')}
+          groupLabel={groupLabel}
+          info={source.provider}
+          onOpenSupport={onOpenSupport}
+        />
+      ) : null}
       {group.open ? (
         <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
           <ProfileTable

@@ -76,6 +76,7 @@
     "deleteUnavailableFailed": "Не удалось удалить недоступные профили.",
     "importFailed": "Не удалось добавить эти VPN.",
     "subscriptionDeleteFailed": "Не удалось удалить подписку.",
+    "supportOpenFailed": "Не удалось открыть страницу поддержки.",
     "startupFailed": "Не удалось прочитать данные приложения."
   },
   "startup": {
