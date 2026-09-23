@@ -680,7 +680,7 @@ doing.
   `app/src/pages/SettingsPage.tsx` needs one. Same shape for
   `PresetSwitchRow`. **Good first issue.**
 
-- [ ] **Preset labels are guessed from a hardcoded id.**
+- [x] **Preset labels are guessed from a hardcoded id.**
   `app/src/components/routing/PresetSwitchRow.tsx:9-11`.
 
   ```ts

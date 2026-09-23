@@ -6,12 +6,14 @@ import type { RoutingPreset } from '@/types/kagerou'
 type PresetLabelKey = 'presets.bypassLan.label' | 'presets.blockAds.label'
 type PresetDescriptionKey = 'presets.bypassLan.description' | 'presets.blockAds.description'
 
-const presetCopyKeys = (
-  id: string,
-): { label: PresetLabelKey; description: PresetDescriptionKey } =>
-  id === 'block-ads'
-    ? { label: 'presets.blockAds.label', description: 'presets.blockAds.description' }
-    : { label: 'presets.bypassLan.label', description: 'presets.bypassLan.description' }
+// Only the presets seeded by migration 0001 are translated, any other one shows the backend copy.
+const presetCopyKeys: Record<
+  string,
+  { label: PresetLabelKey; description: PresetDescriptionKey } | undefined
+> = {
+  'bypass-lan': { label: 'presets.bypassLan.label', description: 'presets.bypassLan.description' },
+  'block-ads': { label: 'presets.blockAds.label', description: 'presets.blockAds.description' },
+}
 
 export function PresetSwitchRow({
   preset,
@@ -22,14 +24,15 @@ export function PresetSwitchRow({
 }) {
   const { t } = useTranslation('routing')
   const { t: tc } = useTranslation('common')
-  const copyKeys = presetCopyKeys(preset.id)
-  const label = t(copyKeys.label)
+  const copyKeys = presetCopyKeys[preset.id]
+  const label = copyKeys ? t(copyKeys.label) : preset.label
+  const description = copyKeys ? t(copyKeys.description) : preset.description
 
   return (
     <div className="flex min-h-[62px] items-center justify-between gap-8 border-b border-hairline px-5 py-3 last:border-b-0">
       <div className="min-w-0">
         <p className="text-[13px] font-medium text-primary">{label}</p>
-        <p className="mt-1 text-[11px] leading-4 text-quiet">{t(copyKeys.description)}</p>
+        <p className="mt-1 text-[11px] leading-4 text-quiet">{description}</p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <span
