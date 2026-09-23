@@ -1,5 +1,6 @@
 use super::*;
 use crate::clash_api::test_support::spawn_http_mock;
+use crate::storage::models::ProviderInfo;
 use crate::subscription::parse_subscription;
 
 /// Two keys the parser accepts, named so a refresh can be seen to keep one
@@ -19,6 +20,7 @@ fn subscribed() -> (Db, String) {
         &db,
         "https://example.com/sub",
         "Example",
+        &ProviderInfo::default(),
         &outbounds(&[TOKYO, OSAKA]),
     )
     .unwrap();
@@ -169,4 +171,43 @@ async fn a_refresh_reports_what_it_left_out() {
 
     assert_eq!(unsupported, vec![Unsupported::Transport("xhttp".into())]);
     assert_eq!(names(&db), vec!["Tokyo".to_string()]);
+}
+
+#[tokio::test]
+async fn a_refresh_keeps_what_the_provider_says_now_and_forgets_what_it_stopped_saying() {
+    let (db, source_id) = subscribed();
+    sources::set_provider(
+        &db,
+        &source_id,
+        &ProviderInfo {
+            announce: Some("Old news".into()),
+            ..ProviderInfo::default()
+        },
+    )
+    .unwrap();
+    let url = spawn_http_mock(move |_| {
+        format!(
+            "HTTP/1.1 200 OK\r\n\
+             subscription-userinfo: upload=1; download=2; total=100; expire=1767225600\r\n\
+             support-url: https://support.example/\r\n\
+             Content-Length: {}\r\n\r\n{TOKYO}",
+            TOKYO.len()
+        )
+        .into_bytes()
+    })
+    .await;
+    update_source(&db, &source_id, None, Some(&url)).unwrap();
+
+    refresh(&db, &source_id).await.unwrap();
+
+    assert_eq!(
+        sources::get(&db, &source_id).unwrap().provider,
+        ProviderInfo {
+            traffic_used: Some(3),
+            traffic_total: Some(100),
+            expires_at: Some(1_767_225_600_000),
+            announce: None,
+            support_url: Some("https://support.example/".into()),
+        }
+    );
 }

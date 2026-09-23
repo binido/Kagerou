@@ -138,6 +138,7 @@ pub fn run() {
             commands::rename_profile_group,
             commands::update_source,
             commands::refresh_source,
+            commands::open_support_url,
             commands::import_from_text,
             commands::delete_subscription,
             commands::set_preset,

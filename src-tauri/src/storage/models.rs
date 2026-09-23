@@ -213,6 +213,22 @@ pub struct Source {
     pub status: String,
     pub last_refresh: String,
     pub origin_label: String,
+    pub provider: ProviderInfo,
+}
+
+/// What the provider said about the subscription on the last fetch. Every
+/// field is `None` when the provider did not say.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderInfo {
+    /// Bytes, upload and download together.
+    pub traffic_used: Option<i64>,
+    /// Bytes. `None` is no limit.
+    pub traffic_total: Option<i64>,
+    /// Unix milliseconds. `None` is no end date.
+    pub expires_at: Option<i64>,
+    pub announce: Option<String>,
+    pub support_url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

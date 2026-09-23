@@ -1,6 +1,6 @@
 use rusqlite::{params, OptionalExtension};
 
-use super::models::{NewSource, Source};
+use super::models::{NewSource, ProviderInfo, Source};
 use super::{Db, StorageError};
 
 /// `last_refresh` holds unix milliseconds as text, or the empty string for a
@@ -22,12 +22,19 @@ fn row_to_source(row: &rusqlite::Row) -> rusqlite::Result<Source> {
         status: row.get("status")?,
         last_refresh: row.get("last_refresh")?,
         origin_label: row.get("origin_label")?,
+        provider: ProviderInfo {
+            traffic_used: row.get("traffic_used")?,
+            traffic_total: row.get("traffic_total")?,
+            expires_at: row.get("expires_at")?,
+            announce: row.get("announce")?,
+            support_url: row.get("support_url")?,
+        },
     })
 }
 
 pub fn list_all(db: &Db) -> Result<Vec<Source>, StorageError> {
     let conn = db.lock();
-    let mut stmt = conn.prepare("SELECT id, name, type, value, status, last_refresh, origin_label FROM sources ORDER BY rowid")?;
+    let mut stmt = conn.prepare("SELECT * FROM sources ORDER BY rowid")?;
     let rows = stmt.query_map([], row_to_source)?;
     rows.collect::<Result<Vec<_>, _>>()
         .map_err(StorageError::from)
@@ -36,7 +43,7 @@ pub fn list_all(db: &Db) -> Result<Vec<Source>, StorageError> {
 pub fn get(db: &Db, id: &str) -> Result<Source, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT id, name, type, value, status, last_refresh, origin_label FROM sources WHERE id = ?1",
+        "SELECT * FROM sources WHERE id = ?1",
         params![id],
         row_to_source,
     )
@@ -89,6 +96,33 @@ pub fn update(db: &Db, id: &str, patch: &SourcePatch) -> Result<(), StorageError
             patch.value,
             patch.status,
             patch.last_refresh,
+            id
+        ],
+    )?;
+    if affected == 0 {
+        return Err(StorageError::NotFound);
+    }
+    Ok(())
+}
+
+/// Replaces what the provider said with what it says now. A field it
+/// stopped sending is cleared, not kept from an older fetch.
+pub fn set_provider(db: &Db, id: &str, info: &ProviderInfo) -> Result<(), StorageError> {
+    let conn = db.lock();
+    let affected = conn.execute(
+        "UPDATE sources SET
+            traffic_used = ?1,
+            traffic_total = ?2,
+            expires_at = ?3,
+            announce = ?4,
+            support_url = ?5
+         WHERE id = ?6",
+        params![
+            info.traffic_used,
+            info.traffic_total,
+            info.expires_at,
+            info.announce,
+            info.support_url,
             id
         ],
     )?;

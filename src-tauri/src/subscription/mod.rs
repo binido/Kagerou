@@ -2,6 +2,7 @@ mod error;
 pub mod fetch;
 mod formats;
 pub mod model;
+pub mod provider;
 mod uri;
 mod xray;
 

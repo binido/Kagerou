@@ -179,8 +179,19 @@ fn a_subscription_gets_its_own_group_and_is_found_by_url() {
     let db = Db::open_in_memory().unwrap();
     let url = "https://sub.example/list";
 
-    let outcome =
-        add_subscription(&db, url, "Work", &outbounds(&format!("{TOKYO}\n{RELAY}"))).unwrap();
+    let provider = ProviderInfo {
+        traffic_used: Some(3),
+        announce: Some("Hi".into()),
+        ..ProviderInfo::default()
+    };
+    let outcome = add_subscription(
+        &db,
+        url,
+        "Work",
+        &provider,
+        &outbounds(&format!("{TOKYO}\n{RELAY}")),
+    )
+    .unwrap();
 
     let ImportOutcome::SubscriptionAdded { group_id, added: 2 } = outcome else {
         panic!("expected a subscription of two, got {outcome:?}");
@@ -190,6 +201,8 @@ fn a_subscription_gets_its_own_group_and_is_found_by_url() {
         (group.kind.as_str(), group.label.as_str()),
         ("subscription", "Work")
     );
+    let source = sources::get(&db, group.source_id.as_deref().unwrap()).unwrap();
+    assert_eq!(source.provider, provider);
     assert!(profiles::list_all(&db)
         .unwrap()
         .iter()
@@ -205,9 +218,14 @@ fn a_subscription_gets_its_own_group_and_is_found_by_url() {
 }
 
 fn subscription_with_active_profile(db: &Db) -> (String, String) {
-    let ImportOutcome::SubscriptionAdded { group_id, .. } =
-        add_subscription(db, "https://sub.example", "Work", &outbounds(TOKYO)).unwrap()
-    else {
+    let ImportOutcome::SubscriptionAdded { group_id, .. } = add_subscription(
+        db,
+        "https://sub.example",
+        "Work",
+        &ProviderInfo::default(),
+        &outbounds(TOKYO),
+    )
+    .unwrap() else {
         unreachable!()
     };
     let active = groups::get(db, &group_id).unwrap().profile_ids[0].clone();

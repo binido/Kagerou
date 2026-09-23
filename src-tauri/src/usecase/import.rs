@@ -1,12 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
-use base64::Engine;
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::storage::models::{NewProfile, NewProfileGroup, NewSource, ProfileGroup, Protocol};
+use crate::storage::models::{
+    NewProfile, NewProfileGroup, NewSource, ProfileGroup, Protocol, ProviderInfo,
+};
 use crate::storage::{groups, profiles, settings, sources, Db, StorageError};
 use crate::subscription::model::ParsedOutbound;
+use crate::subscription::provider::decode_header_text;
 use crate::subscription::{self, Parsed, SubscriptionError, Unsupported};
 
 const DEFAULT_GROUP_ID: &str = "default";
@@ -98,17 +100,7 @@ fn new_id(prefix: &str) -> String {
 /// `base64:<text>` so that non-ASCII survives HTTP. Without one the host is
 /// the most recognisable thing left.
 pub fn subscription_name(profile_title: Option<&str>, url: &str) -> String {
-    let from_header = profile_title
-        .map(str::trim)
-        .and_then(|title| match title.strip_prefix("base64:") {
-            Some(encoded) => base64::engine::general_purpose::STANDARD
-                .decode(encoded.trim())
-                .ok()
-                .and_then(|bytes| String::from_utf8(bytes).ok()),
-            None => Some(title.to_string()),
-        })
-        .map(|title| title.trim().to_string())
-        .filter(|title| !title.is_empty());
+    let from_header = profile_title.and_then(decode_header_text);
     let from_host = || {
         url::Url::parse(url)
             .ok()
@@ -226,6 +218,7 @@ pub fn add_subscription(
     db: &Db,
     url: &str,
     name: &str,
+    provider: &ProviderInfo,
     outbounds: &[ParsedOutbound],
 ) -> Result<ImportOutcome, ImportError> {
     let source_id = new_id("source");
@@ -242,6 +235,7 @@ pub fn add_subscription(
             origin_label: "Remote URL".to_string(),
         },
     )?;
+    sources::set_provider(db, &source_id, provider)?;
     groups::insert(
         db,
         &NewProfileGroup {

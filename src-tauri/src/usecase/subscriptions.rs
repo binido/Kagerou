@@ -87,9 +87,10 @@ pub async fn refresh(db: &Db, source_id: &str) -> Result<Vec<Unsupported>, Subsc
     if source.kind != "url" {
         return Ok(Vec::new());
     }
-    let body = fetch::fetch(&source.value).await?.body;
-    let parsed = parse_subscription(&body)?;
+    let fetched = fetch::fetch(&source.value).await?;
+    let parsed = parse_subscription(&fetched.body)?;
     replace_group_profiles(db, source_id, &parsed.outbounds)?;
+    sources::set_provider(db, source_id, &fetched.provider)?;
     Ok(parsed.unsupported)
 }
 
@@ -120,7 +121,7 @@ pub async fn import_text(db: &Db, text: &str) -> Result<Imported, SubscriptionsE
     let parsed = parse_subscription(&fetched.body)?;
     let name = import::subscription_name(fetched.title.as_deref(), &url);
     Ok(Imported {
-        outcome: import::add_subscription(db, &url, &name, &parsed.outbounds)?,
+        outcome: import::add_subscription(db, &url, &name, &fetched.provider, &parsed.outbounds)?,
         unsupported: parsed.unsupported,
     })
 }

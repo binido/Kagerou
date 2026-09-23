@@ -2,6 +2,9 @@ use std::time::Duration;
 
 use thiserror::Error;
 
+use super::provider::provider_info;
+use crate::storage::models::ProviderInfo;
+
 /// Long enough for a slow provider, short enough that a dead URL does not
 /// leave the button spinning.
 const TIMEOUT: Duration = Duration::from_secs(15);
@@ -30,6 +33,7 @@ pub struct Fetched {
     pub body: String,
     /// The provider's `profile-title` header, still encoded.
     pub title: Option<String>,
+    pub provider: ProviderInfo,
 }
 
 pub async fn fetch(url: &str) -> Result<Fetched, FetchError> {
@@ -49,9 +53,11 @@ pub async fn fetch(url: &str) -> Result<Fetched, FetchError> {
         .get("profile-title")
         .and_then(|value| value.to_str().ok())
         .map(str::to_string);
+    let provider = provider_info(response.headers());
     Ok(Fetched {
         body: response.text().await?,
         title,
+        provider,
     })
 }
 

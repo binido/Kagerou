@@ -29,6 +29,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0010_unify_sources.sql"),
     include_str!("migrations/0011_subscription_refresh_time.sql"),
     include_str!("migrations/0012_test_outcome.sql"),
+    include_str!("migrations/0013_provider_info.sql"),
 ];
 
 /// A handle to the application's SQLite database.
