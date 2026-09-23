@@ -28,6 +28,7 @@
     "active": true,
     "category": "Utility",
     "targets": [
+      "app",
       "dmg",
       "deb",
       "rpm",
