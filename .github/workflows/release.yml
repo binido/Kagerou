@@ -115,6 +115,8 @@ jobs:
 
             Windows SmartScreen will warn for the same reason — choose "More info", then "Run anyway".
 
+            The Windows `portable.zip` needs no installation: unpack it and run `Kagerou.exe`. It needs the WebView2 runtime, which Windows 10 and 11 normally already have.
+
             See the [roadmap](https://github.com/binido/Kagerou/blob/main/ROADMAP.md) for what works, what is half-built, and what is not there yet.
           # Left as a draft on purpose: check the artifacts, write the notes,
           # then publish. Note that GitHub's "latest release" endpoint — the
@@ -124,3 +126,21 @@ jobs:
           # A tag carrying a pre-release suffix (v0.2.0-alpha.1) is marked as
           # one; a plain vX.Y.Z is not.
           prerelease: ${{ contains(github.ref_name, '-') }}
+
+      # No installer: the two executables side by side, since the app looks
+      # for sing-box next to its own exe. The build already put the sidecar
+      # there under its plain name. Settings still live in %APPDATA%.
+      - name: Attach the portable Windows build
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $out = "src-tauri/target/${{ matrix.target }}/release"
+          $dir = "Kagerou-portable"
+          New-Item -ItemType Directory $dir | Out-Null
+          Copy-Item "$out/kagerou.exe" "$dir/Kagerou.exe"
+          Copy-Item "$out/sing-box.exe" "$dir/sing-box.exe"
+          $zip = "Kagerou_${env:GITHUB_REF_NAME}_x64-portable.zip".Replace("_v", "_")
+          Compress-Archive -Path "$dir/*" -DestinationPath $zip
+          gh release upload "$env:GITHUB_REF_NAME" $zip --clobber

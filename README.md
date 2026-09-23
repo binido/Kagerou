@@ -139,7 +139,7 @@ The configured bundle targets are:
 
 - macOS: DMG;
 - Linux: DEB, RPM, and AppImage;
-- Windows: MSI and NSIS installer.
+- Windows: MSI and NSIS installer, plus a portable ZIP (`Kagerou.exe` and `sing-box.exe` side by side, no installation; settings still live in `%APPDATA%`, and it needs the WebView2 runtime, which Windows 10 and 11 normally already have).
 
 Builds are currently unsigned. macOS and Windows may show a security warning on first launch; this does not mean that the application is corrupted.
 
