@@ -78,6 +78,36 @@ pub async fn disconnect(app: AppHandle, state: State<'_, AppState>) -> Result<()
     connection::disconnect(&app, state.inner())
 }
 
+/// The core's open connections. Empty while disconnected: there is nothing
+/// to list, and the page polls through a disconnect.
+#[tauri::command]
+pub async fn list_connections(
+    state: State<'_, AppState>,
+) -> Result<Vec<connection::LiveConnection>, AppError> {
+    let Some(clash) = state.clash_client() else {
+        return Ok(Vec::new());
+    };
+    let response = clash.get_connections().await?;
+    let profiles = profiles::list_all(&state.db)?;
+    Ok(connection::live_connections(response, &profiles))
+}
+
+#[tauri::command]
+pub async fn close_connection(id: String, state: State<'_, AppState>) -> Result<(), AppError> {
+    if let Some(clash) = state.clash_client() {
+        clash.close_connection(&id).await?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn close_all_connections(state: State<'_, AppState>) -> Result<(), AppError> {
+    if let Some(clash) = state.clash_client() {
+        clash.close_all_connections().await?;
+    }
+    Ok(())
+}
+
 /// A cold sing-box takes a moment to listen. Four attempts two seconds apart
 /// covers that without leaving the location spinning for long if the tunnel is
 /// genuinely dead.

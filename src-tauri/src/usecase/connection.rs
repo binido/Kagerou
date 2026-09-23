@@ -1,13 +1,17 @@
+use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
 use super::core::{self, CoreSpec};
 use super::error::AppError;
 use super::events::{AppEvent, DashboardTrafficEvent, Events};
 use crate::app_state::AppState;
+use crate::clash_api::model::ConnectionsResponse;
 use crate::clash_api::{self, ClashApiClient, TrafficEvent};
 use crate::singbox::Status;
+use crate::storage::models::Profile;
 use crate::storage::{profiles, settings};
 
 /// How often the log pump drains the supervisor.
@@ -80,6 +84,82 @@ pub fn connected_since_millis(state: &AppState) -> Option<u64> {
         .duration_since(UNIX_EPOCH)
         .ok()
         .map(|d| d.as_millis() as u64)
+}
+
+/// One open connection as the connections page lists it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LiveConnection {
+    pub id: String,
+    pub host: String,
+    pub port: String,
+    pub network: String,
+    pub rule: String,
+    pub exit: ConnectionExit,
+    pub upload: u64,
+    pub download: u64,
+    /// RFC 3339, as the Clash API reports it.
+    pub start: String,
+}
+
+/// Where a connection leaves the machine.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum ConnectionExit {
+    Profile { name: String },
+    Direct,
+    Block,
+    Other { tag: String },
+}
+
+/// Names each connection's exit after the profile it went through.
+///
+/// A profile is found anywhere in the chain rather than at a fixed end,
+/// because the chain also holds the `proxy` selector in front of it.
+pub fn live_connections(
+    response: ConnectionsResponse,
+    profiles: &[Profile],
+) -> Vec<LiveConnection> {
+    let names: HashMap<&str, &str> = profiles
+        .iter()
+        .map(|p| (p.id.as_str(), p.name.as_str()))
+        .collect();
+    response
+        .connections
+        .into_iter()
+        .map(|c| {
+            let exit = if let Some(name) = c.chains.iter().find_map(|t| names.get(t.as_str())) {
+                ConnectionExit::Profile {
+                    name: name.to_string(),
+                }
+            } else if c.chains.iter().any(|t| t == "block") {
+                ConnectionExit::Block
+            } else if c.chains.iter().any(|t| t == "direct") {
+                ConnectionExit::Direct
+            } else {
+                ConnectionExit::Other {
+                    tag: c.chains.first().cloned().unwrap_or_default(),
+                }
+            };
+            // A connection made to an address has no host, only the IP.
+            let host = if c.metadata.host.is_empty() {
+                c.metadata.destination_ip
+            } else {
+                c.metadata.host
+            };
+            LiveConnection {
+                id: c.id,
+                host,
+                port: c.metadata.destination_port,
+                network: c.metadata.network,
+                rule: c.rule,
+                exit,
+                upload: c.upload,
+                download: c.download,
+                start: c.start,
+            }
+        })
+        .collect()
 }
 
 /// Turns the Clash API's traffic samples into what the dashboard draws.

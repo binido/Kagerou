@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+use crate::clash_api::ClashApiError;
 use crate::net::geo::GeoError;
 use crate::singbox::{ConfigError, ProcessError};
 use crate::storage::StorageError;
@@ -142,6 +143,12 @@ impl From<SubscriptionsError> for AppError {
                 Self::new(ErrorCode::NotASubscriptionUrl, error)
             }
         }
+    }
+}
+
+impl From<ClashApiError> for AppError {
+    fn from(error: ClashApiError) -> Self {
+        Self::new(ErrorCode::Network, error)
     }
 }
 
