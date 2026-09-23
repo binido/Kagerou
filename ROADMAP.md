@@ -860,7 +860,7 @@ doing.
   the ones `SettingSwitchRow` passes in, have the same specificity and win
   without it. **Good first issue.**
 
-- [ ] **Dead `aria-hidden` and an unnamed region on group panels.**
+- [x] **Dead `aria-hidden` and an unnamed region on group panels.**
   `app/src/components/profiles/ProfileGroupCard.tsx:59-60`.
 
   ```tsx
