@@ -843,7 +843,7 @@ doing.
   in the middle of a sentence. Gone with the sources page: the card that
   carried it was deleted when subscriptions moved onto the groups page.
 
-- [ ] **A disabled switch looks almost enabled.**
+- [x] **A disabled switch looks almost enabled.**
   `app/src/components/settings/SettingSwitchRow.tsx:18`,
   `app/src/components/ui/switch.tsx:20`.
 
@@ -853,10 +853,12 @@ doing.
   the next one that is. Give the state a shape of its own:
 
   ```
-  data-disabled:bg-transparent data-disabled:ring-1 data-disabled:ring-hairline
+  data-disabled:bg-transparent! data-disabled:ring-1 data-disabled:ring-hairline
   ```
 
-  **Good first issue.**
+  The background needs `!`: the checked and unchecked backgrounds, including
+  the ones `SettingSwitchRow` passes in, have the same specificity and win
+  without it. **Good first issue.**
 
 - [ ] **Dead `aria-hidden` and an unnamed region on group panels.**
   `app/src/components/profiles/ProfileGroupCard.tsx:59-60`.
