@@ -6,6 +6,7 @@ use super::model::{
     VlessOutbound, VmessOutbound,
 };
 use super::uri::{decode_base64_flexible, parse_uri};
+use super::xray::try_parse_xray_json;
 
 const KNOWN_SCHEMES: &[&str] = &[
     "vmess://",
@@ -23,6 +24,9 @@ const KNOWN_SCHEMES: &[&str] = &[
 pub enum Unsupported {
     Protocol(String),
     Transport(String),
+    /// Several servers behind an automatic pick, which one profile cannot hold.
+    Balancer,
+    Chain,
     Invalid,
 }
 
@@ -32,6 +36,8 @@ impl From<&SubscriptionError> for Unsupported {
             SubscriptionError::UnsupportedScheme(name)
             | SubscriptionError::UnsupportedProtocol(name) => Self::Protocol(name.clone()),
             SubscriptionError::UnsupportedTransport(name) => Self::Transport(name.clone()),
+            SubscriptionError::Balancer => Self::Balancer,
+            SubscriptionError::Chain => Self::Chain,
             _ => Self::Invalid,
         }
     }
@@ -43,7 +49,7 @@ pub struct Parsed {
     pub unsupported: Vec<Unsupported>,
 }
 
-type Entries = Vec<Result<ParsedOutbound, SubscriptionError>>;
+pub(super) type Entries = Vec<Result<ParsedOutbound, SubscriptionError>>;
 
 /// Transports sing-box has, by the names subscriptions use for them.
 const KNOWN_NETWORKS: &[&str] = &["tcp", "ws", "grpc", "http", "httpupgrade", "quic"];
@@ -85,7 +91,8 @@ fn parse_uri_list(text: &str) -> Entries {
 
 /// Parses subscription content of any recognized shape: a plain or
 /// base64-encoded newline list of proxy URIs, a Clash YAML document
-/// (`proxies:`), or a sing-box JSON config (`outbounds`).
+/// (`proxies:`), a sing-box JSON config (`outbounds`), or Xray JSON (one
+/// config or an array of them).
 ///
 /// Entries this app cannot run are left out and listed in `unsupported`.
 /// When nothing is left, the first entry's error is returned, so a single
@@ -117,6 +124,9 @@ pub fn parse_subscription(content: &str) -> Result<Parsed, SubscriptionError> {
 fn recognize(trimmed: &str) -> Option<Entries> {
     if looks_like_uri_list(trimmed) {
         return Some(parse_uri_list(trimmed));
+    }
+    if let Some(entries) = try_parse_xray_json(trimmed) {
+        return Some(entries);
     }
     if let Some(entries) = try_parse_singbox_json(trimmed) {
         return Some(entries);
@@ -154,7 +164,7 @@ fn try_parse_singbox_json(trimmed: &str) -> Option<Entries> {
     )
 }
 
-fn json_str(value: &serde_json::Value, key: &str) -> Option<String> {
+pub(super) fn json_str(value: &serde_json::Value, key: &str) -> Option<String> {
     match value.get(key)? {
         serde_json::Value::String(s) => Some(s.clone()),
         serde_json::Value::Number(n) => Some(n.to_string()),
@@ -162,7 +172,7 @@ fn json_str(value: &serde_json::Value, key: &str) -> Option<String> {
     }
 }
 
-fn json_bool(value: &serde_json::Value, key: &str) -> bool {
+pub(super) fn json_bool(value: &serde_json::Value, key: &str) -> bool {
     value.get(key).and_then(|v| v.as_bool()).unwrap_or(false)
 }
 

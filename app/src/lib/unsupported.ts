@@ -1,8 +1,19 @@
 import i18n from '@/i18n'
 import type { Unsupported } from '@/types/kagerou'
 
-const label = (entry: Unsupported): string =>
-  entry.kind === 'invalid' ? i18n.t('profiles:import.unreadableEntry') : entry.name
+const label = (entry: Unsupported): string => {
+  switch (entry.kind) {
+    case 'protocol':
+    case 'transport':
+      return entry.name
+    case 'balancer':
+      return i18n.t('profiles:import.autoSelectEntry')
+    case 'chain':
+      return i18n.t('profiles:import.chainEntry')
+    case 'invalid':
+      return i18n.t('profiles:import.unreadableEntry')
+  }
+}
 
 /** One line naming what an import left out and how many of each, or
  * `undefined` when it left out nothing. */

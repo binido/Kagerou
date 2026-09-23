@@ -82,7 +82,11 @@ export interface Source {
 
 /** Mirrors `subscription::Unsupported`: an entry an import left out. */
 export type Unsupported =
-  { kind: 'protocol'; name: string } | { kind: 'transport'; name: string } | { kind: 'invalid' }
+  | { kind: 'protocol'; name: string }
+  | { kind: 'transport'; name: string }
+  | { kind: 'balancer' }
+  | { kind: 'chain' }
+  | { kind: 'invalid' }
 
 /** Mirrors `import::Imported`: what a piece of pasted text became, and what
  * it held that could not be imported. */

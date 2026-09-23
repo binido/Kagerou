@@ -16,4 +16,10 @@ describe('describeUnsupported', () => {
     expect(line).toContain('3')
     expect(line).toContain('xhttp (2), ssr (1)')
   })
+
+  it('names reasons that carry no name of their own', () => {
+    const line = describeUnsupported([{ kind: 'balancer' }, { kind: 'chain' }, { kind: 'invalid' }])
+    expect(line).not.toContain('undefined')
+    expect(line).toContain('(1), ')
+  })
 })

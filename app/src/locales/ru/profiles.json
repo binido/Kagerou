@@ -26,6 +26,8 @@
     "alreadyPresent": "Этот VPN уже есть в группе «{{group}}»",
     "nothingNew": "Ничего нового · уже добавлено: {{count}}",
     "unsupported": "Не поддерживаются, пропущено: {{count}} - {{list}}",
+    "autoSelectEntry": "автовыбор",
+    "chainEntry": "цепочка серверов",
     "unreadableEntry": "нечитаемая запись"
   },
   "feedback": {

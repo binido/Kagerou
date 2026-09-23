@@ -3,6 +3,7 @@ pub mod fetch;
 mod formats;
 pub mod model;
 mod uri;
+mod xray;
 
 pub use error::SubscriptionError;
 pub use formats::{parse_subscription, Parsed, Unsupported};
