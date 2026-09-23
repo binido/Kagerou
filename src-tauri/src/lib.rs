@@ -71,7 +71,7 @@ pub fn run() {
             let state = AppState::new(db, sing_box_binary, config_path);
             // The same crash can leave the OS proxy pointed at a core that
             // is no longer there, which cuts off the whole machine.
-            singbox::system_proxy::clear_if_ours(state.paths.mixed_listen_port);
+            singbox::system_proxy::clear_if_ours(storage::settings::get(&state.db)?.mixed_port);
             app.manage(state);
 
             tray::create(app.handle())?;

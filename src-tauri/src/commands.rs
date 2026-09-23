@@ -123,14 +123,15 @@ const GEO_LOOKUP_RETRY_DELAY: Duration = Duration::from_secs(2);
 pub async fn lookup_exit_location(
     state: State<'_, AppState>,
 ) -> Result<Option<geo::ExitLocation>, AppError> {
-    if !settings::get(&state.db)?.geo_lookup {
+    let stored = settings::get(&state.db)?;
+    if !stored.geo_lookup {
         return Ok(None);
     }
     if !state.is_connected() {
         return Ok(None);
     }
 
-    let socks = format!("127.0.0.1:{}", state.paths.mixed_listen_port);
+    let socks = format!("127.0.0.1:{}", stored.mixed_port);
     let client = geo::GeoClient::through_socks(&socks)?;
 
     // `connect` announces the connection as soon as the process is spawned,
@@ -588,6 +589,14 @@ pub fn update_settings(
     state: State<AppState>,
     app: AppHandle,
 ) -> Result<(), AppError> {
+    // The running core, its OS proxy and the geo lookup all use the stored
+    // ports, so they must not move under a live connection.
+    if patch.changes_ports() && state.is_connected() {
+        return Err(AppError::new(
+            ErrorCode::InvalidInput,
+            "ports cannot change while connected",
+        ));
+    }
     let startup = patch.startup;
     settings::update(&state.db, &patch)?;
     if let Some(startup) = startup {

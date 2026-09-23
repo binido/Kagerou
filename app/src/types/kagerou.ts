@@ -193,6 +193,8 @@ export interface SettingsState {
   groupSort: GroupSortMode
   logLevel: SingBoxLogLevel
   testUrl: string
+  mixedPort: number
+  clashApiPort: number
 }
 
 /** Mirrors `usecase::connection::ConnectionExit`. */

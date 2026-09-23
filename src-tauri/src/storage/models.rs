@@ -288,4 +288,6 @@ pub struct Settings {
     pub group_sort: String,
     pub log_level: String,
     pub test_url: String,
+    pub mixed_port: u16,
+    pub clash_api_port: u16,
 }

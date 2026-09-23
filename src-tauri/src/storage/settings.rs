@@ -7,7 +7,7 @@ use super::{Db, StorageError};
 pub fn get(db: &Db) -> Result<Settings, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT theme, language, startup, tun_mode, system_proxy, auto_connect, geo_lookup, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level, test_url
+        "SELECT theme, language, startup, tun_mode, system_proxy, auto_connect, geo_lookup, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level, test_url, mixed_port, clash_api_port
          FROM settings WHERE id = 1",
         [],
         |row| {
@@ -26,6 +26,8 @@ pub fn get(db: &Db) -> Result<Settings, StorageError> {
                 group_sort: row.get("group_sort")?,
                 log_level: row.get("log_level")?,
                 test_url: row.get("test_url")?,
+                mixed_port: row.get("mixed_port")?,
+                clash_api_port: row.get("clash_api_port")?,
             })
         },
     )
@@ -56,6 +58,15 @@ pub struct SettingsPatch {
     pub group_sort: Option<String>,
     pub log_level: Option<String>,
     pub test_url: Option<String>,
+    pub mixed_port: Option<u16>,
+    pub clash_api_port: Option<u16>,
+}
+
+impl SettingsPatch {
+    /// Whether the patch touches the ports the running core listens on.
+    pub fn changes_ports(&self) -> bool {
+        self.mixed_port.is_some() || self.clash_api_port.is_some()
+    }
 }
 
 pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
@@ -96,7 +107,9 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             custom_subscription_update_minutes = COALESCE(?11, custom_subscription_update_minutes),
             group_sort = COALESCE(?12, group_sort),
             log_level = COALESCE(?13, log_level),
-            test_url = COALESCE(?14, test_url)
+            test_url = COALESCE(?14, test_url),
+            mixed_port = COALESCE(?15, mixed_port),
+            clash_api_port = COALESCE(?16, clash_api_port)
          WHERE id = 1",
         params![
             patch.theme.as_deref(),
@@ -113,6 +126,8 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             patch.group_sort.as_deref(),
             patch.log_level.as_deref(),
             patch.test_url.as_deref().map(str::trim),
+            patch.mixed_port,
+            patch.clash_api_port,
         ],
     )?;
     Ok(())

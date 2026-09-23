@@ -256,6 +256,63 @@ fn update_only_touches_provided_fields() {
 }
 
 #[test]
+fn ports_round_trip_and_default_to_2080_and_9090() {
+    let db = Db::open_in_memory().unwrap();
+    let defaults = get(&db).unwrap();
+    assert_eq!((defaults.mixed_port, defaults.clash_api_port), (2080, 9090));
+
+    update(
+        &db,
+        &SettingsPatch {
+            mixed_port: Some(7890),
+            clash_api_port: Some(9097),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let stored = get(&db).unwrap();
+    assert_eq!((stored.mixed_port, stored.clash_api_port), (7890, 9097));
+}
+
+#[test]
+fn update_rejects_port_zero_and_one_port_for_both_listeners() {
+    let db = Db::open_in_memory().unwrap();
+    for patch in [
+        SettingsPatch {
+            mixed_port: Some(0),
+            ..Default::default()
+        },
+        // equal to the stored Clash API port
+        SettingsPatch {
+            mixed_port: Some(9090),
+            ..Default::default()
+        },
+        SettingsPatch {
+            clash_api_port: Some(2080),
+            ..Default::default()
+        },
+    ] {
+        assert!(matches!(update(&db, &patch), Err(StorageError::Sqlite(_))));
+    }
+    let stored = get(&db).unwrap();
+    assert_eq!((stored.mixed_port, stored.clash_api_port), (2080, 9090));
+}
+
+#[test]
+fn only_a_port_change_counts_as_changing_ports() {
+    assert!(!SettingsPatch {
+        log_level: Some("debug".into()),
+        ..Default::default()
+    }
+    .changes_ports());
+    assert!(SettingsPatch {
+        clash_api_port: Some(9097),
+        ..Default::default()
+    }
+    .changes_ports());
+}
+
+#[test]
 fn update_rejects_an_invalid_language_via_the_check_constraint() {
     let db = Db::open_in_memory().unwrap();
     let err = update(

@@ -29,8 +29,6 @@ fn paths(dir: &std::path::Path) -> RuntimePaths {
     RuntimePaths {
         sing_box_binary: dir.join("sing-box"),
         config_path: dir.join("config.json"),
-        clash_api_listen: "127.0.0.1:9090".into(),
-        mixed_listen_port: 2080,
         test_config_path: dir.join("test-config.json"),
         test_clash_api_listen: "127.0.0.1:9091".into(),
         test_mixed_listen_port: 2081,
@@ -101,6 +99,61 @@ fn the_two_cores_never_share_a_config_file_or_a_port() {
     assert_ne!(connection.config_path, test.config_path);
     assert_ne!(connection.mixed_listen_port, test.mixed_listen_port);
     assert_ne!(connection.clash_api_listen, test.clash_api_listen);
+}
+
+#[test]
+fn the_connection_listens_on_the_stored_ports_and_only_on_loopback() {
+    let db = db_with_a_profile();
+    settings::update(
+        &db,
+        &settings::SettingsPatch {
+            mixed_port: Some(7890),
+            clash_api_port: Some(9097),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let stored = stored(&db);
+    let paths = paths(std::path::Path::new("/tmp"));
+    let connection = CoreSpec::connection(&paths, &stored);
+
+    assert_eq!(connection.mixed_listen_port, 7890);
+    assert_eq!(connection.clash_api_listen, "127.0.0.1:9097");
+}
+
+#[test]
+fn the_test_core_ports_cannot_be_stored_as_the_connection_ports() {
+    let state = crate::app_state::AppState::new(
+        Db::open_in_memory().unwrap(),
+        "sing-box".into(),
+        std::env::temp_dir().join("config.json"),
+    );
+    let test_ports = [
+        state.paths.test_mixed_listen_port,
+        state
+            .paths
+            .test_clash_api_listen
+            .rsplit_once(':')
+            .and_then(|(_, port)| port.parse().ok())
+            .unwrap(),
+    ];
+    for port in test_ports {
+        for patch in [
+            settings::SettingsPatch {
+                mixed_port: Some(port),
+                ..Default::default()
+            },
+            settings::SettingsPatch {
+                clash_api_port: Some(port),
+                ..Default::default()
+            },
+        ] {
+            assert!(
+                settings::update(&state.db, &patch).is_err(),
+                "port {port} belongs to the test core, see migration 0014"
+            );
+        }
+    }
 }
 
 #[test]

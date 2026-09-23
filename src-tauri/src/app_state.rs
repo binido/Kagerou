@@ -9,14 +9,11 @@ use crate::singbox::{SidecarLauncher, Supervisor};
 use crate::storage::Db;
 use crate::usecase::testing::TestCore;
 
-/// Paths and network addresses resolved once at startup (sidecar binary
-/// location, where the generated sing-box config is written, and the
-/// loopback ports sing-box's inbounds/Clash API listen on).
+/// Paths and test-core addresses resolved once at startup. The connection's
+/// own ports are settings, read on every connect.
 pub struct RuntimePaths {
     pub sing_box_binary: PathBuf,
     pub config_path: PathBuf,
-    pub clash_api_listen: String,
-    pub mixed_listen_port: u16,
     /// The test core runs alongside a live connection, so it cannot share the
     /// connection's ports or its config file.
     pub test_config_path: PathBuf,
@@ -52,9 +49,8 @@ impl AppState {
         let paths = RuntimePaths {
             sing_box_binary: sing_box_binary.clone(),
             config_path,
-            clash_api_listen: "127.0.0.1:9090".to_string(),
-            mixed_listen_port: 2080,
             test_config_path,
+            // Reserved by migration 0014, so a user port never collides.
             test_clash_api_listen: "127.0.0.1:9091".to_string(),
             test_mixed_listen_port: 2081,
         };
@@ -63,7 +59,8 @@ impl AppState {
             supervisor: Mutex::new(Supervisor::new(SidecarLauncher {
                 binary_path: sing_box_binary.clone(),
                 run_dir: run_dir.clone(),
-                system_proxy_port: paths.mixed_listen_port,
+                // Replaced from settings on every connect.
+                system_proxy_port: 0,
             })),
             clash: Mutex::new(None),
             traffic_stop: Mutex::new(None),

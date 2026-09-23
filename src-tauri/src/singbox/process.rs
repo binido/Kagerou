@@ -401,6 +401,10 @@ impl<L: Launcher> Supervisor<L> {
         }
     }
 
+    pub fn launcher_mut(&mut self) -> &mut L {
+        &mut self.launcher
+    }
+
     pub fn status(&self) -> &Status {
         &self.status
     }
