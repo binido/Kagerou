@@ -46,17 +46,19 @@ export function ConnectionsTable({ connections, now, onClose }: ConnectionsTable
 
   return (
     <div className="overflow-x-auto rounded-[10px] bg-surface ring-1 ring-inset ring-hairline/55">
-      <Table className="min-w-[760px]">
+      <Table className="min-w-[560px] table-fixed">
         <TableHeader>
           <TableRow className="border-b border-hairline/55 hover:bg-transparent">
             <TableHead className={`${headClassName} pl-5`}>{t('table.destination')}</TableHead>
-            <TableHead className={`${headClassName} w-[72px]`}>{t('table.network')}</TableHead>
-            <TableHead className={`${headClassName} w-[160px]`}>{t('table.exit')}</TableHead>
-            <TableHead className={`${headClassName} w-[160px]`}>{t('table.rule')}</TableHead>
+            <TableHead className={`${headClassName} w-[88px]`}>{t('table.network')}</TableHead>
+            <TableHead className={`${headClassName} w-[120px]`}>{t('table.exit')}</TableHead>
+            <TableHead className={`${headClassName} w-[180px] max-[1100px]:hidden`}>
+              {t('table.rule')}
+            </TableHead>
             <TableHead className={`${headClassName} w-[150px] text-right`}>
               {t('table.traffic')}
             </TableHead>
-            <TableHead className={`${headClassName} w-[88px] text-right`}>
+            <TableHead className={`${headClassName} w-[72px] text-right`}>
               {t('table.duration')}
             </TableHead>
             <TableHead className="w-12 px-3 py-3">
@@ -73,10 +75,7 @@ export function ConnectionsTable({ connections, now, onClose }: ConnectionsTable
                 className="group h-[42px] border-b border-hairline/55 text-[12px] text-body transition-colors hover:bg-row-hover"
                 key={connection.id}
               >
-                <TableCell
-                  className="max-w-0 truncate px-3 py-2 pl-5 font-mono"
-                  title={destination}
-                >
+                <TableCell className="truncate px-3 py-2 pl-5 font-mono" title={destination}>
                   {destination}
                 </TableCell>
                 <TableCell className="px-3 py-2 uppercase text-quiet">
@@ -85,15 +84,15 @@ export function ConnectionsTable({ connections, now, onClose }: ConnectionsTable
                 <TableCell
                   className={
                     connection.exit.kind === 'block'
-                      ? 'max-w-0 truncate px-3 py-2 text-bad'
-                      : 'max-w-0 truncate px-3 py-2'
+                      ? 'truncate px-3 py-2 text-bad'
+                      : 'truncate px-3 py-2'
                   }
                   title={exit}
                 >
                   {exit}
                 </TableCell>
                 <TableCell
-                  className="max-w-0 truncate px-3 py-2 text-quiet"
+                  className="truncate px-3 py-2 text-quiet max-[1100px]:hidden"
                   title={connection.rule}
                 >
                   {connection.rule}
