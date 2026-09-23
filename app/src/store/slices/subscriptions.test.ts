@@ -154,3 +154,14 @@ describe('refreshing a subscription', () => {
     expect(api.getAppState).toHaveBeenCalled()
   })
 })
+
+describe('opening the provider support page', () => {
+  it('asks the backend by source id and says so when it cannot', async () => {
+    api.openSupportUrl.mockRejectedValue({ code: 'notFound', detail: 'no support link' })
+
+    await useKagerouStore.getState().openSupportUrl('source-1')
+
+    expect(api.openSupportUrl).toHaveBeenCalledWith('source-1')
+    expect(toast.error).toHaveBeenCalledWith(en.errors.notFound)
+  })
+})

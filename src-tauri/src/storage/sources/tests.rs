@@ -130,3 +130,29 @@ fn deleting_a_source_clears_but_does_not_delete_its_profiles() {
     let profile = crate::storage::profiles::get(&db, "p1").unwrap();
     assert_eq!(profile.source_id, None);
 }
+
+#[test]
+fn a_new_source_knows_nothing_about_its_provider_until_told() {
+    let db = Db::open_in_memory().unwrap();
+    insert(&db, &source("s1", "https://example.com/sub")).unwrap();
+    assert_eq!(get(&db, "s1").unwrap().provider, ProviderInfo::default());
+
+    let info = ProviderInfo {
+        traffic_used: Some(i64::MAX),
+        traffic_total: Some(100),
+        expires_at: Some(1_767_225_600_000),
+        announce: Some("Привет".into()),
+        support_url: Some("https://support.example/".into()),
+    };
+    set_provider(&db, "s1", &info).unwrap();
+    assert_eq!(get(&db, "s1").unwrap().provider, info);
+}
+
+#[test]
+fn provider_info_for_a_missing_source_is_not_found() {
+    let db = Db::open_in_memory().unwrap();
+    assert!(matches!(
+        set_provider(&db, "nope", &ProviderInfo::default()).unwrap_err(),
+        StorageError::NotFound
+    ));
+}

@@ -102,6 +102,7 @@ export const kagerouApi = {
     invoke<void>('update_source', { id, patch }),
   refreshSource: (id: string) => invoke<Unsupported[]>('refresh_source', { id }),
   deleteSubscription: (groupId: string) => invoke<void>('delete_subscription', { groupId }),
+  openSupportUrl: (sourceId: string) => invoke<void>('open_support_url', { id: sourceId }),
 
   setPreset: (id: string, enabled: boolean) => invoke<void>('set_preset', { id, enabled }),
   selectRule: (id: string) => invoke<void>('select_rule', { id }),

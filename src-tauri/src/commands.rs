@@ -380,6 +380,26 @@ pub async fn refresh_source(
         .map_err(AppError::from)
 }
 
+/// Opens the provider's support link in the browser.
+///
+/// Takes the source id rather than the link, so the window can only open a
+/// link the subscription parser already accepted as http(s).
+#[tauri::command]
+pub fn open_support_url(
+    id: String,
+    app: AppHandle,
+    state: State<AppState>,
+) -> Result<(), AppError> {
+    use tauri_plugin_opener::OpenerExt;
+    let url = sources::get(&state.db, &id)?
+        .provider
+        .support_url
+        .ok_or_else(|| AppError::new(ErrorCode::NotFound, "the provider sent no support link"))?;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| AppError::new(ErrorCode::SystemSetting, e))
+}
+
 #[tauri::command]
 pub async fn import_from_text(
     text: String,

@@ -12,6 +12,7 @@ export interface SubscriptionsSlice {
   updateSource: (id: string, patch: Partial<Pick<Source, 'name' | 'value'>>) => Promise<boolean>
   refreshSource: (id: string) => Promise<Unsupported[]>
   deleteSubscription: (groupId: string) => Promise<boolean>
+  openSupportUrl: (sourceId: string) => Promise<void>
 }
 
 /** Getting VPNs in, and keeping the subscriptions they came from current. */
@@ -73,6 +74,14 @@ export const createSubscriptionsSlice: Slice<SubscriptionsSlice> = (set, get) =>
     } catch (error) {
       report(error, 'common:feedback.subscriptionDeleteFailed')
       return false
+    }
+  },
+
+  openSupportUrl: async (sourceId) => {
+    try {
+      await kagerouApi.openSupportUrl(sourceId)
+    } catch (error) {
+      report(error, 'common:feedback.supportOpenFailed')
     }
   },
 })

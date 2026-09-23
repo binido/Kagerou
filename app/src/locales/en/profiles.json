@@ -166,5 +166,14 @@
     "progressCount": "{{done}} of {{total}}",
     "starting": "Starting…",
     "stop": "Stop"
+  },
+  "provider": {
+    "used": "{{used}} of {{total}} used",
+    "usedUnlimited": "{{used}} used, no limit",
+    "expires": "Paid until {{date}} ({{relative}})",
+    "expired": "Expired {{date}} ({{relative}})",
+    "support": "Support",
+    "supportAria": "Open the support page for {{name}} in the browser",
+    "announce": "Provider announcement"
   }
 }

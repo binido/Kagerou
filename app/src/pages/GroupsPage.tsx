@@ -39,6 +39,7 @@ export function GroupsPage() {
   const renameProfile = useKagerouStore((state) => state.renameProfile)
   const deleteProfile = useKagerouStore((state) => state.deleteProfile)
   const moveProfileToGroup = useKagerouStore((state) => state.moveProfileToGroup)
+  const openSupportUrl = useKagerouStore((state) => state.openSupportUrl)
   const addProfileGroup = useKagerouStore((state) => state.addProfileGroup)
   const renameProfileGroup = useKagerouStore((state) => state.renameProfileGroup)
   const testRun = useKagerouStore((state) => state.testRun)
@@ -194,6 +195,9 @@ export function GroupsPage() {
               }}
               onDelete={setDeleteTarget}
               onDeleteSubscription={() => subscriptions.askToDelete(group)}
+              onOpenSupport={() => {
+                if (source) void openSupportUrl(source.id)
+              }}
               onDeleteUnavailable={() => testing.askToRemoveUnavailable(group)}
               onMoveToGroup={(profileId, targetGroupId) => {
                 void moveToGroup(profileId, targetGroupId)

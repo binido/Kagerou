@@ -79,6 +79,20 @@ export interface Source {
   /** Unix milliseconds as text, empty when never refreshed. */
   lastRefresh: string
   originLabel: 'Remote URL'
+  provider: ProviderInfo
+}
+
+/** Mirrors `storage::models::ProviderInfo`: what the provider said on the
+ * last fetch, `null` wherever it said nothing. */
+export interface ProviderInfo {
+  /** Bytes, upload and download together. */
+  trafficUsed: number | null
+  /** Bytes. `null` is no limit. */
+  trafficTotal: number | null
+  /** Unix milliseconds. `null` is no end date. */
+  expiresAt: number | null
+  announce: string | null
+  supportUrl: string | null
 }
 
 /** Mirrors `subscription::Unsupported`: an entry an import left out. */
