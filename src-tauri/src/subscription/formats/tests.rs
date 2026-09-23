@@ -212,3 +212,40 @@ fn garbage_that_happens_to_be_valid_base64_but_not_a_uri_list_is_rejected() {
     let err = parse_subscription(&encoded).unwrap_err();
     assert!(matches!(err, SubscriptionError::UnrecognizedFormat));
 }
+
+#[test]
+fn parses_a_sip008_document() {
+    let json = serde_json::json!({
+        "version": 1,
+        "servers": [
+            { "remarks": "Tokyo", "server": "jp.example.com", "server_port": 8388, "method": "chacha20-ietf-poly1305", "password": "synthetic" },
+            { "server": "obfs.example.com", "server_port": 8388, "method": "aes-256-gcm", "password": "p", "plugin": "obfs-local", "plugin_opts": "obfs=http" },
+            { "server": "broken.example.com", "method": "aes-256-gcm", "password": "p" }
+        ]
+    });
+    let parsed = parse_subscription(&json.to_string()).unwrap();
+    assert_eq!(parsed.outbounds.len(), 1);
+    match &parsed.outbounds[0] {
+        ParsedOutbound::Shadowsocks(s) => {
+            assert_eq!(s.name, "Tokyo");
+            assert_eq!(s.port, 8388);
+        }
+        other => panic!("expected Shadowsocks, got {other:?}"),
+    }
+    assert_eq!(
+        parsed.unsupported,
+        vec![
+            Unsupported::Protocol("ss+obfs-local".into()),
+            Unsupported::Invalid
+        ]
+    );
+}
+
+#[test]
+fn a_sip008_document_with_no_usable_server_is_rejected() {
+    let json = serde_json::json!({ "version": 1, "servers": [ { "server": "x.example.com" } ] });
+    assert!(matches!(
+        parse_subscription(&json.to_string()),
+        Err(SubscriptionError::InvalidSip008Server { .. })
+    ));
+}

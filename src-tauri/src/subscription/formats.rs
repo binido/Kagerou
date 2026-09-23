@@ -91,8 +91,8 @@ fn parse_uri_list(text: &str) -> Entries {
 
 /// Parses subscription content of any recognized shape: a plain or
 /// base64-encoded newline list of proxy URIs, a Clash YAML document
-/// (`proxies:`), a sing-box JSON config (`outbounds`), or Xray JSON (one
-/// config or an array of them).
+/// (`proxies:`), a sing-box JSON config (`outbounds`), Xray JSON (one
+/// config or an array of them), or a Shadowsocks SIP008 document (`servers`).
 ///
 /// Entries this app cannot run are left out and listed in `unsupported`.
 /// When nothing is left, the first entry's error is returned, so a single
@@ -131,6 +131,9 @@ fn recognize(trimmed: &str) -> Option<Entries> {
     if let Some(entries) = try_parse_singbox_json(trimmed) {
         return Some(entries);
     }
+    if let Some(entries) = try_parse_sip008(trimmed) {
+        return Some(entries);
+    }
     if let Some(entries) = try_parse_clash_yaml(trimmed) {
         return Some(entries);
     }
@@ -162,6 +165,50 @@ fn try_parse_singbox_json(trimmed: &str) -> Option<Entries> {
             .map(|(index, entry)| convert_singbox_outbound(index, entry))
             .collect(),
     )
+}
+
+fn try_parse_sip008(trimmed: &str) -> Option<Entries> {
+    if !trimmed.starts_with('{') {
+        return None;
+    }
+    let json: serde_json::Value = serde_json::from_str(trimmed).ok()?;
+    let servers = json.get("servers")?.as_array()?;
+    Some(
+        servers
+            .iter()
+            .enumerate()
+            .map(|(index, entry)| convert_sip008_server(index, entry))
+            .collect(),
+    )
+}
+
+fn convert_sip008_server(
+    index: usize,
+    entry: &serde_json::Value,
+) -> Result<ParsedOutbound, SubscriptionError> {
+    let fail = |reason: &str| SubscriptionError::InvalidSip008Server {
+        index,
+        reason: reason.to_string(),
+    };
+    let server = json_str(entry, "server").ok_or_else(|| fail("missing \"server\""))?;
+    let port: u16 = json_str(entry, "server_port")
+        .ok_or_else(|| fail("missing \"server_port\""))?
+        .parse()
+        .map_err(|_| fail("\"server_port\" is not a valid port number"))?;
+    // A plugin (obfs, v2ray-plugin) wraps the traffic, and the model has
+    // nowhere to keep it. Without it the server would not answer.
+    if let Some(plugin) = json_str(entry, "plugin").filter(|p| !p.is_empty()) {
+        return Err(SubscriptionError::UnsupportedProtocol(format!(
+            "ss+{plugin}"
+        )));
+    }
+    Ok(ParsedOutbound::Shadowsocks(ShadowsocksOutbound {
+        name: json_str(entry, "remarks").unwrap_or_else(|| format!("shadowsocks {server}")),
+        server,
+        port,
+        method: json_str(entry, "method").ok_or_else(|| fail("missing \"method\""))?,
+        password: json_str(entry, "password").ok_or_else(|| fail("missing \"password\""))?,
+    }))
 }
 
 pub(super) fn json_str(value: &serde_json::Value, key: &str) -> Option<String> {
