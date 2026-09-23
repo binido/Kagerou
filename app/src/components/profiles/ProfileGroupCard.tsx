@@ -74,99 +74,95 @@ export function ProfileGroupCard({
     : ''
 
   return (
-    <Card className="overflow-visible rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
-      <div
-        className={cn(
-          'flex min-h-[74px] items-center justify-between gap-5 border-b border-hairline px-5',
-          !group.open && 'border-b-transparent',
-        )}
-      >
-        <Button
-          aria-controls={`${group.id}-panel`}
-          aria-expanded={group.open}
-          className="min-w-0 flex-1 justify-start gap-3 !bg-transparent py-2 text-left text-primary hover:!bg-transparent focus-visible:!bg-transparent hover:text-lavender-hi"
-          onClick={onToggle}
-          type="button"
-          variant="ghost"
-        >
-          {group.open ? (
-            <ChevronDown
-              aria-hidden="true"
-              className="size-[18px] shrink-0 text-muted-copy"
-              strokeWidth={1.7}
-            />
-          ) : (
-            <ChevronRight
-              aria-hidden="true"
-              className="size-[18px] shrink-0 text-muted-copy"
-              strokeWidth={1.7}
-            />
-          )}
-          <span className="min-w-0">
-            <span className="block truncate text-[17px] font-semibold tracking-[-0.015em]">
-              {groupLabel}
-            </span>
-            <span className="mt-1 block truncate text-[12px] font-normal text-muted-copy">
-              {profileCount}
-              {isDefault ? t('group.singleKeysStartHere') : ''}
-              {lastRefresh ? ` · ${refreshing ? t('actions.refreshing') : lastRefresh}` : ''}
-            </span>
-          </span>
-        </Button>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {isSubscription ? (
-            <>
-              <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy max-[720px]:hidden">
-                <Rss aria-hidden="true" className="size-3.5" />
-                {t('group.subscriptionGroup')}
+    <Card className="gap-0 overflow-visible rounded-[10px] border border-hairline bg-surface p-0 shadow-none">
+      <div className={cn('border-b border-hairline', !group.open && 'border-b-transparent')}>
+        <div className="flex min-h-[74px] items-center justify-between gap-5 px-5">
+          <Button
+            aria-controls={`${group.id}-panel`}
+            aria-expanded={group.open}
+            className="min-w-0 flex-1 justify-start gap-3 !bg-transparent py-2 text-left text-primary hover:!bg-transparent focus-visible:!bg-transparent hover:text-lavender-hi"
+            onClick={onToggle}
+            type="button"
+            variant="ghost"
+          >
+            {group.open ? (
+              <ChevronDown
+                aria-hidden="true"
+                className="size-[18px] shrink-0 text-muted-copy"
+                strokeWidth={1.7}
+              />
+            ) : (
+              <ChevronRight
+                aria-hidden="true"
+                className="size-[18px] shrink-0 text-muted-copy"
+                strokeWidth={1.7}
+              />
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-[17px] font-semibold tracking-[-0.015em]">
+                {groupLabel}
               </span>
-              <Button
-                aria-label={t('actions.refreshAria', { name: groupLabel })}
-                className="ml-2 h-9 gap-2 border-hairline px-3 text-[11px] text-body hover:bg-raised hover:text-primary"
-                disabled={refreshing || !source}
-                onClick={onRefresh}
-                type="button"
-                variant="outline"
-              >
-                <RefreshCw
-                  aria-hidden="true"
-                  className={cn('size-[15px]', refreshing && 'animate-spin')}
-                />
-                <span>{refreshing ? t('actions.refreshing') : t('actions.refresh')}</span>
-              </Button>
-            </>
-          ) : isDefault ? (
-            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy">
-              <MonitorCog aria-hidden="true" className="size-3.5" />
-              {t('group.defaultGroup')}
+              <span className="mt-1 block truncate text-[12px] font-normal text-muted-copy">
+                {profileCount}
+                {isDefault ? t('group.singleKeysStartHere') : ''}
+                {lastRefresh ? ` · ${refreshing ? t('actions.refreshing') : lastRefresh}` : ''}
+              </span>
             </span>
-          ) : (
-            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy">
-              <Folder aria-hidden="true" className="size-3.5" />
-              {t('group.customGroup')}
-            </span>
-          )}
-          <ProfileGroupActionsMenu
-            group={group}
-            onChangeUrl={onChangeUrl}
-            onClearResults={onClearResults}
-            onCopyUrl={onCopyUrl}
-            onDeleteSubscription={onDeleteSubscription}
-            onDeleteUnavailable={onDeleteUnavailable}
-            onRename={() => onRenameGroup(group)}
-            onTestGroup={onTestGroup}
-            testRunning={testRunning}
-          />
+          </Button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {isSubscription ? (
+              <>
+                <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy max-[720px]:hidden">
+                  <Rss aria-hidden="true" className="size-3.5" />
+                  {t('group.subscriptionGroup')}
+                </span>
+                <Button
+                  aria-label={t('actions.refreshAria', { name: groupLabel })}
+                  className="ml-2 h-9 gap-2 border-hairline px-3 text-[11px] text-body hover:bg-raised hover:text-primary"
+                  disabled={refreshing || !source}
+                  onClick={onRefresh}
+                  type="button"
+                  variant="outline"
+                >
+                  <RefreshCw
+                    aria-hidden="true"
+                    className={cn('size-[15px]', refreshing && 'animate-spin')}
+                  />
+                  <span>{refreshing ? t('actions.refreshing') : t('actions.refresh')}</span>
+                </Button>
+              </>
+            ) : isDefault ? (
+              <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy">
+                <MonitorCog aria-hidden="true" className="size-3.5" />
+                {t('group.defaultGroup')}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-copy">
+                <Folder aria-hidden="true" className="size-3.5" />
+                {t('group.customGroup')}
+              </span>
+            )}
+            <ProfileGroupActionsMenu
+              group={group}
+              onChangeUrl={onChangeUrl}
+              onClearResults={onClearResults}
+              onCopyUrl={onCopyUrl}
+              onDeleteSubscription={onDeleteSubscription}
+              onDeleteUnavailable={onDeleteUnavailable}
+              onRename={() => onRenameGroup(group)}
+              onTestGroup={onTestGroup}
+              testRunning={testRunning}
+            />
+          </div>
         </div>
+        {source && hasProviderInfo(source.provider) ? (
+          <SubscriptionProviderInfo
+            groupLabel={groupLabel}
+            info={source.provider}
+            onOpenSupport={onOpenSupport}
+          />
+        ) : null}
       </div>
-      {source && hasProviderInfo(source.provider) ? (
-        <SubscriptionProviderInfo
-          className={cn(group.open && 'border-b border-hairline')}
-          groupLabel={groupLabel}
-          info={source.provider}
-          onOpenSupport={onOpenSupport}
-        />
-      ) : null}
       {group.open ? (
         <div aria-hidden={!group.open} id={`${group.id}-panel`} role="region">
           <ProfileTable

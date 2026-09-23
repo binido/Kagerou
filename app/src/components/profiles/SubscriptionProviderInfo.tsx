@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ExternalLink, Megaphone } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { CalendarClock, ExternalLink, Gauge, LifeBuoy, Megaphone } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { formatBytes } from '@/lib/formatters'
@@ -7,10 +7,16 @@ import { daysUntil, expiryTone, usageTone, type ProviderTone } from '@/lib/provi
 import { cn } from '@/lib/utils'
 import type { ProviderInfo } from '@/types/kagerou'
 
-const toneClass: Record<ProviderTone, string> = {
-  normal: 'text-muted-copy',
+const textTone: Record<ProviderTone, string> = {
+  normal: 'text-body',
   warn: 'text-warn',
   bad: 'text-bad',
+}
+
+const barTone: Record<ProviderTone, string> = {
+  normal: 'bg-lavender',
+  warn: 'bg-warn',
+  bad: 'bg-bad',
 }
 
 const bytes = (count: number) => {
@@ -18,82 +24,112 @@ const bytes = (count: number) => {
   return `${value} ${unit}`
 }
 
+function Fact({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: typeof Gauge
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <span className="flex items-center gap-2">
+      <Icon aria-hidden="true" className="size-3.5 shrink-0 text-muted-copy" strokeWidth={1.8} />
+      <span className="sr-only">{label}: </span>
+      {children}
+    </span>
+  )
+}
+
 interface SubscriptionProviderInfoProps {
   info: ProviderInfo
   groupLabel: string
   onOpenSupport: () => void
-  className?: string
 }
 
+/** Sits under the group's title, indented to line up with it. */
 export function SubscriptionProviderInfo({
   info,
   groupLabel,
   onOpenSupport,
-  className,
 }: SubscriptionProviderInfoProps) {
   const { i18n, t } = useTranslation('profiles')
   const language = i18n.resolvedLanguage ?? 'en'
   // Days are the finest unit shown, so the time the card mounted is close enough.
   const [now] = useState(() => Date.now())
 
-  const usage =
-    info.trafficUsed === null ? null : info.trafficTotal === null ? (
-      <span>{t('provider.usedUnlimited', { used: bytes(info.trafficUsed) })}</span>
-    ) : (
-      <span className={toneClass[usageTone(info.trafficUsed, info.trafficTotal)]}>
-        {t('provider.used', { used: bytes(info.trafficUsed), total: bytes(info.trafficTotal) })}
-      </span>
-    )
-
-  const expiry =
-    info.expiresAt === null ? null : (
-      <span className={toneClass[expiryTone(info.expiresAt, now)]}>
-        {t(info.expiresAt <= now ? 'provider.expired' : 'provider.expires', {
-          date: new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(info.expiresAt),
-          relative: new Intl.RelativeTimeFormat(language, { numeric: 'auto' }).format(
-            daysUntil(info.expiresAt, now),
-            'day',
-          ),
-        })}
-      </span>
-    )
-
-  const parts = [usage, expiry].filter((part) => part !== null)
+  const { trafficUsed: used, trafficTotal: total, expiresAt } = info
+  const hasFacts = used !== null || expiresAt !== null || info.supportUrl !== null
 
   return (
-    <div className={cn('space-y-1.5 px-5 py-3 text-[11px] text-muted-copy', className)}>
-      {parts.length > 0 || info.supportUrl ? (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          {parts.map((part, index) => (
-            <span className="flex items-center gap-2" key={index}>
-              {index > 0 ? <span aria-hidden="true">·</span> : null}
-              {part}
-            </span>
-          ))}
+    <div className="space-y-3 pb-4 pl-[60px] pr-5 max-[640px]:pl-5">
+      {hasFacts ? (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-body">
+          {used !== null ? (
+            <Fact icon={Gauge} label={t('provider.traffic')}>
+              {total !== null ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-24 overflow-hidden rounded-full bg-hairline"
+                  >
+                    <span
+                      className={cn('block h-full rounded-full', barTone[usageTone(used, total)])}
+                      style={{ width: `${Math.min(100, (used / total) * 100)}%` }}
+                    />
+                  </span>
+                  <span className={cn('type-data', textTone[usageTone(used, total)])}>
+                    {t('provider.used', { used: bytes(used), total: bytes(total) })}
+                  </span>
+                </>
+              ) : (
+                <span className="type-data">
+                  {t('provider.usedUnlimited', { used: bytes(used) })}
+                </span>
+              )}
+            </Fact>
+          ) : null}
+          {expiresAt !== null ? (
+            <Fact icon={CalendarClock} label={t('provider.expiry')}>
+              <span className={textTone[expiryTone(expiresAt, now)]}>
+                {t(expiresAt <= now ? 'provider.expired' : 'provider.expires', {
+                  date: new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(
+                    expiresAt,
+                  ),
+                  relative: new Intl.RelativeTimeFormat(language, { numeric: 'auto' }).format(
+                    daysUntil(expiresAt, now),
+                    'day',
+                  ),
+                })}
+              </span>
+            </Fact>
+          ) : null}
           {info.supportUrl ? (
-            <>
-              {parts.length > 0 ? <span aria-hidden="true">·</span> : null}
-              <button
-                aria-label={t('provider.supportAria', { name: groupLabel })}
-                className="inline-flex items-center gap-1 rounded-sm text-lavender-hi underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-lavender"
-                onClick={onOpenSupport}
-                type="button"
-              >
-                {t('provider.support')}
-                <ExternalLink aria-hidden="true" className="size-3" />
-              </button>
-            </>
+            <button
+              aria-label={t('provider.supportAria', { name: groupLabel })}
+              className="flex items-center gap-2 rounded-sm text-lavender-hi outline-none hover:underline focus-visible:ring-2 focus-visible:ring-lavender"
+              onClick={onOpenSupport}
+              type="button"
+            >
+              <LifeBuoy aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+              {t('provider.support')}
+              <ExternalLink aria-hidden="true" className="size-3" />
+            </button>
           ) : null}
         </div>
       ) : null}
       {info.announce ? (
-        <p className="flex items-start gap-1.5 whitespace-pre-line text-body" data-selectable>
-          <Megaphone aria-hidden="true" className="mt-px size-3.5 shrink-0 text-lavender" />
-          <span>
+        <div
+          className="flex max-w-[720px] items-start gap-2.5 rounded-lg bg-raised px-3 py-2.5 text-[12px] leading-5 text-body ring-1 ring-inset ring-hairline"
+          data-selectable
+        >
+          <Megaphone aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-lavender" />
+          <p className="whitespace-pre-line">
             <span className="sr-only">{t('provider.announce')}: </span>
             {info.announce}
-          </span>
-        </p>
+          </p>
+        </div>
       ) : null}
     </div>
   )
