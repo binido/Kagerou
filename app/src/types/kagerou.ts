@@ -1,6 +1,7 @@
 import type { ThemeId } from '@/themes/types'
 
-export type RouteKey = 'dashboard' | 'groups' | 'routing-rules' | 'logs' | 'settings'
+export type RouteKey =
+  'dashboard' | 'groups' | 'routing-rules' | 'connections' | 'logs' | 'settings'
 
 export type ProfileOrigin = 'local' | 'imported'
 export type ProfileGroupKind = 'default' | 'custom' | 'subscription'
@@ -178,4 +179,25 @@ export interface SettingsState {
   groupSort: GroupSortMode
   logLevel: SingBoxLogLevel
   testUrl: string
+}
+
+/** Mirrors `usecase::connection::ConnectionExit`. */
+export type ConnectionExit =
+  | { kind: 'profile'; name: string }
+  | { kind: 'direct' }
+  | { kind: 'block' }
+  | { kind: 'other'; tag: string }
+
+/** Mirrors `usecase::connection::LiveConnection`. */
+export interface LiveConnection {
+  id: string
+  host: string
+  port: string
+  network: string
+  rule: string
+  exit: ConnectionExit
+  upload: number
+  download: number
+  /** RFC 3339 with up to nine fraction digits, as the Clash API reports it. */
+  start: string
 }

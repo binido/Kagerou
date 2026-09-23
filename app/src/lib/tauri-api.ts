@@ -5,6 +5,7 @@ import { readText } from '@tauri-apps/plugin-clipboard-manager'
 
 import type {
   ImportOutcome,
+  LiveConnection,
   Profile,
   ProfileGroup,
   RoutingPreset,
@@ -69,6 +70,9 @@ export const kagerouApi = {
   connect: () => invoke<void>('connect'),
   disconnect: () => invoke<void>('disconnect'),
   lookupExitLocation: () => invoke<ExitLocation | null>('lookup_exit_location'),
+  listConnections: () => invoke<LiveConnection[]>('list_connections'),
+  closeConnection: (id: string) => invoke<void>('close_connection', { id }),
+  closeAllConnections: () => invoke<void>('close_all_connections'),
 
   selectProfile: (id: string) => invoke<void>('select_profile', { id }),
   renameProfile: (id: string, name: string) => invoke<void>('rename_profile', { id, name }),

@@ -1,0 +1,29 @@
+{
+  "page": {
+    "eyebrow": "Kagerou  /  Connections",
+    "title": "Connections",
+    "description": "What is open through the core right now, and where it leaves",
+    "count": "Open: {{count}}",
+    "closeAll": "Close all",
+    "disconnectedTitle": "Not connected",
+    "disconnectedDescription": "Connections appear here while Kagerou is connected.",
+    "emptyTitle": "Nothing open",
+    "emptyDescription": "New connections show up within a second."
+  },
+  "table": {
+    "destination": "Destination",
+    "network": "Network",
+    "exit": "Exit",
+    "rule": "Rule",
+    "traffic": "Down / Up",
+    "duration": "Duration",
+    "direct": "Direct",
+    "block": "Blocked",
+    "unknown": "Unknown",
+    "close": "Close connection to {{host}}"
+  },
+  "feedback": {
+    "closeFailed": "Could not close the connection.",
+    "closeAllFailed": "Could not close the connections."
+  }
+}

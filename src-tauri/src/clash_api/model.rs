@@ -28,6 +28,8 @@ pub struct ProxiesResponse {
 pub struct ConnectionMetadata {
     #[serde(default)]
     pub host: String,
+    #[serde(rename = "destinationIP", default)]
+    pub destination_ip: String,
     #[serde(default)]
     pub network: String,
     #[serde(rename = "destinationPort", default)]
@@ -46,6 +48,9 @@ pub struct ConnectionInfo {
     pub chains: Vec<String>,
     #[serde(default)]
     pub rule: String,
+    /// RFC 3339.
+    #[serde(default)]
+    pub start: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

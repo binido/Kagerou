@@ -1,4 +1,5 @@
 import {
+  Cable,
   FileText,
   LayoutDashboard,
   PanelLeftClose,
@@ -21,6 +22,7 @@ type SidebarLabelKey =
   | 'sidebar.dashboard'
   | 'sidebar.groups'
   | 'sidebar.routingRules'
+  | 'sidebar.connections'
   | 'sidebar.logs'
   | 'sidebar.settings'
 
@@ -33,6 +35,7 @@ const navigation: Array<{
   { key: 'dashboard', labelKey: 'sidebar.dashboard', to: '/dashboard', icon: LayoutDashboard },
   { key: 'groups', labelKey: 'sidebar.groups', to: '/groups', icon: Server },
   { key: 'routing-rules', labelKey: 'sidebar.routingRules', to: '/routing-rules', icon: Route },
+  { key: 'connections', labelKey: 'sidebar.connections', to: '/connections', icon: Cable },
   { key: 'logs', labelKey: 'sidebar.logs', to: '/logs', icon: FileText },
   { key: 'settings', labelKey: 'sidebar.settings', to: '/settings', icon: Settings },
 ]

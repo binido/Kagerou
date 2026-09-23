@@ -6,6 +6,7 @@ fn connection(id: &str) -> ConnectionInfo {
         id: id.to_string(),
         metadata: ConnectionMetadata {
             host: String::new(),
+            destination_ip: String::new(),
             network: String::new(),
             destination_port: String::new(),
         },
@@ -13,6 +14,7 @@ fn connection(id: &str) -> ConnectionInfo {
         download: 0,
         chains: vec![],
         rule: String::new(),
+        start: String::new(),
     }
 }
 

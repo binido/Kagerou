@@ -71,9 +71,7 @@ impl ClashApiClient {
         self.get_json("/connections").await
     }
 
-    /// Runs sing-box's built-in latency probe for one outbound (`GET
-    /// /proxies/{name}/delay`), used to power the "test" action on a
-    /// profile. Returns the round-trip time in milliseconds.
+    /// Points a selector outbound at one of its members.
     pub async fn select_outbound(&self, selector: &str, target: &str) -> Result<(), ClashApiError> {
         let request = self
             .http

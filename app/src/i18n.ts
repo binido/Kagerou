@@ -2,12 +2,14 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
 import enCommon from '@/locales/en/common.json'
+import enConnections from '@/locales/en/connections.json'
 import enDashboard from '@/locales/en/dashboard.json'
 import enProfiles from '@/locales/en/profiles.json'
 import enRouting from '@/locales/en/routing.json'
 import enLogs from '@/locales/en/logs.json'
 import enSettings from '@/locales/en/settings.json'
 import ruCommon from '@/locales/ru/common.json'
+import ruConnections from '@/locales/ru/connections.json'
 import ruDashboard from '@/locales/ru/dashboard.json'
 import ruProfiles from '@/locales/ru/profiles.json'
 import ruRouting from '@/locales/ru/routing.json'
@@ -18,6 +20,7 @@ import type { Language } from '@/types/kagerou'
 export const resources = {
   en: {
     common: enCommon,
+    connections: enConnections,
     dashboard: enDashboard,
     profiles: enProfiles,
     routing: enRouting,
@@ -26,6 +29,7 @@ export const resources = {
   },
   ru: {
     common: ruCommon,
+    connections: ruConnections,
     dashboard: ruDashboard,
     profiles: ruProfiles,
     routing: ruRouting,
