@@ -114,6 +114,14 @@ export const subscribeToBackendEvents = () => {
     setState((state) => ({ logs: appendLog(state.logs, line) }))
   })
 
+  void kagerouApi.onUpdateProgress((progress) => {
+    setState((state) =>
+      state.updateDownload.phase === 'downloading'
+        ? { updateDownload: { phase: 'downloading', ...progress } }
+        : {},
+    )
+  })
+
   void kagerouApi.onCrashed(() =>
     setState({
       connected: false,

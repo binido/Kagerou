@@ -45,6 +45,9 @@ export function Sidebar() {
   const location = useLocation()
   const collapsed = useKagerouStore((state) => state.sidebarCollapsed)
   const updateAvailable = useKagerouStore((state) => state.updateAvailable)
+  const updateDownload = useKagerouStore((state) => state.updateDownload)
+  const downloadUpdate = useKagerouStore((state) => state.downloadUpdate)
+  const installUpdate = useKagerouStore((state) => state.installUpdate)
   const toggleSidebar = useKagerouStore((state) => state.toggleSidebar)
 
   return (
@@ -117,7 +120,13 @@ export function Sidebar() {
 
       <div className="mt-auto space-y-3 pt-8">
         {updateAvailable ? (
-          <SidebarUpdateNotice collapsed={collapsed} update={updateAvailable} />
+          <SidebarUpdateNotice
+            collapsed={collapsed}
+            download={updateDownload}
+            onDownload={() => void downloadUpdate()}
+            onInstall={() => void installUpdate()}
+            update={updateAvailable}
+          />
         ) : null}
         <TooltipProvider>
           <Tooltip>

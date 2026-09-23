@@ -47,6 +47,8 @@ pub enum ErrorCode {
     SystemSetting,
     /// A file the user asked for could not be written where they chose.
     FileWrite,
+    /// A new version could not be downloaded, verified or installed.
+    UpdateFailed,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -161,6 +163,12 @@ impl From<ExportError> for AppError {
 impl From<ClashApiError> for AppError {
     fn from(error: ClashApiError) -> Self {
         Self::new(ErrorCode::Network, error)
+    }
+}
+
+impl From<tauri_plugin_updater::Error> for AppError {
+    fn from(error: tauri_plugin_updater::Error) -> Self {
+        Self::new(ErrorCode::UpdateFailed, error)
     }
 }
 

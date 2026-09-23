@@ -8,6 +8,7 @@ use crate::clash_api::ClashApiClient;
 use crate::singbox::{SidecarLauncher, Supervisor};
 use crate::storage::Db;
 use crate::usecase::testing::TestCore;
+use crate::usecase::update::PendingUpdate;
 
 /// Paths and test-core addresses resolved once at startup. The connection's
 /// own ports are settings, read on every connect.
@@ -33,6 +34,7 @@ pub struct AppState {
     /// The core that answers latency tests. Its own process, its own ports,
     /// and not the connection: see `usecase::testing`.
     pub test_core: Arc<TestCore>,
+    pub pending_update: Mutex<Option<PendingUpdate>>,
     pub paths: RuntimePaths,
 }
 
@@ -70,6 +72,7 @@ impl AppState {
                 run_dir,
                 system_proxy_port: paths.test_mixed_listen_port,
             })),
+            pending_update: Mutex::new(None),
             paths,
         }
     }

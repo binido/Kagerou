@@ -1,9 +1,9 @@
 import i18n from '@/i18n'
 import { backendErrorMessage } from '@/lib/errors'
 import { kagerouApi } from '@/lib/tauri-api'
-import type { UpdateInfo } from '@/types/kagerou'
+import type { UpdateDownload, UpdateInfo } from '@/types/kagerou'
 
-import { applySnapshot, type Slice } from '../shared'
+import { applySnapshot, report, type Slice } from '../shared'
 
 export interface ShellSlice {
   hydrated: boolean
@@ -11,8 +11,11 @@ export interface ShellSlice {
   hydrateError: { message: string; dataDir: string } | null
   sidebarCollapsed: boolean
   updateAvailable: UpdateInfo | null
+  updateDownload: UpdateDownload
   hydrate: () => Promise<void>
   toggleSidebar: () => void
+  downloadUpdate: () => Promise<void>
+  installUpdate: () => Promise<void>
 }
 
 /** The window itself: whether it has anything to draw yet, and the two bits
@@ -22,6 +25,7 @@ export const createShellSlice: Slice<ShellSlice> = (set, get) => ({
   hydrateError: null,
   sidebarCollapsed: false,
   updateAvailable: null,
+  updateDownload: { phase: 'idle' },
 
   hydrate: async () => {
     let snapshot
@@ -50,4 +54,29 @@ export const createShellSlice: Slice<ShellSlice> = (set, get) => ({
   },
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
+  downloadUpdate: async () => {
+    if (get().updateDownload.phase !== 'idle') return
+    set({ updateDownload: { phase: 'downloading', downloaded: 0, total: null } })
+    try {
+      await kagerouApi.downloadUpdate()
+      set({ updateDownload: { phase: 'ready' } })
+    } catch (error) {
+      report(error, 'common:feedback.updateDownloadFailed')
+      set({ updateDownload: { phase: 'idle' } })
+    }
+  },
+
+  installUpdate: async () => {
+    if (get().updateDownload.phase !== 'ready') return
+    set({ updateDownload: { phase: 'installing' } })
+    try {
+      await kagerouApi.installUpdate()
+    } catch (error) {
+      // The backend keeps the download on a failed install, so the restart
+      // button can simply be offered again.
+      report(error, 'common:feedback.updateInstallFailed')
+      set({ updateDownload: { phase: 'ready' } })
+    }
+  },
 })

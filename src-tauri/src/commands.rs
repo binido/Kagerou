@@ -5,7 +5,6 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::app_state::AppState;
 use crate::net::geo;
-use crate::net::updates;
 use crate::singbox;
 use crate::storage::models::{
     NewProfileGroup, NewRoutingRule, Profile, ProfileGroup, RoutingPreset, RoutingRule, Settings,
@@ -19,6 +18,7 @@ use crate::usecase::export;
 use crate::usecase::import::{self, Imported};
 use crate::usecase::subscriptions;
 use crate::usecase::testing;
+use crate::usecase::update;
 
 fn new_id(prefix: &str) -> String {
     format!("{prefix}-{}", uuid::Uuid::new_v4())
@@ -557,8 +557,18 @@ pub fn set_theme(theme_id: String, state: State<AppState>) -> Result<(), AppErro
 /// Silent by design: a failed check is not something to surface, and before
 /// the first release GitHub answers 404, which simply means "nothing newer".
 #[tauri::command]
-pub async fn check_for_update(app: AppHandle) -> Option<updates::UpdateInfo> {
-    updates::check(&app.package_info().version).await
+pub async fn check_for_update(app: AppHandle) -> Option<update::AvailableUpdate> {
+    update::check(&app).await
+}
+
+#[tauri::command]
+pub async fn download_update(app: AppHandle, state: State<'_, AppState>) -> Result<(), AppError> {
+    update::download(&app, &state).await
+}
+
+#[tauri::command]
+pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Result<(), AppError> {
+    update::install(&app, &state).await
 }
 
 /// Makes the OS launch-at-login registration agree with `enabled`. The DB is

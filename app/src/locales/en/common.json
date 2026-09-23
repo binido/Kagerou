@@ -13,7 +13,13 @@
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
     "updateAvailable": "Version {{version}} available",
-    "viewReleases": "View Kagerou releases"
+    "viewReleases": "View Kagerou releases",
+    "updateInstall": "Download and install version {{version}}",
+    "updateDownloading": "Downloading {{percent}}%",
+    "updateDownloadingUnknown": "Downloading…",
+    "updateReady": "Restart to update",
+    "updateReadyHint": "Kagerou restarts into version {{version}}. The VPN disconnects while it installs.",
+    "updateInstalling": "Installing…"
   },
   "actions": {
     "cancel": "Cancel",
@@ -77,7 +83,9 @@
     "importFailed": "Could not add these VPNs.",
     "subscriptionDeleteFailed": "Could not delete the subscription.",
     "supportOpenFailed": "Could not open the support page.",
-    "startupFailed": "Could not read the app data."
+    "startupFailed": "Could not read the app data.",
+    "updateDownloadFailed": "Could not download the update.",
+    "updateInstallFailed": "Could not install the update."
   },
   "startup": {
     "title": "Kagerou could not start",
@@ -99,6 +107,7 @@
     "testRunInProgress": "A test is already running. Wait for it or stop it first.",
     "lookupFailed": "The location could not be looked up through the tunnel.",
     "systemSetting": "The system refused that change.",
-    "fileWrite": "The file could not be saved there."
+    "fileWrite": "The file could not be saved there.",
+    "updateFailed": "The update could not be downloaded or installed."
   }
 }

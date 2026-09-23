@@ -74,7 +74,11 @@ pnpm tauri build
 2. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
 3. The workflow builds macOS (Apple silicon and Intel), Linux and Windows bundles, plus a portable Windows ZIP, and attaches them to a **draft** release. Check the artifacts, write the notes, then publish it yourself.
 
-Builds are unsigned, so macOS and Windows will warn on first launch. A tag with a pre-release suffix (`v0.2.0-alpha.1`) is marked as a pre-release; GitHub's "latest release" endpoint skips those and drafts alike, which is also what the in-app update check reads.
+The workflow also signs the in-app update artifacts and publishes `latest.json`, which installed copies read to update themselves. A last job fails if `latest.json` is missing an installer: the build jobs merge their entries into it one after another, and two finishing together can drop one. Re-run the job whose entry is missing.
+
+The update signing key is set up once. `pnpm tauri signer generate -w ~/.tauri/kagerou.key` makes the pair; the public key goes into `plugins.updater.pubkey` in `src-tauri/tauri.conf.json`, the private key and its password into the repository secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Keep a copy of both outside GitHub: without them no installed copy can be updated in place again. Update artifacts are switched on only by `src-tauri/tauri.release.conf.json`, so a local `pnpm tauri build` does not need the key.
+
+Builds are not signed with a platform certificate, so macOS and Windows will warn on first launch. A tag with a pre-release suffix (`v0.2.0-alpha.1`) is marked as a pre-release; GitHub's "latest release" endpoint skips those and drafts alike, which is also what the in-app update check reads.
 
 ## Submitting changes
 

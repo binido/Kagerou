@@ -7,12 +7,14 @@ import { emptySnapshot } from './test-fixtures'
 /** One mock of the backend bridge for every store test file.
  *
  * Shared rather than declared per file because the store subscribes to all
- * eight events on start-up: a file testing one action would still have to
+ * nine events on start-up: a file testing one action would still have to
  * list every listener for the subscription not to throw. */
 export const kagerouApiMock = {
   getAppState: vi.fn(),
   appDataDir: vi.fn(),
   checkForUpdate: vi.fn(),
+  downloadUpdate: vi.fn(),
+  installUpdate: vi.fn(),
   connect: vi.fn(),
   disconnect: vi.fn(),
   lookupExitLocation: vi.fn(async (): Promise<ExitLocation | null> => null),
@@ -57,6 +59,7 @@ export const kagerouApiMock = {
   onTestFinished: vi.fn(),
   onTrayToggleConnection: vi.fn(),
   onTraySelectProfile: vi.fn(),
+  onUpdateProgress: vi.fn(),
   onCrashed: vi.fn(),
 }
 
@@ -68,6 +71,7 @@ const LISTENERS = [
   kagerouApiMock.onTestFinished,
   kagerouApiMock.onTrayToggleConnection,
   kagerouApiMock.onTraySelectProfile,
+  kagerouApiMock.onUpdateProgress,
   kagerouApiMock.onCrashed,
 ]
 

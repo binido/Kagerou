@@ -6,3 +6,4 @@ pub mod export;
 pub mod import;
 pub mod subscriptions;
 pub mod testing;
+pub mod update;

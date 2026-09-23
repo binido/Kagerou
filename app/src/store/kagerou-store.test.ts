@@ -107,6 +107,7 @@ describe('update check', () => {
     const update = {
       version: '0.3.0',
       url: 'https://github.com/binido/Kagerou/releases/tag/v0.3.0',
+      installable: true,
     }
     api.checkForUpdate.mockResolvedValue(update)
 
@@ -130,6 +131,85 @@ describe('update check', () => {
 
     expect(useKagerouStore.getState().hydrated).toBe(true)
     expect(useKagerouStore.getState().updateAvailable).toBeNull()
+  })
+})
+
+describe('in-app update', () => {
+  it('moves from downloading to ready and follows the progress events in between', async () => {
+    let progress: (event: { downloaded: number; total: number | null }) => void = () => {}
+    api.onUpdateProgress.mockImplementation((handler: typeof progress) => {
+      progress = handler
+      return Promise.resolve(() => {})
+    })
+    let finish: () => void = () => {}
+    api.downloadUpdate.mockReturnValue(new Promise<void>((resolve) => (finish = resolve)))
+    subscribeToBackendEvents()
+
+    const done = useKagerouStore.getState().downloadUpdate()
+    progress({ downloaded: 50, total: 200 })
+    expect(useKagerouStore.getState().updateDownload).toEqual({
+      phase: 'downloading',
+      downloaded: 50,
+      total: 200,
+    })
+
+    finish()
+    await done
+    expect(useKagerouStore.getState().updateDownload).toEqual({ phase: 'ready' })
+  })
+
+  it('ignores a late progress event once the download is over', async () => {
+    let progress: (event: { downloaded: number; total: number | null }) => void = () => {}
+    api.onUpdateProgress.mockImplementation((handler: typeof progress) => {
+      progress = handler
+      return Promise.resolve(() => {})
+    })
+    subscribeToBackendEvents()
+    useKagerouStore.setState({ updateDownload: { phase: 'ready' } })
+
+    progress({ downloaded: 200, total: 200 })
+
+    expect(useKagerouStore.getState().updateDownload).toEqual({ phase: 'ready' })
+  })
+
+  it('reports a failed download and offers it again', async () => {
+    api.downloadUpdate.mockRejectedValue({ code: 'updateFailed', detail: 'bad signature' })
+
+    await useKagerouStore.getState().downloadUpdate()
+
+    expect(toast.error).toHaveBeenCalledWith(en.errors.updateFailed)
+    expect(useKagerouStore.getState().updateDownload).toEqual({ phase: 'idle' })
+  })
+
+  it('does not start a second download while one is running', async () => {
+    api.downloadUpdate.mockReturnValue(new Promise(() => {}))
+
+    void useKagerouStore.getState().downloadUpdate()
+    void useKagerouStore.getState().downloadUpdate()
+
+    expect(api.downloadUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('installs only once the download is ready', async () => {
+    await useKagerouStore.getState().installUpdate()
+    expect(api.installUpdate).not.toHaveBeenCalled()
+
+    api.installUpdate.mockReturnValue(new Promise(() => {}))
+    useKagerouStore.setState({ updateDownload: { phase: 'ready' } })
+    void useKagerouStore.getState().installUpdate()
+
+    expect(api.installUpdate).toHaveBeenCalledTimes(1)
+    expect(useKagerouStore.getState().updateDownload).toEqual({ phase: 'installing' })
+  })
+
+  it('offers the restart again when the install fails', async () => {
+    api.installUpdate.mockRejectedValue({ code: 'updateFailed', detail: 'permission denied' })
+    useKagerouStore.setState({ updateDownload: { phase: 'ready' } })
+
+    await useKagerouStore.getState().installUpdate()
+
+    expect(toast.error).toHaveBeenCalledWith(en.errors.updateFailed)
+    expect(useKagerouStore.getState().updateDownload).toEqual({ phase: 'ready' })
   })
 })
 

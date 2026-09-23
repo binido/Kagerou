@@ -62,6 +62,7 @@ fn the_codes_keep_the_names_the_frontend_switches_on() {
         ErrorCode::LookupFailed,
         ErrorCode::SystemSetting,
         ErrorCode::FileWrite,
+        ErrorCode::UpdateFailed,
     ];
     let names: Vec<String> = codes
         .iter()
@@ -91,6 +92,7 @@ fn the_codes_keep_the_names_the_frontend_switches_on() {
             "lookupFailed",
             "systemSetting",
             "fileWrite",
+            "updateFailed",
         ]
     );
 }

@@ -59,6 +59,7 @@ Most sing-box clients either expose a configuration file or hide the core behind
 - English and Russian localisation.
 - Seven built-in themes: four Catppuccin flavours and three Kanagawa variants, light and dark.
 - Native desktop window and tray integration.
+- In-place updates: a new release downloads from the sidebar with a progress bar, is checked against the project's signing key and installs on restart. The portable Windows build links to the release page instead.
 
 Kagerou is actively evolving. Some controls are already visible while their backend behaviour is still being completed. See [ROADMAP.md](ROADMAP.md) for the exact status of every feature.
 
@@ -149,6 +150,8 @@ Builds are currently unsigned. macOS and Windows may show a security warning on 
 ## Data and privacy
 
 Kagerou is a local desktop application. Profiles, subscription sources, routing rules, and settings are stored in a local SQLite database in the operating system's application-data directory. The application does not sync this data to a Kagerou server.
+
+On launch Kagerou asks GitHub whether a newer release exists, and an update you start is downloaded from GitHub Releases.
 
 When exit-location lookup is enabled, Kagerou asks [ipwho.is](https://ipwho.is/) to identify the address visible through the active tunnel. Disable the lookup in Settings if you do not want this request.
 

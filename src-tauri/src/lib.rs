@@ -45,6 +45,7 @@ pub fn run() {
         // update notice arrived and then went nowhere.
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // LaunchAgent writes a plist under the user's LaunchAgents directory;
         // the AppleScript route it competes with is unreliable on modern macOS.
         .plugin(tauri_plugin_autostart::init(
@@ -117,6 +118,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_app_state,
             commands::check_for_update,
+            commands::download_update,
+            commands::install_update,
             commands::start_group_test,
             commands::cancel_group_test,
             commands::connect,

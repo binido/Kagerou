@@ -61,6 +61,15 @@ pub struct TestFinished {
     pub cancelled: bool,
 }
 
+/// How far the download of a new version has got, in bytes.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProgress {
+    pub downloaded: u64,
+    /// `None` when the server sends no Content-Length.
+    pub total: Option<u64>,
+}
+
 /// Everything the backend pushes into the window.
 ///
 /// The other half of this list is the frontend's listener table in
@@ -81,6 +90,7 @@ pub enum AppEvent {
     /// bugs.
     TrayToggleConnection,
     TraySelectProfile(String),
+    UpdateProgress(UpdateProgress),
 }
 
 impl AppEvent {
@@ -94,6 +104,7 @@ impl AppEvent {
             Self::TestFinished(_) => "kagerou://test-finished",
             Self::TrayToggleConnection => "kagerou://tray-toggle-connection",
             Self::TraySelectProfile(_) => "kagerou://tray-select-profile",
+            Self::UpdateProgress(_) => "kagerou://update-progress",
         }
     }
 }
@@ -117,6 +128,7 @@ impl<R: tauri::Runtime> Events for tauri::AppHandle<R> {
             AppEvent::TestFinished(payload) => TauriEmitter::emit(self, name, payload),
             AppEvent::TrayToggleConnection => TauriEmitter::emit(self, name, ()),
             AppEvent::TraySelectProfile(profile_id) => TauriEmitter::emit(self, name, profile_id),
+            AppEvent::UpdateProgress(payload) => TauriEmitter::emit(self, name, payload),
         };
     }
 }

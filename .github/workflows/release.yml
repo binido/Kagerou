@@ -100,8 +100,15 @@ jobs:
           # "damaged" and offers nothing but the Trash. This does not make the
           # app notarised; it makes its signature valid.
           APPLE_SIGNING_IDENTITY: '-'
+          # Signs the update artifacts. The app checks them against the public
+          # key in tauri.conf.json, so a release signed with another key
+          # installs nowhere.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          args: --target ${{ matrix.target }}
+          # Update artifacts only here: with them on in tauri.conf.json a
+          # local `pnpm tauri build` fails for want of the private key.
+          args: --target ${{ matrix.target }} --config src-tauri/tauri.release.conf.json
           tagName: ${{ github.ref_name }}
           releaseName: Kagerou ${{ github.ref_name }}
           releaseBody: |
@@ -144,3 +151,28 @@ jobs:
           $zip = "Kagerou_${env:GITHUB_REF_NAME}_x64-portable.zip".Replace("_v", "_")
           Compress-Archive -Path "$dir/*" -DestinationPath $zip
           gh release upload "$env:GITHUB_REF_NAME" $zip --clobber
+
+  updater-manifest:
+    name: Check latest.json
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      # Every build job rewrites latest.json on the release by read, merge and
+      # upload, so two jobs finishing together can drop each other's entry.
+      # A missing entry leaves that platform without in-app updates; re-run
+      # its job to merge it back.
+      - name: Check every installer has an entry
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern latest.json
+          missing=0
+          for platform in darwin-aarch64-app darwin-x86_64-app \
+                          linux-x86_64-appimage linux-x86_64-deb linux-x86_64-rpm \
+                          windows-x86_64-nsis windows-x86_64-msi; do
+            if ! jq -e --arg p "$platform" '.platforms[$p].signature' latest.json > /dev/null; then
+              echo "::error::latest.json has no entry for $platform"
+              missing=1
+            fi
+          done
+          exit $missing
