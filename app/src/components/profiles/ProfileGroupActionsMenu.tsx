@@ -1,4 +1,14 @@
-import { Copy, Eraser, Link2, MoreHorizontal, Pencil, Trash2, Waypoints } from 'lucide-react'
+import {
+  Copy,
+  Eraser,
+  FileDown,
+  Link2,
+  MoreHorizontal,
+  Pencil,
+  Share2,
+  Trash2,
+  Waypoints,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -21,6 +31,8 @@ interface ProfileGroupActionsMenuProps {
   onChangeUrl: () => void
   onCopyUrl: () => void
   onDeleteSubscription: () => void
+  onCopyLinks: () => void
+  onSaveLinks: () => void
 }
 
 export function ProfileGroupActionsMenu({
@@ -33,11 +45,14 @@ export function ProfileGroupActionsMenu({
   onChangeUrl,
   onCopyUrl,
   onDeleteSubscription,
+  onCopyLinks,
+  onSaveLinks,
 }: ProfileGroupActionsMenuProps) {
   const { t } = useTranslation('profiles')
   const canRename = group.kind !== 'default'
   const isSubscription = group.kind === 'subscription'
   const groupLabel = group.kind === 'default' ? t('group.defaultName') : group.label
+  const empty = group.profileIds.length === 0
 
   return (
     <DropdownMenu>
@@ -73,6 +88,14 @@ export function ProfileGroupActionsMenu({
             </DropdownMenuItem>
           </>
         ) : null}
+        <DropdownMenuItem disabled={empty} onSelect={onCopyLinks}>
+          <Share2 aria-hidden="true" className="size-3.5" />
+          <span>{t('menu.copyAllLinks')}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={empty} onSelect={onSaveLinks}>
+          <FileDown aria-hidden="true" className="size-3.5" />
+          <span>{t('menu.saveLinks')}</span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={testRunning} onSelect={onTestGroup}>
           <Waypoints aria-hidden="true" className="size-3.5" />

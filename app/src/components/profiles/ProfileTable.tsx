@@ -26,6 +26,8 @@ interface ProfileTableProps {
   onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
   onTest: (id: string) => void
+  onCopyLink: (profile: Profile) => void
+  onShowQr: (profile: Profile) => void
 }
 
 // Below this width the table's columns no longer leave a readable name. It is
@@ -87,6 +89,8 @@ function ProfileCompactRow({
   onMoveToGroup,
   onDelete,
   onTest,
+  onCopyLink,
+  onShowQr,
 }: {
   profile: Profile
   index: number
@@ -97,6 +101,8 @@ function ProfileCompactRow({
   onMoveToGroup: (profileId: string, groupId: string) => void
   onDelete: (profile: Profile) => void
   onTest: (id: string) => void
+  onCopyLink: (profile: Profile) => void
+  onShowQr: (profile: Profile) => void
 }) {
   const { t } = useTranslation('profiles')
 
@@ -147,6 +153,8 @@ function ProfileCompactRow({
               onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)}
               onRename={() => onRename(profile)}
               onTest={() => onTest(profile.id)}
+              onCopyLink={() => onCopyLink(profile)}
+              onShowQr={() => onShowQr(profile)}
               profile={profile}
             />
           </span>
@@ -165,6 +173,8 @@ export function ProfileTable({
   onMoveToGroup,
   onDelete,
   onTest,
+  onCopyLink,
+  onShowQr,
 }: ProfileTableProps) {
   const { t } = useTranslation('profiles')
   const [containerRef, narrow] = useNarrowContainer()
@@ -182,6 +192,8 @@ export function ProfileTable({
             onRename={onRename}
             onSelect={onSelect}
             onTest={onTest}
+            onCopyLink={onCopyLink}
+            onShowQr={onShowQr}
             profile={profile}
             running={Boolean(runningTests[profile.id])}
           />
@@ -269,6 +281,8 @@ export function ProfileTable({
                       onMoveToGroup={(groupId) => onMoveToGroup(profile.id, groupId)}
                       onRename={() => onRename(profile)}
                       onTest={() => onTest(profile.id)}
+                      onCopyLink={() => onCopyLink(profile)}
+                      onShowQr={() => onShowQr(profile)}
                       profile={profile}
                     />
                   </TableCell>

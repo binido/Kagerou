@@ -10,6 +10,7 @@ import { DeleteSubscriptionDialog } from '@/components/profiles/DeleteSubscripti
 import { ImportDialog } from '@/components/profiles/ImportDialog'
 import { ProfileGroupCard } from '@/components/profiles/ProfileGroupCard'
 import { ProfileGroupDialog } from '@/components/profiles/ProfileGroupDialog'
+import { ProfileQrDialog } from '@/components/profiles/ProfileQrDialog'
 import { RemoveUnavailableDialog } from '@/components/profiles/RemoveUnavailableDialog'
 import { RenameProfileDialog } from '@/components/profiles/RenameProfileDialog'
 import { SubscriptionUrlDialog } from '@/components/profiles/SubscriptionUrlDialog'
@@ -40,6 +41,9 @@ export function GroupsPage() {
   const deleteProfile = useKagerouStore((state) => state.deleteProfile)
   const moveProfileToGroup = useKagerouStore((state) => state.moveProfileToGroup)
   const openSupportUrl = useKagerouStore((state) => state.openSupportUrl)
+  const copyProfileLinks = useKagerouStore((state) => state.copyProfileLinks)
+  const saveProfileLinks = useKagerouStore((state) => state.saveProfileLinks)
+  const loadProfileQr = useKagerouStore((state) => state.loadProfileQr)
   const addProfileGroup = useKagerouStore((state) => state.addProfileGroup)
   const renameProfileGroup = useKagerouStore((state) => state.renameProfileGroup)
   const testRun = useKagerouStore((state) => state.testRun)
@@ -47,6 +51,7 @@ export function GroupsPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null)
   const [renameTarget, setRenameTarget] = useState<Profile | null>(null)
+  const [qrTarget, setQrTarget] = useState<Profile | null>(null)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
   const [groupDialogTarget, setGroupDialogTarget] = useState<ProfileGroup | null>(null)
 
@@ -190,6 +195,8 @@ export function GroupsPage() {
                 if (source) subscriptions.openUrlDialog(source)
               }}
               onClearResults={() => testing.clearResults(group)}
+              onCopyLink={(profile) => void copyProfileLinks([profile.id])}
+              onCopyLinks={() => void copyProfileLinks(group.profileIds)}
               onCopyUrl={() => {
                 if (source) void subscriptions.copyUrl(source)
               }}
@@ -206,6 +213,8 @@ export function GroupsPage() {
                 if (source) void subscriptions.refresh(group, source)
               }}
               onRename={setRenameTarget}
+              onSaveLinks={() => void saveProfileLinks(group.profileIds, groupLabel(group))}
+              onShowQr={setQrTarget}
               onRenameGroup={(target) => {
                 setGroupDialogTarget(target)
                 setGroupDialogOpen(true)
@@ -273,6 +282,14 @@ export function GroupsPage() {
         onOpenChange={(open) => {
           if (!open) subscriptions.dismissDeleteTarget()
         }}
+      />
+      <ProfileQrDialog
+        loadQr={loadProfileQr}
+        onCopyLink={(profile) => void copyProfileLinks([profile.id])}
+        onOpenChange={(open) => {
+          if (!open) setQrTarget(null)
+        }}
+        profile={qrTarget}
       />
       <RenameProfileDialog
         onOpenChange={(open) => {

@@ -94,7 +94,11 @@
     "deleteSubscription": "Delete subscription",
     "testGroup": "Test group",
     "clearResults": "Clear results",
-    "deleteUnavailable": "Delete unavailable"
+    "deleteUnavailable": "Delete unavailable",
+    "copyLink": "Copy link",
+    "showQr": "Show QR code",
+    "copyAllLinks": "Copy all links",
+    "saveLinks": "Save links to file"
   },
   "dialogs": {
     "group": {
@@ -177,5 +181,18 @@
     "announce": "Provider announcement",
     "traffic": "Traffic",
     "expiry": "Subscription period"
+  },
+  "share": {
+    "copied_one": "Link copied",
+    "copied_other": "{{count}} links copied",
+    "saved_one": "{{count}} link saved",
+    "saved_other": "{{count}} links saved",
+    "copyFailed": "Could not copy the links.",
+    "saveFailed": "Could not save the links.",
+    "qrFailed": "Could not make the QR code.",
+    "qrTitle": "Share {{name}}",
+    "qrDescription": "Anyone who scans this code or has the link can use this VPN.",
+    "qrAlt": "QR code for {{name}}",
+    "qrLoading": "Making the code…"
   }
 }

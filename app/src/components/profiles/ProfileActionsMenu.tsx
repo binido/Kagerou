@@ -1,4 +1,13 @@
-import { ArrowRight, ExternalLink, MoreHorizontal, Pencil, Trash2, Waypoints } from 'lucide-react'
+import {
+  ArrowRight,
+  Copy,
+  ExternalLink,
+  MoreHorizontal,
+  Pencil,
+  QrCode,
+  Trash2,
+  Waypoints,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -21,6 +30,8 @@ interface ProfileActionsMenuProps {
   onMoveToGroup: (groupId: string) => void
   onDelete: () => void
   onTest: () => void
+  onCopyLink: () => void
+  onShowQr: () => void
 }
 
 export function ProfileActionsMenu({
@@ -30,6 +41,8 @@ export function ProfileActionsMenu({
   onMoveToGroup,
   onDelete,
   onTest,
+  onCopyLink,
+  onShowQr,
 }: ProfileActionsMenuProps) {
   const { t } = useTranslation('profiles')
   const local = profile.origin === 'local'
@@ -87,6 +100,14 @@ export function ProfileActionsMenu({
         <DropdownMenuItem onSelect={onTest}>
           <Waypoints aria-hidden="true" className="size-3.5" />
           <span>{t('menu.test')}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onCopyLink}>
+          <Copy aria-hidden="true" className="size-3.5" />
+          <span>{t('menu.copyLink')}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onShowQr}>
+          <QrCode aria-hidden="true" className="size-3.5" />
+          <span>{t('menu.showQr')}</span>
         </DropdownMenuItem>
         {!local ? (
           <>

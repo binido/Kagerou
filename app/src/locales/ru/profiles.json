@@ -94,7 +94,11 @@
     "deleteSubscription": "Удалить подписку",
     "testGroup": "Проверить группу",
     "clearResults": "Очистить результаты",
-    "deleteUnavailable": "Удалить недоступные"
+    "deleteUnavailable": "Удалить недоступные",
+    "copyLink": "Копировать ссылку",
+    "showQr": "Показать QR-код",
+    "copyAllLinks": "Копировать все ссылки",
+    "saveLinks": "Сохранить ссылки в файл"
   },
   "dialogs": {
     "group": {
@@ -177,5 +181,22 @@
     "announce": "Объявление провайдера",
     "traffic": "Трафик",
     "expiry": "Срок подписки"
+  },
+  "share": {
+    "copied_one": "Ссылка скопирована",
+    "copied_few": "Скопировано ссылок: {{count}}",
+    "copied_many": "Скопировано ссылок: {{count}}",
+    "copied_other": "Скопировано ссылок: {{count}}",
+    "saved_one": "Сохранено ссылок: {{count}}",
+    "saved_few": "Сохранено ссылок: {{count}}",
+    "saved_many": "Сохранено ссылок: {{count}}",
+    "saved_other": "Сохранено ссылок: {{count}}",
+    "copyFailed": "Не удалось скопировать ссылки.",
+    "saveFailed": "Не удалось сохранить ссылки.",
+    "qrFailed": "Не удалось построить QR-код.",
+    "qrTitle": "Поделиться {{name}}",
+    "qrDescription": "Кто отсканирует этот код или получит ссылку, сможет пользоваться этим VPN.",
+    "qrAlt": "QR-код для {{name}}",
+    "qrLoading": "Строю код…"
   }
 }
