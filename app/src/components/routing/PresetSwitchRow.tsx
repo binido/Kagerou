@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Switch } from '@/components/ui/switch'
@@ -24,6 +25,7 @@ export function PresetSwitchRow({
 }) {
   const { t } = useTranslation('routing')
   const { t: tc } = useTranslation('common')
+  const switchId = useId()
   const copyKeys = presetCopyKeys[preset.id]
   const label = copyKeys ? t(copyKeys.label) : preset.label
   const description = copyKeys ? t(copyKeys.description) : preset.description
@@ -31,8 +33,15 @@ export function PresetSwitchRow({
   return (
     <div className="flex min-h-[62px] items-center justify-between gap-8 border-b border-hairline px-5 py-3 last:border-b-0">
       <div className="min-w-0">
-        <p className="text-[13px] font-medium text-primary">{label}</p>
-        <p className="mt-1 text-[11px] leading-4 text-quiet">{description}</p>
+        <label
+          className="block cursor-pointer text-[13px] font-medium text-primary"
+          htmlFor={switchId}
+        >
+          {label}
+        </label>
+        <p className="mt-1 text-[11px] leading-4 text-quiet" id={`${switchId}-description`}>
+          {description}
+        </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <span
@@ -45,9 +54,10 @@ export function PresetSwitchRow({
           {preset.enabled ? tc('status.on') : tc('status.off')}
         </span>
         <Switch
-          aria-label={t('presets.toggle', { name: label })}
+          aria-describedby={`${switchId}-description`}
           checked={preset.enabled}
           className="data-checked:bg-lavender data-unchecked:bg-raised"
+          id={switchId}
           onCheckedChange={onChange}
         />
       </div>

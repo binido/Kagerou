@@ -645,7 +645,7 @@ doing.
   every INFO line from a busy core is its own kind of unusable, so consider
   scoping the live region to WARN and ERROR. **Discuss first.**
 
-- [ ] **Switch labels are not clickable.**
+- [x] **Switch labels are not clickable.**
   `app/src/components/settings/SettingSwitchRow.tsx:15`,
   `app/src/components/routing/PresetSwitchRow.tsx:21`.
 
