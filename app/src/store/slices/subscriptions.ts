@@ -1,7 +1,7 @@
 import i18n from '@/i18n'
 import { backendErrorMessage } from '@/lib/errors'
 import { kagerouApi } from '@/lib/tauri-api'
-import type { ImportAttempt, Source } from '@/types/kagerou'
+import type { ImportAttempt, Source, Unsupported } from '@/types/kagerou'
 
 import { refresh, report, type Slice } from '../shared'
 
@@ -10,7 +10,7 @@ export interface SubscriptionsSlice {
   importText: (text: string) => Promise<ImportAttempt>
   importFromClipboard: () => Promise<ImportAttempt>
   updateSource: (id: string, patch: Partial<Pick<Source, 'name' | 'value'>>) => Promise<boolean>
-  refreshSource: (id: string) => Promise<void>
+  refreshSource: (id: string) => Promise<Unsupported[]>
   deleteSubscription: (groupId: string) => Promise<boolean>
 }
 
@@ -60,8 +60,9 @@ export const createSubscriptionsSlice: Slice<SubscriptionsSlice> = (set, get) =>
   // The one action that lets its rejection through: the page it is called
   // from puts the reason in the toast it already opened.
   refreshSource: async (id) => {
-    await kagerouApi.refreshSource(id)
+    const unsupported = await kagerouApi.refreshSource(id)
     await refresh(set)
+    return unsupported
   },
 
   deleteSubscription: async (groupId) => {

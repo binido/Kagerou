@@ -5,8 +5,8 @@ use thiserror::Error;
 use crate::storage::{groups, profiles, sources, Db, StorageError};
 use crate::subscription::fetch::{self, FetchError};
 use crate::subscription::model::ParsedOutbound;
-use crate::subscription::{parse_subscription, SubscriptionError};
-use crate::usecase::import::{self, ImportError, ImportOutcome, Pasted};
+use crate::subscription::{parse_subscription, SubscriptionError, Unsupported};
+use crate::usecase::import::{self, ImportError, ImportOutcome, Imported, Pasted};
 
 #[derive(Debug, Error)]
 pub enum SubscriptionsError {
@@ -79,34 +79,50 @@ pub fn replace_group_profiles(
 
 /// Fetches a subscription again and replaces what it produced last time.
 /// A source that is not a URL has nothing to refresh from.
-pub async fn refresh(db: &Db, source_id: &str) -> Result<(), SubscriptionsError> {
+///
+/// Returns what the provider offered that could not be imported. A body with
+/// nothing importable fails in `parse_subscription`, before the group is touched.
+pub async fn refresh(db: &Db, source_id: &str) -> Result<Vec<Unsupported>, SubscriptionsError> {
     let source = sources::get(db, source_id)?;
     if source.kind != "url" {
-        return Ok(());
+        return Ok(Vec::new());
     }
     let body = fetch::fetch(&source.value).await?.body;
     let parsed = parse_subscription(&body)?;
-    replace_group_profiles(db, source_id, &parsed)
+    replace_group_profiles(db, source_id, &parsed.outbounds)?;
+    Ok(parsed.unsupported)
 }
 
 /// The one way VPNs get in: whatever was on the clipboard, or pasted by
 /// hand. A URL that is already a subscription is refreshed rather than
 /// added twice.
-pub async fn import_text(db: &Db, text: &str) -> Result<ImportOutcome, SubscriptionsError> {
+pub async fn import_text(db: &Db, text: &str) -> Result<Imported, SubscriptionsError> {
     let url = match import::classify(text)? {
-        Pasted::Outbounds(outbounds) => return Ok(import::add_outbounds(db, &outbounds)?),
+        Pasted::Outbounds(parsed) => {
+            return Ok(Imported {
+                outcome: import::add_outbounds(db, &parsed.outbounds)?,
+                unsupported: parsed.unsupported,
+            })
+        }
         Pasted::SubscriptionUrl(url) => url,
     };
     if let Some(group) = import::subscription_for_url(db, &url)? {
-        if let Some(source_id) = &group.source_id {
-            refresh(db, source_id).await?;
-        }
-        return Ok(ImportOutcome::SubscriptionRefreshed { group_id: group.id });
+        let unsupported = match &group.source_id {
+            Some(source_id) => refresh(db, source_id).await?,
+            None => Vec::new(),
+        };
+        return Ok(Imported {
+            outcome: ImportOutcome::SubscriptionRefreshed { group_id: group.id },
+            unsupported,
+        });
     }
     let fetched = fetch::fetch(&url).await?;
     let parsed = parse_subscription(&fetched.body)?;
     let name = import::subscription_name(fetched.title.as_deref(), &url);
-    Ok(import::add_subscription(db, &url, &name, &parsed)?)
+    Ok(Imported {
+        outcome: import::add_subscription(db, &url, &name, &parsed.outbounds)?,
+        unsupported: parsed.unsupported,
+    })
 }
 
 /// Renames a subscription, or points it at a different URL.

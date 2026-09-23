@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { backendErrorMessage } from '@/lib/errors'
+import { describeUnsupported } from '@/lib/unsupported'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type { ProfileGroup, Source } from '@/types/kagerou'
 
@@ -30,8 +31,11 @@ export function useSubscriptionActions({ groups, groupLabel }: Options) {
     setRefreshing((state) => ({ ...state, [source.id]: true }))
     const toastId = toast.loading(t('feedback.refreshing', { name }))
     try {
-      await refreshSource(source.id)
-      toast.success(t('feedback.refreshed', { name }), { id: toastId })
+      const unsupported = await refreshSource(source.id)
+      toast.success(t('feedback.refreshed', { name }), {
+        id: toastId,
+        description: describeUnsupported(unsupported),
+      })
     } catch (error) {
       toast.error(backendErrorMessage(error, t('feedback.refreshFailed')), { id: toastId })
     } finally {

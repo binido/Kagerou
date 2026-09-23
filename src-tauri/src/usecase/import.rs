@@ -7,7 +7,7 @@ use thiserror::Error;
 use crate::storage::models::{NewProfile, NewProfileGroup, NewSource, ProfileGroup, Protocol};
 use crate::storage::{groups, profiles, settings, sources, Db, StorageError};
 use crate::subscription::model::ParsedOutbound;
-use crate::subscription::{self, SubscriptionError};
+use crate::subscription::{self, Parsed, SubscriptionError, Unsupported};
 
 const DEFAULT_GROUP_ID: &str = "default";
 const IMPORTED_GROUP_LABEL: &str = "Imported";
@@ -32,7 +32,7 @@ pub enum ImportError {
 #[derive(Debug, PartialEq)]
 pub enum Pasted {
     SubscriptionUrl(String),
-    Outbounds(Vec<ParsedOutbound>),
+    Outbounds(Parsed),
 }
 
 pub fn is_subscription_url(text: &str) -> bool {
@@ -80,6 +80,14 @@ pub enum ImportOutcome {
     /// Several keys, every one of them already present.
     #[serde(rename_all = "camelCase")]
     NothingNew { skipped: usize },
+}
+
+/// An import's outcome together with what the source held that could not be imported.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Imported {
+    #[serde(flatten)]
+    pub outcome: ImportOutcome,
+    pub unsupported: Vec<Unsupported>,
 }
 
 fn new_id(prefix: &str) -> String {

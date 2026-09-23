@@ -12,9 +12,10 @@ use crate::storage::models::{
     Source, TestResult,
 };
 use crate::storage::{groups, profiles, routing, settings, sources};
+use crate::subscription::Unsupported;
 use crate::usecase::connection;
 use crate::usecase::error::{AppError, ErrorCode};
-use crate::usecase::import::{self, ImportOutcome};
+use crate::usecase::import::{self, Imported};
 use crate::usecase::subscriptions;
 use crate::usecase::testing;
 
@@ -340,7 +341,10 @@ pub fn update_source(
 }
 
 #[tauri::command]
-pub async fn refresh_source(id: String, state: State<'_, AppState>) -> Result<(), AppError> {
+pub async fn refresh_source(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<Unsupported>, AppError> {
     subscriptions::refresh(&state.db, &id)
         .await
         .map_err(AppError::from)
@@ -350,7 +354,7 @@ pub async fn refresh_source(id: String, state: State<'_, AppState>) -> Result<()
 pub async fn import_from_text(
     text: String,
     state: State<'_, AppState>,
-) -> Result<ImportOutcome, AppError> {
+) -> Result<Imported, AppError> {
     subscriptions::import_text(&state.db, &text)
         .await
         .map_err(AppError::from)

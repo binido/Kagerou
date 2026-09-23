@@ -24,7 +24,11 @@
     "groupAdded": "Group {{name}} created · VPNs: {{count}}",
     "groupAddedSkipped": "Group {{name}} created · VPNs: {{count}}, already present: {{skipped}}",
     "alreadyPresent": "This VPN is already in {{group}}",
-    "nothingNew": "Nothing new · already added: {{count}}"
+    "nothingNew": "Nothing new · already added: {{count}}",
+    "unsupported": "Not supported, left out: {{count}} - {{list}}",
+    "autoSelectEntry": "auto-select",
+    "chainEntry": "server chain",
+    "unreadableEntry": "unreadable entry"
   },
   "feedback": {
     "testRunning": "Testing {{name}}…",

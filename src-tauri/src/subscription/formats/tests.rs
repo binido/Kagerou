@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn parses_a_plain_newline_uri_list() {
     let content = "vless://uuid@example.com:443#A\ntrojan://pw@relay.example.com:443#B\n";
-    let outbounds = parse_subscription(content).unwrap();
+    let outbounds = parse_subscription(content).unwrap().outbounds;
     assert_eq!(outbounds.len(), 2);
     assert_eq!(outbounds[0].protocol_label(), "VLESS");
     assert_eq!(outbounds[1].protocol_label(), "Trojan");
@@ -14,22 +14,78 @@ fn parses_a_base64_encoded_uri_list() {
     let raw =
         "vless://uuid@example.com:443#A\nss://YWVzLTI1Ni1nY206aHVudGVyMg==@ss.example.com:8388#B";
     let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, raw);
-    let outbounds = parse_subscription(&encoded).unwrap();
+    let outbounds = parse_subscription(&encoded).unwrap().outbounds;
     assert_eq!(outbounds.len(), 2);
 }
 
 #[test]
 fn skips_blank_lines_in_a_uri_list() {
     let content = "\n\nvless://uuid@example.com:443#A\n\n\n";
-    let outbounds = parse_subscription(content).unwrap();
+    let outbounds = parse_subscription(content).unwrap().outbounds;
     assert_eq!(outbounds.len(), 1);
 }
 
 #[test]
-fn a_single_bad_uri_fails_the_whole_list() {
-    let content = "vless://uuid@example.com:443#A\nvless://missing-port@example.com#B";
+fn a_bad_uri_is_left_out_and_the_rest_of_the_list_kept() {
+    let content = "vless://uuid@example.com:443#A\nvless://missing-port@example.com#B\nssr://abc";
+    let parsed = parse_subscription(content).unwrap();
+    assert_eq!(parsed.outbounds.len(), 1);
+    assert_eq!(
+        parsed.unsupported,
+        vec![Unsupported::Invalid, Unsupported::Protocol("ssr".into())]
+    );
+}
+
+#[test]
+fn a_list_of_only_bad_uris_fails_with_the_first_error() {
+    let content = "vless://missing-port@example.com#B\nssr://abc";
     let err = parse_subscription(content).unwrap_err();
     assert!(matches!(err, SubscriptionError::InvalidUri { .. }));
+}
+
+#[test]
+fn a_list_starting_with_an_unknown_scheme_is_still_a_uri_list() {
+    let parsed = parse_subscription("ssr://abc\ntrojan://pw@relay.example.com:443#B").unwrap();
+    assert_eq!(parsed.outbounds.len(), 1);
+    assert_eq!(
+        parsed.unsupported,
+        vec![Unsupported::Protocol("ssr".into())]
+    );
+}
+
+#[test]
+fn a_transport_sing_box_lacks_is_left_out() {
+    let content =
+        "vless://uuid@example.com:443?type=xhttp#A\nvless://uuid@example.com:443?type=ws#B";
+    let parsed = parse_subscription(content).unwrap();
+    assert_eq!(parsed.outbounds.len(), 1);
+    assert_eq!(
+        parsed.unsupported,
+        vec![Unsupported::Transport("xhttp".into())]
+    );
+}
+
+#[test]
+fn xray_raw_transport_is_read_as_tcp() {
+    let outbounds = parse_subscription("vless://uuid@example.com:443?type=raw#A")
+        .unwrap()
+        .outbounds;
+    match &outbounds[0] {
+        ParsedOutbound::Vless(v) => assert_eq!(v.network, "tcp"),
+        other => panic!("expected Vless, got {other:?}"),
+    }
+}
+
+#[test]
+fn unsupported_reasons_keep_their_wire_format() {
+    assert_eq!(
+        serde_json::to_value(Unsupported::Transport("xhttp".into())).unwrap(),
+        serde_json::json!({ "kind": "transport", "name": "xhttp" })
+    );
+    assert_eq!(
+        serde_json::to_value(Unsupported::Invalid).unwrap(),
+        serde_json::json!({ "kind": "invalid" })
+    );
 }
 
 #[test]
@@ -55,7 +111,7 @@ proxies:
     password: hunter2
     sni: relay.example.com
 "#;
-    let outbounds = parse_subscription(yaml).unwrap();
+    let outbounds = parse_subscription(yaml).unwrap().outbounds;
     assert_eq!(outbounds.len(), 2);
     match &outbounds[0] {
         ParsedOutbound::Vless(v) => {
@@ -75,10 +131,23 @@ fn clash_yaml_rejects_a_proxy_missing_required_fields() {
 }
 
 #[test]
-fn clash_yaml_rejects_an_unsupported_proxy_type() {
-    let yaml = "proxies:\n  - name: Unsupported\n    type: snell\n    server: s.example.com\n    port: 1\n";
-    let err = parse_subscription(yaml).unwrap_err();
-    assert!(matches!(err, SubscriptionError::InvalidClashProxy { .. }));
+fn clash_yaml_leaves_out_an_unsupported_proxy_type() {
+    let yaml = "proxies:\n  - name: Unsupported\n    type: snell\n    server: s.example.com\n    port: 1\n  - name: Relay\n    type: trojan\n    server: relay.example.com\n    port: 443\n    password: hunter2\n";
+    let parsed = parse_subscription(yaml).unwrap();
+    assert_eq!(parsed.outbounds.len(), 1);
+    assert_eq!(
+        parsed.unsupported,
+        vec![Unsupported::Protocol("snell".into())]
+    );
+}
+
+#[test]
+fn singbox_json_with_only_groups_and_direct_is_rejected() {
+    let json = serde_json::json!({ "outbounds": [ { "type": "direct" }, { "type": "selector" } ] });
+    assert_eq!(
+        parse_subscription(&json.to_string()).unwrap_err(),
+        SubscriptionError::Empty
+    );
 }
 
 #[test]
@@ -94,7 +163,7 @@ fn parses_a_singbox_json_subscription() {
             { "type": "shadowsocks", "tag": "SS Node", "server": "ss.example.com", "server_port": 8388, "method": "aes-256-gcm", "password": "hunter2" }
         ]
     });
-    let outbounds = parse_subscription(&json.to_string()).unwrap();
+    let outbounds = parse_subscription(&json.to_string()).unwrap().outbounds;
     assert_eq!(outbounds.len(), 2, "the direct outbound must be skipped");
     match &outbounds[0] {
         ParsedOutbound::Hysteria2(h) => {
@@ -142,4 +211,41 @@ fn garbage_that_happens_to_be_valid_base64_but_not_a_uri_list_is_rejected() {
     );
     let err = parse_subscription(&encoded).unwrap_err();
     assert!(matches!(err, SubscriptionError::UnrecognizedFormat));
+}
+
+#[test]
+fn parses_a_sip008_document() {
+    let json = serde_json::json!({
+        "version": 1,
+        "servers": [
+            { "remarks": "Tokyo", "server": "jp.example.com", "server_port": 8388, "method": "chacha20-ietf-poly1305", "password": "synthetic" },
+            { "server": "obfs.example.com", "server_port": 8388, "method": "aes-256-gcm", "password": "p", "plugin": "obfs-local", "plugin_opts": "obfs=http" },
+            { "server": "broken.example.com", "method": "aes-256-gcm", "password": "p" }
+        ]
+    });
+    let parsed = parse_subscription(&json.to_string()).unwrap();
+    assert_eq!(parsed.outbounds.len(), 1);
+    match &parsed.outbounds[0] {
+        ParsedOutbound::Shadowsocks(s) => {
+            assert_eq!(s.name, "Tokyo");
+            assert_eq!(s.port, 8388);
+        }
+        other => panic!("expected Shadowsocks, got {other:?}"),
+    }
+    assert_eq!(
+        parsed.unsupported,
+        vec![
+            Unsupported::Protocol("ss+obfs-local".into()),
+            Unsupported::Invalid
+        ]
+    );
+}
+
+#[test]
+fn a_sip008_document_with_no_usable_server_is_rejected() {
+    let json = serde_json::json!({ "version": 1, "servers": [ { "server": "x.example.com" } ] });
+    assert!(matches!(
+        parse_subscription(&json.to_string()),
+        Err(SubscriptionError::InvalidSip008Server { .. })
+    ));
 }

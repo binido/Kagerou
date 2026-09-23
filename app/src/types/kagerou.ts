@@ -80,14 +80,24 @@ export interface Source {
   originLabel: 'Remote URL'
 }
 
-/** Mirrors `import::ImportOutcome`: what a piece of pasted text became. */
-export type ImportOutcome =
+/** Mirrors `subscription::Unsupported`: an entry an import left out. */
+export type Unsupported =
+  | { kind: 'protocol'; name: string }
+  | { kind: 'transport'; name: string }
+  | { kind: 'balancer' }
+  | { kind: 'chain' }
+  | { kind: 'invalid' }
+
+/** Mirrors `import::Imported`: what a piece of pasted text became, and what
+ * it held that could not be imported. */
+export type ImportOutcome = (
   | { kind: 'subscriptionAdded'; groupId: string; added: number }
   | { kind: 'subscriptionRefreshed'; groupId: string }
   | { kind: 'profileAdded'; profileId: string; name: string }
   | { kind: 'groupAdded'; groupId: string; added: number; skipped: number }
   | { kind: 'alreadyPresent'; groupId: string }
   | { kind: 'nothingNew'; skipped: number }
+) & { unsupported: Unsupported[] }
 
 /** A failed attempt carries its text back so it can be corrected by hand. An
  * empty `error` means there was nothing to import in the first place. */

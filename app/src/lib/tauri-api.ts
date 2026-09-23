@@ -15,6 +15,7 @@ import type {
   Source,
   TestResult,
   UpdateInfo,
+  Unsupported,
 } from '@/types/kagerou'
 
 export interface TestProgressEvent {
@@ -95,7 +96,7 @@ export const kagerouApi = {
   importFromText: (text: string) => invoke<ImportOutcome>('import_from_text', { text }),
   updateSource: (id: string, patch: { name?: string; value?: string }) =>
     invoke<void>('update_source', { id, patch }),
-  refreshSource: (id: string) => invoke<void>('refresh_source', { id }),
+  refreshSource: (id: string) => invoke<Unsupported[]>('refresh_source', { id }),
   deleteSubscription: (groupId: string) => invoke<void>('delete_subscription', { groupId }),
 
   setPreset: (id: string, enabled: boolean) => invoke<void>('set_preset', { id, enabled }),

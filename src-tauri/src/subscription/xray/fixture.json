@@ -1,0 +1,124 @@
+[
+  {
+    "remarks": "🇩🇪 Germany",
+    "dns": { "servers": ["https://8.8.8.8/dns-query"] },
+    "outbounds": [
+      {
+        "tag": "proxy",
+        "protocol": "vless",
+        "settings": {
+          "vnext": [
+            {
+              "address": "de.example.com",
+              "port": 8443,
+              "users": [
+                {
+                  "id": "11111111-2222-3333-4444-555555555555",
+                  "encryption": "none",
+                  "flow": "xtls-rprx-vision"
+                }
+              ]
+            }
+          ]
+        },
+        "streamSettings": {
+          "network": "tcp",
+          "security": "reality",
+          "realitySettings": {
+            "serverName": "cdn.example.org",
+            "publicKey": "synthetic-public-key",
+            "shortId": "abcd",
+            "fingerprint": "firefox"
+          }
+        }
+      },
+      { "tag": "direct", "protocol": "freedom" },
+      { "tag": "block", "protocol": "blackhole" }
+    ],
+    "routing": { "rules": [{ "network": "udp", "port": "443", "outboundTag": "block" }] }
+  },
+  {
+    "remarks": "🇳🇱 Netherlands GAMING",
+    "outbounds": [
+      {
+        "tag": "proxy",
+        "protocol": "hysteria",
+        "settings": { "address": "nl.example.com", "port": 8449, "version": 2 },
+        "streamSettings": {
+          "network": "hysteria",
+          "hysteriaSettings": { "version": 2, "auth": "synthetic-auth" },
+          "security": "tls",
+          "tlsSettings": { "serverName": "nl.example.com", "alpn": ["h3"] }
+        }
+      },
+      { "tag": "direct", "protocol": "freedom" }
+    ]
+  },
+  {
+    "remarks": "🇮🇹 Italy SS",
+    "outbounds": [
+      {
+        "tag": "proxy",
+        "protocol": "shadowsocks",
+        "settings": {
+          "servers": [
+            {
+              "address": "it.example.com",
+              "port": 2030,
+              "password": "synthetic-password",
+              "method": "chacha20-ietf-poly1305"
+            }
+          ]
+        },
+        "streamSettings": { "network": "tcp", "security": "none" }
+      }
+    ]
+  },
+  {
+    "remarks": "🇪🇺 Auto | Best server",
+    "outbounds": [
+      {
+        "tag": "proxy-a",
+        "protocol": "vless",
+        "settings": { "vnext": [{ "address": "a.example.com", "port": 443, "users": [{ "id": "a" }] }] }
+      },
+      {
+        "tag": "proxy-b",
+        "protocol": "vless",
+        "settings": { "vnext": [{ "address": "b.example.com", "port": 443, "users": [{ "id": "b" }] }] }
+      },
+      { "tag": "direct", "protocol": "freedom" }
+    ],
+    "routing": {
+      "balancers": [{ "tag": "Auto", "selector": ["proxy"], "fallbackTag": "proxy-a" }],
+      "rules": [{ "network": "tcp,udp", "balancerTag": "Auto" }]
+    }
+  },
+  {
+    "remarks": "🇹🇷 Turkey (whitelist)",
+    "outbounds": [
+      {
+        "tag": "proxy",
+        "protocol": "vless",
+        "settings": { "vnext": [{ "address": "tr.example.com", "port": 443, "users": [{ "id": "c" }] }] },
+        "streamSettings": { "network": "xhttp", "security": "tls", "xhttpSettings": { "path": "/x" } }
+      }
+    ]
+  },
+  {
+    "remarks": "🇫🇮 Finland via relay",
+    "outbounds": [
+      {
+        "tag": "proxy",
+        "protocol": "trojan",
+        "settings": { "servers": [{ "address": "fi.example.com", "port": 443, "password": "p" }] },
+        "streamSettings": { "security": "tls", "sockopt": { "dialerProxy": "relay" } }
+      },
+      {
+        "tag": "relay",
+        "protocol": "trojan",
+        "settings": { "servers": [{ "address": "relay.example.com", "port": 443, "password": "p" }] }
+      }
+    ]
+  }
+]

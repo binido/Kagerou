@@ -9,6 +9,7 @@ export type ErrorCode =
   | 'coreFailed'
   | 'network'
   | 'subscriptionInvalid'
+  | 'subscriptionRefused'
   | 'notASubscriptionUrl'
   | 'notASubscription'
   | 'activeProfileInUse'
