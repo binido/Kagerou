@@ -110,7 +110,7 @@ Four Catppuccin flavours and three Kanagawa variants, switched in Settings witho
 
 Prebuilt bundles are published on the [Releases](https://github.com/binido/Kagerou/releases) page. If you want to run the latest code or build for an unsupported target, build Kagerou locally with Rust, Node.js, and pnpm.
 
-The latest release is [v0.7.0](https://github.com/binido/Kagerou/releases/tag/v0.7.0).
+The latest release is [v0.7.1](https://github.com/binido/Kagerou/releases/tag/v0.7.1).
 
 ### Prerequisites
 
