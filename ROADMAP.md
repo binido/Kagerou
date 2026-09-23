@@ -518,7 +518,7 @@ user needs to know about.
 Real defects, none of them blocking. Roughly in the order they are worth
 doing.
 
-- [ ] **The focus ring is drawn at 50% alpha.**
+- [x] **The focus ring is drawn at 50% alpha.**
   `app/src/index.css:81-83`.
 
   ```css
