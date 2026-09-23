@@ -92,6 +92,18 @@ pub enum ParsedOutbound {
 }
 
 impl ParsedOutbound {
+    pub fn set_name(&mut self, name: &str) {
+        let slot = match self {
+            ParsedOutbound::Vmess(o) => &mut o.name,
+            ParsedOutbound::Vless(o) => &mut o.name,
+            ParsedOutbound::Trojan(o) => &mut o.name,
+            ParsedOutbound::Shadowsocks(o) => &mut o.name,
+            ParsedOutbound::Hysteria2(o) => &mut o.name,
+            ParsedOutbound::Tuic(o) => &mut o.name,
+        };
+        *slot = name.to_string();
+    }
+
     pub fn name(&self) -> &str {
         match self {
             ParsedOutbound::Vmess(o) => &o.name,
