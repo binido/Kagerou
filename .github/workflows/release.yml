@@ -112,20 +112,6 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: Kagerou ${{ github.ref_name }}
           releaseBody: |
-            ## Installing
-
-            Bundles sing-box as its proxy core — nothing to install separately.
-
-            **These builds are not notarised.** macOS may refuse to open the app; clear the quarantine flag it adds on download:
-
-            ```
-            xattr -dr com.apple.quarantine /Applications/Kagerou.app
-            ```
-
-            Windows SmartScreen will warn for the same reason — choose "More info", then "Run anyway".
-
-            The Windows `portable.zip` needs no installation: unpack it and run `Kagerou.exe`. It needs the WebView2 runtime, which Windows 10 and 11 normally already have.
-
             See the [roadmap](https://github.com/binido/Kagerou/blob/main/ROADMAP.md) for what works, what is half-built, and what is not there yet.
           # Left as a draft on purpose: check the artifacts, write the notes,
           # then publish. Note that GitHub's "latest release" endpoint — the

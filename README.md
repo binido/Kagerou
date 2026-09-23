@@ -145,7 +145,13 @@ The configured bundle targets are:
 - Linux: DEB, RPM, and AppImage;
 - Windows: MSI and NSIS installer, plus a portable ZIP (`Kagerou.exe` and `sing-box.exe` side by side, no installation; settings still live in `%APPDATA%`, and it needs the WebView2 runtime, which Windows 10 and 11 normally already have).
 
-Builds are currently unsigned. macOS and Windows may show a security warning on first launch; this does not mean that the application is corrupted.
+Builds are currently unsigned. macOS and Windows may show a security warning on first launch; this does not mean that the application is corrupted. If macOS refuses to open the app, clear the quarantine flag it adds on download:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kagerou.app
+```
+
+On Windows, SmartScreen offers "More info", then "Run anyway".
 
 ## Data and privacy
 

@@ -72,7 +72,7 @@ pnpm tauri build
 
 1. Bump `version` in `src-tauri/tauri.conf.json`. It is the only place the version lives — Vite injects it into the frontend, and the release workflow refuses a tag that disagrees with it.
 2. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
-3. The workflow builds macOS (Apple silicon and Intel), Linux and Windows bundles, plus a portable Windows ZIP, and attaches them to a **draft** release. Check the artifacts, add the notes above its "Installing" section, then publish it yourself.
+3. The workflow builds macOS (Apple silicon and Intel), Linux and Windows bundles, plus a portable Windows ZIP, and attaches them to a **draft** release. Check the artifacts, add the notes above its roadmap link, then publish it yourself.
 
 The notes are a "What's changed" list, one line per change a user would notice, verb first ("Added ...", "Removed ..."). Anything removed or renamed gets its own line. Lint, tests and small fixes fold into one line or are left out.
 
