@@ -36,6 +36,8 @@ futures-util = "0.3"
 uuid = { version = "1", features = ["v4"] }
 tauri-plugin-clipboard-manager = "2.3.3"
 tauri-plugin-opener = "2.5.5"
+tauri-plugin-dialog = "2"
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Networking_WinInet"] }

@@ -15,6 +15,7 @@ use crate::storage::{groups, profiles, routing, settings, sources};
 use crate::subscription::Unsupported;
 use crate::usecase::connection;
 use crate::usecase::error::{AppError, ErrorCode};
+use crate::usecase::export;
 use crate::usecase::import::{self, Imported};
 use crate::usecase::subscriptions;
 use crate::usecase::testing;
@@ -152,6 +153,49 @@ pub async fn lookup_exit_location(
 // ---------------------------------------------------------------------
 // Profiles
 // ---------------------------------------------------------------------
+
+#[tauri::command]
+pub fn export_links(ids: Vec<String>, state: State<AppState>) -> Result<Vec<String>, AppError> {
+    export::share_links(&state.db, &ids).map_err(AppError::from)
+}
+
+#[tauri::command]
+pub fn profile_qr_svg(id: String, state: State<AppState>) -> Result<String, AppError> {
+    export::qr_svg(&state.db, &id).map_err(AppError::from)
+}
+
+/// Asks where to save the profiles' links and writes them there, one per
+/// line. `false` means the user closed the dialog.
+#[tauri::command]
+pub async fn save_links_to_file(
+    ids: Vec<String>,
+    label: String,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<bool, AppError> {
+    use tauri_plugin_dialog::DialogExt;
+    let links = export::share_links(&state.db, &ids)?;
+
+    let (chosen, picked) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_file_name(export::suggested_file_name(&label))
+        .add_filter("Text", &["txt"])
+        .save_file(move |path| {
+            let _ = chosen.send(path);
+        });
+    let Some(path) = picked.await.ok().flatten() else {
+        return Ok(false);
+    };
+    let path = path
+        .into_path()
+        .map_err(|e| AppError::new(ErrorCode::FileWrite, e))?;
+    let mut text = links.join("\n");
+    text.push('\n');
+    std::fs::write(&path, text)
+        .map_err(|e| AppError::new(ErrorCode::FileWrite, format!("{}: {e}", path.display())))?;
+    Ok(true)
+}
 
 #[tauri::command]
 pub async fn select_profile(

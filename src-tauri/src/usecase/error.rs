@@ -9,6 +9,7 @@ use crate::subscription::SubscriptionError;
 use crate::usecase::import::ImportError;
 
 use super::core::CoreError;
+use super::export::ExportError;
 use super::subscriptions::SubscriptionsError;
 
 /// The kinds of failure the interface distinguishes. Deliberately coarse:
@@ -44,6 +45,8 @@ pub enum ErrorCode {
     LookupFailed,
     /// The operating system refused a setting the app tried to change.
     SystemSetting,
+    /// A file the user asked for could not be written where they chose.
+    FileWrite,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -142,6 +145,15 @@ impl From<SubscriptionsError> for AppError {
             SubscriptionsError::NotASubscriptionUrl => {
                 Self::new(ErrorCode::NotASubscriptionUrl, error)
             }
+        }
+    }
+}
+
+impl From<ExportError> for AppError {
+    fn from(error: ExportError) -> Self {
+        match error {
+            ExportError::Storage(e) => e.into(),
+            ExportError::TooLongForQr(_) => Self::new(ErrorCode::InvalidInput, error),
         }
     }
 }

@@ -61,6 +61,7 @@ fn the_codes_keep_the_names_the_frontend_switches_on() {
         ErrorCode::TestRunInProgress,
         ErrorCode::LookupFailed,
         ErrorCode::SystemSetting,
+        ErrorCode::FileWrite,
     ];
     let names: Vec<String> = codes
         .iter()
@@ -89,6 +90,7 @@ fn the_codes_keep_the_names_the_frontend_switches_on() {
             "testRunInProgress",
             "lookupFailed",
             "systemSetting",
+            "fileWrite",
         ]
     );
 }
