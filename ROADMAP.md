@@ -780,7 +780,7 @@ doing.
   already have an `onBlur` doing validation; move the persist there and keep
   the keystroke handler local. **Good first issue.**
 
-- [ ] **`transition-all` on three primitives.**
+- [x] **`transition-all` on three primitives.**
   `app/src/components/ui/button.tsx:8`, `app/src/components/ui/badge.tsx:8`,
   `app/src/components/ui/switch.tsx:20`.
 
