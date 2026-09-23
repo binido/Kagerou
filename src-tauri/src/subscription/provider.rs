@@ -6,14 +6,21 @@ use crate::storage::models::ProviderInfo;
 /// Longer announcements are cut, so a broken panel cannot fill the window.
 const ANNOUNCE_MAX_CHARS: usize = 500;
 
+/// Providers write a date a century out, 2100 or 2126, to mean "never ends".
+/// Nothing is paid for this far ahead, so such a date reads as no end date.
+const OPEN_ENDED_AFTER_MS: i64 = 10 * 365 * 86_400_000;
+
 /// Reads what the provider says about the subscription itself from the
 /// headers Happ and v2rayN understand. A header that is missing or cannot be
-/// read leaves its field empty.
-pub fn provider_info(headers: &HeaderMap) -> ProviderInfo {
+/// read leaves its field empty. `now` is unix milliseconds.
+pub fn provider_info(headers: &HeaderMap, now: i64) -> ProviderInfo {
     let header = |name: &str| headers.get(name).and_then(|value| value.to_str().ok());
     let mut info = header("subscription-userinfo")
         .map(parse_userinfo)
         .unwrap_or_default();
+    info.expires_at = info
+        .expires_at
+        .filter(|&expires| expires <= now.saturating_add(OPEN_ENDED_AFTER_MS));
     info.announce = header("announce")
         .and_then(decode_header_text)
         .map(|text| text.chars().take(ANNOUNCE_MAX_CHARS).collect());

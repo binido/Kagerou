@@ -53,7 +53,11 @@ pub async fn fetch(url: &str) -> Result<Fetched, FetchError> {
         .get("profile-title")
         .and_then(|value| value.to_str().ok())
         .map(str::to_string);
-    let provider = provider_info(response.headers());
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_millis() as i64)
+        .unwrap_or_default();
+    let provider = provider_info(response.headers(), now);
     Ok(Fetched {
         body: response.text().await?,
         title,
