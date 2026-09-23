@@ -167,6 +167,7 @@ export function ProfileGroupCard({
         </div>
         {source && hasProviderInfo(source.provider) ? (
           <SubscriptionProviderInfo
+            expanded={group.open}
             groupLabel={groupLabel}
             info={source.provider}
             onOpenSupport={onOpenSupport}

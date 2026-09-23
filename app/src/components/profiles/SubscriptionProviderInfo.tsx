@@ -45,6 +45,8 @@ function Fact({
 interface SubscriptionProviderInfoProps {
   info: ProviderInfo
   groupLabel: string
+  /** Shows the whole announcement. Collapsed, it is cut to one line. */
+  expanded: boolean
   onOpenSupport: () => void
 }
 
@@ -52,6 +54,7 @@ interface SubscriptionProviderInfoProps {
 export function SubscriptionProviderInfo({
   info,
   groupLabel,
+  expanded,
   onOpenSupport,
 }: SubscriptionProviderInfoProps) {
   const { i18n, t } = useTranslation('profiles')
@@ -125,7 +128,7 @@ export function SubscriptionProviderInfo({
           data-selectable
         >
           <Megaphone aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-lavender" />
-          <p className="whitespace-pre-line">
+          <p className={cn('min-w-0', expanded ? 'whitespace-pre-line' : 'truncate')}>
             <span className="sr-only">{t('provider.announce')}: </span>
             {info.announce}
           </p>
