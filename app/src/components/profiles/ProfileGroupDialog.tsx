@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 
@@ -33,6 +33,7 @@ export function ProfileGroupDialog({
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [prevOpen, setPrevOpen] = useState(open)
+  const inputRef = useRef<HTMLInputElement>(null)
   // Snapshot rather than read live: the parent clears `group` on close, and the
   // dialog stays mounted through its exit animation. Deriving from the prop
   // would retitle it "new group" for those 100ms on the way out.
@@ -54,6 +55,7 @@ export function ProfileGroupDialog({
     const trimmed = label.trim().replace(/\s+/g, ' ')
     if (!trimmed) {
       setError(t('dialogs.group.empty'))
+      inputRef.current?.focus()
       return
     }
     setSubmitting(true)
@@ -61,6 +63,7 @@ export function ProfileGroupDialog({
     setSubmitting(false)
     if (!ok) {
       setError(t('dialogs.group.duplicate'))
+      inputRef.current?.focus()
       return
     }
     setError('')
@@ -85,7 +88,10 @@ export function ProfileGroupDialog({
               {t('dialogs.group.nameLabel')}
             </FieldLabel>
             <Input
-              aria-describedby="profile-group-helper"
+              aria-describedby={
+                error ? 'profile-group-error profile-group-helper' : 'profile-group-helper'
+              }
+              aria-invalid={Boolean(error)}
               autoFocus
               className="h-[42px] border-hairline bg-surface text-[13px]"
               id="profile-group-name"
@@ -94,8 +100,14 @@ export function ProfileGroupDialog({
                 setError('')
               }}
               placeholder={t('dialogs.group.placeholder')}
+              ref={inputRef}
               value={label}
             />
+            {error ? (
+              <FieldError className="text-[11px]" id="profile-group-error">
+                {error}
+              </FieldError>
+            ) : null}
             <FieldDescription
               className="text-[11px] leading-4 text-muted-copy"
               id="profile-group-helper"
@@ -103,7 +115,6 @@ export function ProfileGroupDialog({
               {t('dialogs.group.helper')}
             </FieldDescription>
           </Field>
-          {error ? <FieldError className="text-[11px]">{error}</FieldError> : null}
           <DialogFooter>
             <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
               {t('dialogs.group.cancel')}

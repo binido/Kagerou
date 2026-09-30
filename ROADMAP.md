@@ -721,7 +721,7 @@ doing.
   `role="radiogroup"` from `ThemePicker.tsx:108` up to the wrapper at line
   101 and give it a single label.
 
-- [ ] **Dialog validation errors are not tied to their field.**
+- [x] **Dialog validation errors are not tied to their field.**
   `app/src/components/profiles/ProfileGroupDialog.tsx:71-74`.
 
   The message renders as a sibling above the footer. The input gets no
