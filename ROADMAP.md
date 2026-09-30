@@ -80,7 +80,7 @@ row.
 | Per-profile delay test | ✅ | One measurement: the latency of the whole path through the proxy, reported by sing-box's own API and shown in the Ping column. The TCP ping that used to sit beside it is gone — it measured the round trip to the proxy server rather than through it, which told a user nothing they could act on. |
 | Group-wide delay test | ✅ | Each group's menu tests all its members concurrently (TCP or URL), then "clear results" resets both stored results and "delete unavailable" removes the profiles that failed the chosen method — never the active profile, never untested ones, behind a confirmation. |
 | Export and sharing | ✅ | A VPN's menu copies it as a link or shows it as a QR code, and a group's menu copies every link or saves them to a text file, one per line. The links are rebuilt by the backend from the stored key with the name the VPN has now, since the key keeps the name it was imported with; a key that no longer parses goes out as stored. The QR code is rendered in the backend (`qrcode`, SVG only) and is always black on white, whatever the theme. The save dialog comes from `tauri-plugin-dialog`, called from Rust only, so the window gains no file permission. |
-| QR code import | 📋 | Scan a QR from an image file, the clipboard, or a screen region. |
+| QR code import | 🟡 | "Add from clipboard" reads a QR code from a clipboard image when there is no text, so a screenshot of a code imports like the link inside it. The image is decoded in Rust (`rqrr`) rather than sent over IPC, since a screen-sized RGBA buffer is tens of megabytes. Missing: an image file, and picking a screen region. |
 | Backup and restore | 📋 | Export groups, profiles, routing rules, and settings as one JSON file, and import it back. NekoBox lets you pick which of the three to include. **Discuss first.** |
 | Auto-select fastest (urltest group) | 📋 | Groups currently generate a plain selector. sing-box's `urltest` outbound gives automatic failover. **Discuss first.** |
 | Proxy chains | 📋 | Route one proxy through another. NekoBox has both a chain profile type and per-group front/landing proxies. **Discuss first.** |
@@ -1034,7 +1034,7 @@ Kagerou do X yet".
 | Subscription auto-update on an interval | 🟡 Setting exists, no scheduler. |
 | Subscription User-Agent, deduplication, force-resolve | 📋 |
 | Manual profile creation with per-protocol settings | 📋 Link paste only today. |
-| QR code scan / share, clipboard and file import | 🟡 Pasted links import, and VPNs share as links, QR codes and files. Scanning a QR and importing a file do not. |
+| QR code scan / share, clipboard and file import | 🟡 Pasted links import, and VPNs share as links, QR codes and files. A QR code imports from a clipboard image; from a file or a screen region it does not, and neither does a file of links. |
 | NFC sharing | ❌ Android hardware feature. |
 | Backup and restore (groups, rules, settings) | 📋 |
 | Profile groups, group ordering, group-wide URL test | ✅ Groups, sorting, group-wide testing and the delete/clear actions are all in. |

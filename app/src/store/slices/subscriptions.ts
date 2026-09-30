@@ -44,6 +44,8 @@ export const createSubscriptionsSlice: Slice<SubscriptionsSlice> = (set, get) =>
       // An empty clipboard rejects too; either way there is nothing to read
       // and the manual paste dialog takes over.
     }
+    // No text: the clipboard may hold a screenshot of a QR code instead.
+    if (!text.trim()) text = (await kagerouApi.readClipboardQr().catch(() => null)) ?? ''
     if (!text.trim()) return { status: 'failed', text: '', error: '' }
     return get().importText(text)
   },

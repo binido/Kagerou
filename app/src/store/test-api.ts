@@ -37,6 +37,7 @@ export const kagerouApiMock = {
   addProfileGroup: vi.fn(),
   renameProfileGroup: vi.fn(),
   readClipboardText: vi.fn(),
+  readClipboardQr: vi.fn(),
   importFromText: vi.fn(),
   updateSource: vi.fn(),
   refreshSource: vi.fn(),
@@ -90,6 +91,7 @@ export const resetApiMock = () => {
   kagerouApiMock.getAppState.mockResolvedValue(emptySnapshot)
   kagerouApiMock.appDataDir.mockResolvedValue('/data/kagerou')
   kagerouApiMock.checkForUpdate.mockResolvedValue(null)
+  kagerouApiMock.readClipboardQr.mockResolvedValue(null)
   LISTENERS.forEach((fn) => fn.mockResolvedValue(() => {}))
   FIRE_AND_FORGET.forEach((fn) => fn.mockResolvedValue(undefined))
 }

@@ -326,3 +326,52 @@ fn what_was_left_out_rides_next_to_the_outcome() {
         })
     );
 }
+
+/// Renders `text` as an RGBA QR code, 4 pixels per module, with the
+/// standard 4-module quiet zone.
+fn qr_rgba(text: &str, dark: [u8; 4], light: [u8; 4]) -> (Vec<u8>, usize) {
+    let code = qrcode::QrCode::new(text).unwrap();
+    let modules = code.width();
+    let colors = code.to_colors();
+    let size = (modules + 8) * 4;
+    let mut rgba = Vec::with_capacity(size * size * 4);
+    for y in 0..size {
+        for x in 0..size {
+            let (mx, my) = ((x / 4) as isize - 4, (y / 4) as isize - 4);
+            let inside = (0..modules as isize).contains(&mx) && (0..modules as isize).contains(&my);
+            let is_dark =
+                inside && colors[my as usize * modules + mx as usize] == qrcode::Color::Dark;
+            rgba.extend_from_slice(if is_dark { &dark } else { &light });
+        }
+    }
+    (rgba, size)
+}
+
+#[test]
+fn qr_text_reads_a_key_from_an_image() {
+    let key = "vless://11111111-2222-3333-4444-555555555555@example.com:443?security=tls#Tokyo";
+    let (rgba, size) = qr_rgba(key, [0, 0, 0, 255], [255, 255, 255, 255]);
+    assert_eq!(qr_text(&rgba, size, size).as_deref(), Some(key));
+}
+
+#[test]
+fn qr_text_treats_a_transparent_background_as_white() {
+    let (rgba, size) = qr_rgba("trojan://pw@example.com:443", [0, 0, 0, 255], [0, 0, 0, 0]);
+    assert_eq!(
+        qr_text(&rgba, size, size).as_deref(),
+        Some("trojan://pw@example.com:443")
+    );
+}
+
+#[test]
+fn qr_text_is_none_without_a_code() {
+    let rgba = vec![255; 64 * 64 * 4];
+    assert_eq!(qr_text(&rgba, 64, 64), None);
+}
+
+#[test]
+fn qr_text_is_none_for_a_buffer_shorter_than_its_dimensions() {
+    assert_eq!(qr_text(&[0; 16], 64, 64), None);
+    assert_eq!(qr_text(&[], 0, 0), None);
+    assert_eq!(qr_text(&[0; 16], usize::MAX, 2), None);
+}

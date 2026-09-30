@@ -145,6 +145,7 @@ pub fn run() {
             commands::refresh_source,
             commands::open_support_url,
             commands::import_from_text,
+            commands::read_clipboard_qr,
             commands::delete_subscription,
             commands::set_preset,
             commands::select_rule,

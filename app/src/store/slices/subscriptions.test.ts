@@ -80,6 +80,36 @@ describe('importing pasted text', () => {
     expect(api.importFromText).not.toHaveBeenCalled()
   })
 
+  it('reads a QR code from the clipboard image when there is no text', async () => {
+    api.readClipboardText.mockRejectedValue('clipboard contents were not available')
+    api.readClipboardQr.mockResolvedValue('trojan://pw@relay.example:443#Relay')
+    api.importFromText.mockResolvedValue(outcome)
+
+    const attempt = await useKagerouStore.getState().importFromClipboard()
+
+    expect(api.importFromText).toHaveBeenCalledWith('trojan://pw@relay.example:443#Relay')
+    expect(attempt.status).toBe('imported')
+  })
+
+  it('leaves the QR path alone when the clipboard has text', async () => {
+    api.readClipboardText.mockResolvedValue('https://sub.example/list')
+    api.importFromText.mockResolvedValue(outcome)
+
+    await useKagerouStore.getState().importFromClipboard()
+
+    expect(api.readClipboardQr).not.toHaveBeenCalled()
+  })
+
+  it('treats an image without a readable code as nothing to import', async () => {
+    api.readClipboardText.mockRejectedValue('clipboard contents were not available')
+    api.readClipboardQr.mockResolvedValue(null)
+
+    const attempt = await useKagerouStore.getState().importFromClipboard()
+
+    expect(attempt).toEqual({ status: 'failed', text: '', error: '' })
+    expect(api.importFromText).not.toHaveBeenCalled()
+  })
+
   it('treats an unreadable clipboard the same way', async () => {
     api.readClipboardText.mockRejectedValue('clipboard contents were not available')
 
