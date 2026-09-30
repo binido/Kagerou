@@ -31,6 +31,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0012_test_outcome.sql"),
     include_str!("migrations/0013_provider_info.sql"),
     include_str!("migrations/0014_listen_ports.sql"),
+    include_str!("migrations/0015_remote_dns.sql"),
 ];
 
 /// A handle to the application's SQLite database.

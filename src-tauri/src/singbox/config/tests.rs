@@ -33,6 +33,7 @@ fn base_input<'a>(profiles: &'a [Profile], rules: &'a [RoutingRule]) -> ConfigIn
         mixed_listen_port: 2080,
         clash_api_listen: "127.0.0.1:9090",
         log_level: "info",
+        remote_dns: "1.1.1.1",
         tun: false,
         system_proxy: false,
     }
@@ -244,6 +245,18 @@ fn queries_go_to_a_resolver_behind_the_proxy_by_default() {
         "a resolver reached outside the tunnel is the leak this exists to close"
     );
     assert_eq!(dns["servers"][1]["type"], "local");
+}
+
+#[test]
+fn the_remote_resolver_is_the_one_the_user_picked() {
+    let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+    let mut input = base_input(&profiles, &[]);
+    input.remote_dns = "9.9.9.9";
+    let config = generate(&input).unwrap();
+    let remote = &config["dns"]["servers"][0];
+
+    assert_eq!(remote["server"], "9.9.9.9");
+    assert_eq!(remote["detour"], "proxy");
 }
 
 /// The proxy's own hostname cannot be resolved through the proxy, and

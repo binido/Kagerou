@@ -32,6 +32,7 @@ pub struct CoreSpec<'a> {
     pub mixed_listen_port: u16,
     pub clash_api_listen: String,
     pub log_level: &'a str,
+    pub remote_dns: &'a str,
     pub tun: bool,
     pub system_proxy: bool,
 }
@@ -45,6 +46,7 @@ impl<'a> CoreSpec<'a> {
             mixed_listen_port: stored.mixed_port,
             clash_api_listen: format!("127.0.0.1:{}", stored.clash_api_port),
             log_level: &stored.log_level,
+            remote_dns: &stored.remote_dns,
             tun: stored.tun_mode,
             system_proxy: stored.system_proxy,
         }
@@ -63,6 +65,7 @@ impl<'a> CoreSpec<'a> {
             mixed_listen_port: paths.test_mixed_listen_port,
             clash_api_listen: paths.test_clash_api_listen.clone(),
             log_level: &stored.log_level,
+            remote_dns: &stored.remote_dns,
             tun: false,
             system_proxy: false,
         }
@@ -92,6 +95,7 @@ pub fn start<L: Launcher>(
         mixed_listen_port: spec.mixed_listen_port,
         clash_api_listen: &spec.clash_api_listen,
         log_level: spec.log_level,
+        remote_dns: spec.remote_dns,
         tun: spec.tun,
         system_proxy: spec.system_proxy,
     })?;

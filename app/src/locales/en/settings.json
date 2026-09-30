@@ -29,7 +29,8 @@
     "testUrl": "Connection-test URL",
     "geoLookup": "Exit location lookup",
     "mixedPort": "Proxy port",
-    "clashApiPort": "Clash API port"
+    "clashApiPort": "Clash API port",
+    "remoteDns": "DNS server"
   },
   "descriptions": {
     "autoUpdateSubscriptions": "Keep URL subscription groups fresh automatically.",
@@ -42,7 +43,8 @@
     "testUrl": "Fetched through the VPN to measure its delay. Something small that answers from anywhere works best.",
     "mixedPort": "Local HTTP and SOCKS port that apps and the system proxy connect to. Only this computer can reach it. Locked while connected.",
     "clashApiPort": "Local port Kagerou uses to control the core. Change it if another app already uses 9090. Locked while connected.",
-    "geoLookup": "Asks a public service, through the tunnel, which country and city your connection appears to come from. Turning this off keeps the dashboard on the flag in the profile name."
+    "geoLookup": "Asks a public service, through the tunnel, which country and city your connection appears to come from. Turning this off keeps the dashboard on the flag in the profile name.",
+    "remoteDns": "Resolves site names through the VPN, over HTTPS. AdGuard also blocks ads. Applies the next time you connect."
   },
   "options": {
     "interval5": "5 minutes",

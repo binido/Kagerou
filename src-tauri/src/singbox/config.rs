@@ -28,6 +28,8 @@ pub struct ConfigInput<'a> {
     pub mixed_listen_port: u16,
     pub clash_api_listen: &'a str,
     pub log_level: &'a str,
+    /// IP of the DoH server that resolves everything not sent Direct.
+    pub remote_dns: &'a str,
     pub tun: bool,
     /// Has sing-box set the OS proxy to the mixed inbound. Ignored under TUN.
     pub system_proxy: bool,
@@ -38,7 +40,7 @@ pub struct ConfigInput<'a> {
 /// Without a `dns` block sing-box falls back to the system resolver, so
 /// every name the user visits goes to their ISP in the clear while the
 /// traffic itself is tunnelled.
-fn dns_block(rules: &[RoutingRule]) -> Value {
+fn dns_block(rules: &[RoutingRule], remote_dns: &str) -> Value {
     let mut dns_rules: Vec<Value> = Vec::new();
     for rule in rules {
         if outbound_tag_for(&rule.outbound) != "direct" {
@@ -62,7 +64,7 @@ fn dns_block(rules: &[RoutingRule]) -> Value {
             // Addressed by IP. A resolver named by domain would itself need
             // resolving, and the only thing available to do that is the
             // system resolver this block exists to avoid.
-            { "tag": "remote", "type": "https", "server": "1.1.1.1", "detour": "proxy" },
+            { "tag": "remote", "type": "https", "server": remote_dns, "detour": "proxy" },
             { "tag": "local", "type": "local" },
         ],
         "rules": dns_rules,
@@ -150,7 +152,7 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
 
     Ok(json!({
         "log": { "level": input.log_level, "timestamp": true },
-        "dns": dns_block(input.routing_rules),
+        "dns": dns_block(input.routing_rules, input.remote_dns),
         "inbounds": inbounds,
         "outbounds": outbounds,
         "route": {

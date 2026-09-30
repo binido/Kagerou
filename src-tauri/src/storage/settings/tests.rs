@@ -24,6 +24,34 @@ fn get_returns_the_seeded_defaults() {
 }
 
 #[test]
+fn remote_dns_accepts_a_listed_provider_and_rejects_anything_else() {
+    let db = Db::open_in_memory().unwrap();
+    assert_eq!(get(&db).unwrap().remote_dns, "1.1.1.1");
+
+    update(
+        &db,
+        &SettingsPatch {
+            remote_dns: Some("8.8.8.8".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(get(&db).unwrap().remote_dns, "8.8.8.8");
+
+    // a domain would need the system resolver to find the resolver
+    let err = update(
+        &db,
+        &SettingsPatch {
+            remote_dns: Some("dns.google".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap_err();
+    assert!(matches!(err, StorageError::Sqlite(_)));
+    assert_eq!(get(&db).unwrap().remote_dns, "8.8.8.8");
+}
+
+#[test]
 fn update_rejects_an_unknown_log_level() {
     let db = Db::open_in_memory().unwrap();
     let err = update(

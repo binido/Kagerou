@@ -7,7 +7,7 @@ use super::{Db, StorageError};
 pub fn get(db: &Db) -> Result<Settings, StorageError> {
     let conn = db.lock();
     conn.query_row(
-        "SELECT theme, language, startup, tun_mode, system_proxy, auto_connect, geo_lookup, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level, test_url, mixed_port, clash_api_port
+        "SELECT theme, language, startup, tun_mode, system_proxy, auto_connect, geo_lookup, tun_interface, auto_update_subscriptions, subscription_update_interval, custom_subscription_update_minutes, group_sort, log_level, test_url, mixed_port, clash_api_port, remote_dns
          FROM settings WHERE id = 1",
         [],
         |row| {
@@ -28,6 +28,7 @@ pub fn get(db: &Db) -> Result<Settings, StorageError> {
                 test_url: row.get("test_url")?,
                 mixed_port: row.get("mixed_port")?,
                 clash_api_port: row.get("clash_api_port")?,
+                remote_dns: row.get("remote_dns")?,
             })
         },
     )
@@ -60,6 +61,7 @@ pub struct SettingsPatch {
     pub test_url: Option<String>,
     pub mixed_port: Option<u16>,
     pub clash_api_port: Option<u16>,
+    pub remote_dns: Option<String>,
 }
 
 impl SettingsPatch {
@@ -109,7 +111,8 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             log_level = COALESCE(?13, log_level),
             test_url = COALESCE(?14, test_url),
             mixed_port = COALESCE(?15, mixed_port),
-            clash_api_port = COALESCE(?16, clash_api_port)
+            clash_api_port = COALESCE(?16, clash_api_port),
+            remote_dns = COALESCE(?17, remote_dns)
          WHERE id = 1",
         params![
             patch.theme.as_deref(),
@@ -128,6 +131,7 @@ pub fn update(db: &Db, patch: &SettingsPatch) -> Result<(), StorageError> {
             patch.test_url.as_deref().map(str::trim),
             patch.mixed_port,
             patch.clash_api_port,
+            patch.remote_dns.as_deref(),
         ],
     )?;
     Ok(())
