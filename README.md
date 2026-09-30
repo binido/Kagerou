@@ -35,7 +35,7 @@ Most sing-box clients either expose a configuration file or hide the core behind
 
 ### Profiles and subscriptions
 
-- Profile groups with drag-and-drop ordering.
+- Profile groups.
 - Subscription sources loaded from a URL, pasted content, or a QR code copied as an image.
 - Manual and scheduled subscription refresh.
 - Traffic used, limit, expiry date, announcements and support link, when the provider sends them.
