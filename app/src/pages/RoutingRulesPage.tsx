@@ -69,7 +69,7 @@ export function RoutingRulesPage() {
               {t('page.commonShortcuts')}
             </h2>
           </div>
-          <p className="text-[11px] text-quiet">{t('page.appliedBeforeCustom')}</p>
+          <p className="text-[11px] text-quiet">{t('page.appliedAfterCustom')}</p>
         </div>
         <Card className="gap-0 overflow-hidden rounded-[10px] border-0 bg-surface p-0 shadow-none ring-1 ring-inset ring-hairline">
           {presets.map((preset) => (

@@ -186,3 +186,32 @@ fn a_corrupt_profile_key_is_reported_before_anything_is_started() {
     assert!(matches!(sup.status(), Status::Stopped));
     assert_eq!(control.kill_count(), 0, "nothing was ever launched");
 }
+
+#[test]
+fn the_bypass_lan_preset_reaches_the_written_config() {
+    let dir = std::env::temp_dir().join(format!("kagerou-core-lan-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let db = db_with_a_profile();
+    let has_lan_rule = |db: &Db| {
+        let (mut sup, _control) = supervisor();
+        start(
+            db,
+            &mut sup,
+            &CoreSpec::connection(&paths(&dir), &stored(db)),
+        )
+        .unwrap();
+        let written = std::fs::read_to_string(dir.join("config.json")).unwrap();
+        let config: serde_json::Value = serde_json::from_str(&written).unwrap();
+        config["route"]["rules"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|rule| rule["ip_is_private"] == true)
+    };
+
+    // seeded on
+    assert!(has_lan_rule(&db));
+    routing::set_preset(&db, "bypass-lan", false).unwrap();
+    assert!(!has_lan_rule(&db));
+    std::fs::remove_dir_all(&dir).ok();
+}

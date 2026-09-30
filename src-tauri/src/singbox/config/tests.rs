@@ -33,6 +33,7 @@ fn base_input<'a>(profiles: &'a [Profile], rules: &'a [RoutingRule]) -> ConfigIn
         mixed_listen_port: 2080,
         clash_api_listen: "127.0.0.1:9090",
         log_level: "info",
+        bypass_lan: false,
         remote_dns: "1.1.1.1",
         tun: false,
         system_proxy: false,
@@ -248,6 +249,32 @@ fn queries_go_to_a_resolver_behind_the_proxy_by_default() {
 }
 
 #[test]
+fn bypass_lan_sends_private_addresses_direct_after_the_users_rules() {
+    let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+    let rules = vec![rule("r1", "192.168.50.0/24", "Proxy")];
+    let mut input = base_input(&profiles, &rules);
+    input.bypass_lan = true;
+    let config = generate(&input).unwrap();
+    let rules_json = config["route"]["rules"].as_array().unwrap();
+
+    assert_eq!(rules_json.len(), 3);
+    assert_eq!(rules_json[1]["ip_cidr"], json!(["192.168.50.0/24"]));
+    assert_eq!(
+        rules_json[2],
+        json!({ "ip_is_private": true, "outbound": "direct" })
+    );
+}
+
+#[test]
+fn bypass_lan_off_adds_no_rule() {
+    let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
+    let config = generate(&base_input(&profiles, &[])).unwrap();
+    let rules_json = config["route"]["rules"].as_array().unwrap();
+
+    assert!(!rules_json.iter().any(|r| r.get("ip_is_private").is_some()));
+}
+
+#[test]
 fn the_remote_resolver_is_the_one_the_user_picked() {
     let profiles = vec![profile("p1", "vless://uuid@a.example.com:443")];
     let mut input = base_input(&profiles, &[]);
@@ -381,6 +408,7 @@ fn the_bundled_sing_box_accepts_a_generated_config() {
     for tun in [false, true] {
         let mut input = base_input(&profiles, &rules);
         input.tun = tun;
+        input.bypass_lan = true;
         // On, so the non-TUN shape carries `set_system_proxy: true`.
         // `check` only parses it; the OS proxy is left untouched.
         input.system_proxy = true;
