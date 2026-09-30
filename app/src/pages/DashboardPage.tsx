@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import { ConnectionStage } from '@/components/dashboard/ConnectionStage'
+import { FirstRunCard } from '@/components/dashboard/FirstRunCard'
 import { ModeSwitches } from '@/components/dashboard/ModeSwitches'
 import { QuickProfiles } from '@/components/dashboard/QuickProfiles'
 import { StatusFooter } from '@/components/dashboard/StatusFooter'
@@ -62,45 +63,51 @@ export function DashboardPage() {
     >
       <PageHeader eyebrow={t('page.eyebrow')} title={t('page.title')} />
       <section
-        aria-labelledby="connection-stage-title"
+        aria-labelledby={profiles.length === 0 ? 'first-run-title' : 'connection-stage-title'}
         className="mt-5 flex min-h-0 max-h-[700px] flex-1 flex-col gap-4"
       >
-        <ConnectionStage
-          activeConnections={activeConnections}
-          connected={connected}
-          connectedSince={connectedSince}
-          exitLocation={exitLocation}
-          exitLocationPending={exitLocationPending}
-          latestDownload={trafficSample.download}
-          latestUpload={trafficSample.upload}
-          onRefreshLocation={() => void refreshExitLocation()}
-          onToggleConnection={toggleConnection}
-          ping={ping}
-          profileName={profileName}
-          sessionTraffic={sessionTraffic}
-          trafficHistory={trafficHistory}
-        />
-        <div className="grid shrink-0 grid-cols-2 gap-4 max-[720px]:grid-cols-1">
-          <ModeSwitches
-            onToggle={(mode) =>
-              updateSettings(
-                mode === 'tun'
-                  ? { tunMode: !settings.tunMode }
-                  : { systemProxy: !settings.systemProxy },
-              )
-            }
-            systemProxy={settings.systemProxy}
-            tunMode={settings.tunMode}
-          />
-          <QuickProfiles
-            activeProfileId={activeProfile?.id ?? ''}
-            onSelect={(id) => void selectProfile(id)}
-            onTestGroup={() => void startGroupTest(group?.id ?? null)}
-            profiles={sortProfiles(groupProfiles, 'ping').slice(0, QUICK_PROFILE_COUNT)}
-            ranked={ranked}
-            testRunning={testRun !== null}
-          />
-        </div>
+        {profiles.length === 0 ? (
+          <FirstRunCard />
+        ) : (
+          <>
+            <ConnectionStage
+              activeConnections={activeConnections}
+              connected={connected}
+              connectedSince={connectedSince}
+              exitLocation={exitLocation}
+              exitLocationPending={exitLocationPending}
+              latestDownload={trafficSample.download}
+              latestUpload={trafficSample.upload}
+              onRefreshLocation={() => void refreshExitLocation()}
+              onToggleConnection={toggleConnection}
+              ping={ping}
+              profileName={profileName}
+              sessionTraffic={sessionTraffic}
+              trafficHistory={trafficHistory}
+            />
+            <div className="grid shrink-0 grid-cols-2 gap-4 max-[720px]:grid-cols-1">
+              <ModeSwitches
+                onToggle={(mode) =>
+                  updateSettings(
+                    mode === 'tun'
+                      ? { tunMode: !settings.tunMode }
+                      : { systemProxy: !settings.systemProxy },
+                  )
+                }
+                systemProxy={settings.systemProxy}
+                tunMode={settings.tunMode}
+              />
+              <QuickProfiles
+                activeProfileId={activeProfile?.id ?? ''}
+                onSelect={(id) => void selectProfile(id)}
+                onTestGroup={() => void startGroupTest(group?.id ?? null)}
+                profiles={sortProfiles(groupProfiles, 'ping').slice(0, QUICK_PROFILE_COUNT)}
+                ranked={ranked}
+                testRunning={testRun !== null}
+              />
+            </div>
+          </>
+        )}
         <StatusFooter
           className="shrink-0 [@media(max-height:700px)]:hidden"
           presets={routingPresets}

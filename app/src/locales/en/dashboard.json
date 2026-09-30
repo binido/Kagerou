@@ -52,5 +52,10 @@
     "rules": "Rules: {{count}}",
     "sources": "Subscriptions: {{count}}",
     "sourcesStale": "Subscriptions: {{count}} of {{total}} due for refresh"
+  },
+  "firstRun": {
+    "eyebrow": "Getting started",
+    "title": "Add your first VPN",
+    "description": "Copy a subscription link, or one or more keys like vless:// or trojan://, then add them here. Pasting anywhere on this page works too."
   }
 }

@@ -114,7 +114,7 @@ row.
 | Embedded sing-box dashboard | 📋 | NekoBox bundles Yacd. The Clash API is already running and reachable, so this is mostly a window and a bundled static build. |
 | App icon | ✅ | `assets/icon-source.svg` is the source: the mark on a Catppuccin Mocha plate, drawn on Apple's macOS grid (an 824×824 rounded square inset in a 1024 canvas) so it sits the same size as its neighbours in the dock. Regenerate the platform icons with `pnpm tauri icon assets/icon-source.png`. The mark loses its detail below about 48px, which would need separate small-size artwork inside the `.ico` and `.icns` — `tauri icon` scales a single source, so that is a manual job nobody has judged worth doing. |
 | Theme-aware icon | ❌ | Considered and dropped (2026-09-05). Only a tray icon could genuinely follow the system theme — `Window::set_icon` is a no-op on macOS, and the bundle icon is baked in — so it would be a platform-specific detail hanging off a tray that does not exist yet, ahead of work that matters more. |
-| Onboarding for an empty install | 📋 | A fresh install shows empty tables. A first-run path — add a subscription, or paste a link — would carry more than the current fallback copy. |
+| Onboarding for an empty install | ✅ | Until the first VPN exists, the dashboard shows an "Add your first VPN" card instead of a connect button with nothing behind it. It imports from the clipboard or from a paste anywhere on the page, through the same path as the groups page, and the dashboard switches to the dial once a profile lands. |
 
 ## Platform integration
 
