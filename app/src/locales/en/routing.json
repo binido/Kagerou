@@ -6,7 +6,7 @@
     "connectionActive": "Connection active",
     "presets": "Presets",
     "commonShortcuts": "Common traffic shortcuts",
-    "appliedBeforeCustom": "Applied before custom rules",
+    "appliedAfterCustom": "Applied after custom rules",
     "customRules": "Custom rules",
     "trafficMatches": "Traffic matches",
     "firstMatchWins": "First match wins",

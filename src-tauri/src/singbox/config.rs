@@ -28,6 +28,8 @@ pub struct ConfigInput<'a> {
     pub mixed_listen_port: u16,
     pub clash_api_listen: &'a str,
     pub log_level: &'a str,
+    /// Sends loopback, link-local and RFC 1918 / ULA destinations Direct.
+    pub bypass_lan: bool,
     /// IP of the DoH server that resolves everything not sent Direct.
     pub remote_dns: &'a str,
     pub tun: bool,
@@ -86,9 +88,15 @@ fn dns_block(rules: &[RoutingRule], remote_dns: &str) -> Value {
 /// Sniffing has to come first, because rules are evaluated in order. It is a
 /// rule action since sing-box 1.11, and the inbound-level `sniff` fields were
 /// removed in 1.13, so 1.14 refuses a config carrying them.
-fn sniff_first(rules: &[RoutingRule]) -> Vec<Value> {
+fn sniff_first(rules: &[RoutingRule], bypass_lan: bool) -> Vec<Value> {
     let mut out = vec![json!({ "action": "sniff" })];
     out.extend(rules.iter().map(routing_rule_to_json));
+    // After the user's rules, so one that sends a LAN range through the proxy
+    // still wins. Matches the destination address only - a LAN host reached
+    // by name (`nas.local`) is not resolved here and still goes to the proxy.
+    if bypass_lan {
+        out.push(json!({ "ip_is_private": true, "outbound": "direct" }));
+    }
     out
 }
 
@@ -156,7 +164,7 @@ pub fn generate(input: &ConfigInput) -> Result<Value, ConfigError> {
         "inbounds": inbounds,
         "outbounds": outbounds,
         "route": {
-            "rules": sniff_first(input.routing_rules),
+            "rules": sniff_first(input.routing_rules, input.bypass_lan),
             "final": "proxy",
             // Without this, TUN's auto_route captures sing-box's own
             // connections to the proxy server and feeds them back into the

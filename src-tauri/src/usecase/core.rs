@@ -86,12 +86,16 @@ pub fn start<L: Launcher>(
 ) -> Result<(), CoreError> {
     let all_profiles = profiles::list_all(db)?;
     let routing_rules = routing::list_rules(db)?;
+    let bypass_lan = routing::list_presets(db)?
+        .iter()
+        .any(|preset| preset.id == "bypass-lan" && preset.enabled);
     let active_profile_id = settings::get_active_profile_id(db)?.unwrap_or_default();
 
     let config = singbox::generate(&singbox::ConfigInput {
         profiles: &all_profiles,
         active_profile_id: &active_profile_id,
         routing_rules: &routing_rules,
+        bypass_lan,
         mixed_listen_port: spec.mixed_listen_port,
         clash_api_listen: &spec.clash_api_listen,
         log_level: spec.log_level,

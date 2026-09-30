@@ -6,7 +6,7 @@
     "connectionActive": "Соединение активно",
     "presets": "Предустановки",
     "commonShortcuts": "Популярные правила трафика",
-    "appliedBeforeCustom": "Применяются до своих правил",
+    "appliedAfterCustom": "Применяются после своих правил",
     "customRules": "Свои правила",
     "trafficMatches": "Совпадения трафика",
     "firstMatchWins": "Срабатывает первое совпадение",
