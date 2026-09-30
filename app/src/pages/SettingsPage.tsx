@@ -170,6 +170,7 @@ export function SettingsPage() {
           </SettingsSection>
           <SettingsSection title={t('sections.diagnostics')}>
             <SettingSelectRow
+              description={t('descriptions.logLevel')}
               id="log-level"
               label={t('fields.logLevel')}
               onChange={(logLevel) => updateSettings({ logLevel: logLevel as SingBoxLogLevel })}
