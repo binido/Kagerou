@@ -13,6 +13,7 @@ import { ThemePicker } from '@/components/settings/ThemePicker'
 import { useKagerouStore } from '@/store/kagerou-store'
 import type {
   GroupSortMode,
+  RemoteDns,
   SingBoxLogLevel,
   SubscriptionUpdateInterval,
   TunInterface,
@@ -148,6 +149,19 @@ export function SettingsPage() {
                 { value: 'tun0', label: t('options.tun0') },
               ]}
               value={settings.tunInterface}
+            />
+            <SettingSelectRow
+              description={t('descriptions.remoteDns')}
+              id="remote-dns"
+              label={t('fields.remoteDns')}
+              onChange={(remoteDns) => updateSettings({ remoteDns: remoteDns as RemoteDns })}
+              options={[
+                { value: '1.1.1.1', label: 'Cloudflare' },
+                { value: '8.8.8.8', label: 'Google' },
+                { value: '9.9.9.9', label: 'Quad9' },
+                { value: '94.140.14.14', label: 'AdGuard' },
+              ]}
+              value={settings.remoteDns}
             />
             <SettingNumberRow
               description={t('descriptions.mixedPort')}

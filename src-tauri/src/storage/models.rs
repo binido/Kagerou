@@ -290,4 +290,5 @@ pub struct Settings {
     pub test_url: String,
     pub mixed_port: u16,
     pub clash_api_port: u16,
+    pub remote_dns: String,
 }

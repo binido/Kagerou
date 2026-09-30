@@ -26,6 +26,9 @@ export type TunInterface = 'utun / tun0' | 'utun' | 'tun0'
 export type SubscriptionUpdateInterval = '5' | '10' | '15' | '30' | '60' | 'custom'
 export type GroupSortMode = 'ping' | 'name' | 'protocol'
 /** sing-box's config log levels - deliberately not the display `LogLevel` above. */
+/** IPs allowed by the `remote_dns` CHECK constraint. */
+export type RemoteDns = '1.1.1.1' | '8.8.8.8' | '9.9.9.9' | '94.140.14.14'
+
 export type SingBoxLogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'panic'
 
 /** Mirrors `storage::models::TestOutcome`: what measuring a profile
@@ -211,6 +214,7 @@ export interface SettingsState {
   testUrl: string
   mixedPort: number
   clashApiPort: number
+  remoteDns: RemoteDns
 }
 
 /** Mirrors `usecase::connection::ConnectionExit`. */

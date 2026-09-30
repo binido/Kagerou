@@ -29,6 +29,7 @@ export const emptySnapshot: AppSnapshot = {
     testUrl: 'http://www.gstatic.com/generate_204',
     mixedPort: 2080,
     clashApiPort: 9090,
+    remoteDns: '1.1.1.1',
   },
 }
 
