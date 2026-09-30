@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::app_state::AppState;
 use crate::net::geo;
@@ -435,6 +436,18 @@ pub async fn import_from_text(
     subscriptions::import_text(&state.db, &text)
         .await
         .map_err(AppError::from)
+}
+
+/// The text of a QR code in the image on the clipboard. `None` when the
+/// clipboard holds no image or the image has no readable code.
+#[tauri::command]
+pub async fn read_clipboard_qr(app: AppHandle) -> Option<String> {
+    let image = app.clipboard().read_image().ok()?;
+    import::qr_text(
+        image.rgba(),
+        image.width() as usize,
+        image.height() as usize,
+    )
 }
 
 #[tauri::command]

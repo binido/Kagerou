@@ -101,6 +101,7 @@ export const kagerouApi = {
     invoke<void>('rename_profile_group', { id, label }),
 
   readClipboardText: () => readText(),
+  readClipboardQr: () => invoke<string | null>('read_clipboard_qr'),
   importFromText: (text: string) => invoke<ImportOutcome>('import_from_text', { text }),
   updateSource: (id: string, patch: { name?: string; value?: string }) =>
     invoke<void>('update_source', { id, patch }),

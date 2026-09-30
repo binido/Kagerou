@@ -58,6 +58,29 @@ pub fn classify(text: &str) -> Result<Pasted, ImportError> {
     )?))
 }
 
+/// Reads the text of the first QR code found in an RGBA image.
+///
+/// Returns `None` when there is no readable code, or when the buffer is
+/// shorter than `width * height * 4`.
+pub fn qr_text(rgba: &[u8], width: usize, height: usize) -> Option<String> {
+    if width == 0 || height == 0 || rgba.len() < width.checked_mul(height)?.checked_mul(4)? {
+        return None;
+    }
+    let mut image = rqrr::PreparedImage::prepare_from_greyscale(width, height, |x, y| {
+        let i = (y * width + x) * 4;
+        let [r, g, b, a] = [rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]].map(u32::from);
+        let luma = (r * 299 + g * 587 + b * 114) / 1000;
+        // Transparent pixels count as white, or the quiet zone of a QR copied
+        // from a web page with a transparent background reads as black.
+        ((luma * a + 255 * (255 - a)) / 255) as u8
+    });
+    image
+        .detect_grids()
+        .iter()
+        .find_map(|grid| grid.decode().ok())
+        .map(|(_, text)| text)
+}
+
 /// What an import did, so the UI can say it in words.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]

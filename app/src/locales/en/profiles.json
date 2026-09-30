@@ -119,7 +119,7 @@
     "import": {
       "title": "Add VPNs",
       "description": "Paste a subscription link, a single key, or a list of keys.",
-      "emptyClipboard": "The clipboard had nothing to add. Paste it here instead.",
+      "emptyClipboard": "The clipboard had no link, key or readable QR code. Paste the text here instead.",
       "label": "Link or keys",
       "placeholder": "https://… or vless://…",
       "cancel": "Cancel",
